@@ -1,0 +1,302 @@
+# ==============================================================================
+# Stele — System Intent
+# ==============================================================================
+# The governed experiential-memory ledger for AI agents.
+# Agents log what worked and what failed per task; a quarantine gate promotes
+# only oracle-verified lessons; any agent retrieves the distilled experience
+# before its next task — so context is built from real right and wrong answers.
+#
+# This is a DESIGN-PHASE intent: it locks the architecture decisions derived
+# from the audited research in this repository. No implementation exists yet;
+# every constraint test is a planned path and reports UNVERIFIED until built
+# and cleared by a human-authored or execution-derived oracle.
+# ==============================================================================
+
+meta:
+  name: stele
+  version: "0.1.1"  # full cross-check vs docs/patterns: DELETE restored, C2/C3/C6 gaps closed, failure-mode coverage added
+  date: "2026-07-17"
+  status: DESIGN — PENDING_SIGNOFF (human review required before implementation)
+  license: MIT
+  layer: "Context / inference-time memory — never model weights"
+
+# ------------------------------------------------------------------------------
+# Goal
+# ------------------------------------------------------------------------------
+
+goal: |
+  Provide a centralized, governed ledger of agent task experience — distilled
+  lessons with provenance and temporal validity — that any agent can write to
+  and read from through one protocol, so that future tasks start with solid
+  context built from prior right AND wrong answers instead of repeating them.
+
+problem: |
+  Agent sessions already produce the most valuable knowledge a system has —
+  what actually worked, what failed, and why — and today that value is thrown
+  away or scattered across per-project files. Naive fixes fail in documented
+  ways: raw transcript dumps cause context rot and negative transfer; unverified
+  auto-extraction poisons long-term stores; append-only memories go stale and
+  mislead; recall-benchmark wins do not translate into better agent actions.
+
+evidence_base:
+  research:
+    - docs/research/AGENT_SESSION_LEDGER_INFERENCE_TIME_MEMORY_RESEARCH_2026.md
+    - docs/research/AGENT_MEMORY_STORAGE_SYSTEMS_RESEARCH_2026.md
+  patterns:
+    - docs/patterns/patterns_session_ledger_memory.yaml
+  note: |
+    Both research documents are source-audited (audit logs in ledger Part 14 and
+    storage Part 11). Pattern IDs cited below (FF-n, OP-n) refer to the patterns
+    file. Re-verify any load-bearing number against the primary source before
+    changing a claim.
+
+# ------------------------------------------------------------------------------
+# Non-goals
+# ------------------------------------------------------------------------------
+
+non_goals:
+  - "Training-time memory: no fine-tuning, no LoRA, no weight updates of any model"
+  - "Being a database product: the substrate stays boring and swappable; the protocol is the product"
+  - "LLM extraction pipelines on the write path (writers submit already-structured entries)"
+  - "Replacing IVD, Cairn, or EIF: Stele composes with them over protocol boundaries only"
+  - "Product/SKU/pricing for experience packs: out of scope for this repository"
+  - "Generic document RAG over static corpora (a ledger is written DURING the work, by the worker)"
+
+# ------------------------------------------------------------------------------
+# Architecture (five planes)
+# ------------------------------------------------------------------------------
+
+architecture:
+  contract_plane: "Entry schema + six-op protocol — the vendor-neutral contract every producer/consumer uses"
+  tool_surface: "The six ops — ADD · UPDATE · DELETE/SUPERSEDE · SEARCH · REFLECT · LINK — exposed as an MCP server (and importable library). DELETE is a true erase (redaction/wrong lessons), distinct from SUPERSEDE (belief update); both required (pattern OP-3, FF-9)"
+  governance_plane: "Quarantine → promote lifecycle; external-oracle gate; periodic REFLECT consolidation"
+  retrieval_plane: "Hybrid keyword + semantic + temporal index over PROMOTED entries only; selective by design; injection is BUDGETED and compressed to slices, never whole-ledger dumps"
+  export_plane: "Pack export: redacted, versioned, purpose-scoped, audience-tiered distillates (storage ≠ pack)"
+  context_operator_coverage:
+    # The four context-engineering operators mapped onto Stele (pattern OP-9):
+    write: "The six ops — producers append/update outside the context window"
+    select: "Retrieval plane — relevant promoted slices only"
+    compress: "Budgeted injection at read time + REFLECT consolidation at rest (Select without Compress re-creates context rot)"
+    isolate: "Scope/namespace on every entry (project vs universal); producers write into their scope, cross-scope reads are explicit"
+
+ecosystem_linkage:
+  # Protocol linkage ONLY — Stele core never imports code from these projects.
+  ivd:
+    repo: "https://github.com/leocelis/ivd"
+    role: "PRODUCER — the IVD Judgment layer captures intent corrections; a thin adapter ships codified judgments into Stele through the same six-op protocol as every other writer"
+    boundary: "Judgment = decision procedure about intents (stays in IVD); Stele = general experiential store. CoALA separates memory modules from decision procedures — they sit on opposite sides of this interface"
+  cairn:
+    repo: "https://github.com/leocelis/cairn"
+    role: "RETRIEVAL ROUTER (optional) — Cairn's selective gate and composition layer can front Stele as one more store behind its adapters; Cairn owns routing, Stele owns the store"
+    boundary: "Cairn is storage-agnostic and does not own storage; Stele is a store and does not route. Complementary by construction"
+  eif:
+    repo: "https://github.com/leocelis/eif"
+    role: "PROMOTION ORACLE (optional adapter) — EIF's falsification/calibration pipeline can serve as the external oracle that clears quarantined entries for promotion"
+    boundary: "Stele defines WHAT evidence promotion requires; EIF is one way to produce it. Any oracle satisfying the evidence contract works"
+
+# ------------------------------------------------------------------------------
+# Constraints
+# Ordered least → most critical (position bias: models weight later constraints
+# more heavily; governance and schema integrity are the load-bearing core).
+# ------------------------------------------------------------------------------
+
+constraints:
+
+  - id: C1
+    name: ecosystem_protocol_linkage_only
+    statement: |
+      Stele core imports no code from IVD, Cairn, EIF, or any storage vendor.
+      All integration happens through the six-op protocol (producers/consumers)
+      or through caller-supplied adapter callables. Heterogeneous-system
+      integration via wire contract, not code merge.
+    rationale: "memorywire (arXiv:2606.01138): heterogeneous memory systems integrate through vendor-neutral wire formats; 'expect field loss' when merging instead. Pattern OP-6 portability_protocols; FF-3 (share the contract, not the implementation)"
+    assumption_status: KNOWN
+    test:
+      path: "tests/test_purity.py::test_core_static_import_scan"
+      oracle: "Static import scan of every core file — zero imports of ivd/cairn/eif/DB drivers"
+      test_provenance: ai_generated  # planned; needs execution-derived run before PASS
+    verification_state: UNVERIFIED (no implementation yet)
+
+  - id: C2
+    name: selective_hybrid_retrieval_promoted_only
+    statement: |
+      Retrieval serves PROMOTED entries only, through hybrid search
+      (keyword + semantic + temporal), always filtered by temporal validity
+      and abstraction scope before injection. Injection is budgeted: slices,
+      never dumps. Returning nothing is a first-class answer, and abstention
+      is a capability — entries past their last_verified horizon are served
+      with an explicit staleness flag or withheld. Quarantined entries are
+      never retrievable by default consumers.
+    rationale: "Ledger research Part 7.3 (SEARCH = semantic + keyword + temporal); BEAM (context cannot be brute-forced); wrong-memory-hurts is a high-severity failure mode (pattern OP-10; SRACG); MTL negative transfer requires scope filtering (FF-3/FF-4); abstention is a first-class memory skill (FF-8, LongMemEval); Select without Compress re-creates context rot (OP-9)"
+    assumption_status: KNOWN
+    test:
+      path: "tests/test_retrieval.py::test_quarantine_never_served_and_filters_applied"
+      oracle: "Golden fixture: store with quarantined + expired + out-of-scope + valid entries; only the valid promoted entry is returned"
+      test_provenance: ai_generated  # planned; golden fixture must be human-reviewed
+    verification_state: UNVERIFIED (no implementation yet)
+
+  - id: C3
+    name: pack_export_boundary
+    statement: |
+      The live store is never the sharing surface. Exports are packs:
+      distilled Insight/skill/workflow layers plus issue trail and provenance,
+      redacted at export (trajectory-level review), version- and expiry-stamped,
+      purpose-scoped. Every pack declares an audience tier (scaffolding fades
+      with expertise) and ships adaptation operators — what to substitute,
+      which environment assumptions must hold, which steps to re-derive.
+      Packs carry the recipe layer (workflow + constraints), never the
+      equipment layer (environment-specific command sequences). Raw
+      trajectories may travel only as provenance appendix, never as the
+      pack surface.
+    rationale: "Storage research Part 6 ('Storage ≠ pack'); AMP redact/pack/hydrate (PMLR v317); OCELOT trajectory-level leakage (arXiv:2606.12341); MTL raw-trajectory negative transfer (pattern OP-6, FF-9); audience tiering per expertise reversal (FF-10, OP-6 mandatory step); adaptation operators per CBR — retrieved solutions are not usable as-is (FF-7); recipe/equipment split (FF-13); replayed env-specific steps are the negative-transfer anchor (FF-4)"
+    assumption_status: KNOWN
+    test:
+      path: "tests/test_export.py::test_pack_is_redacted_versioned_scoped"
+      oracle: "Property test: every exported pack passes secret-pattern scan, carries version+expiry stamps, and contains no raw trajectory at the top level"
+      test_provenance: ai_generated  # planned
+    verification_state: UNVERIFIED (no implementation yet)
+
+  - id: C4
+    name: inspectable_sot_derived_indexes
+    statement: |
+      The source of truth is inspectable and file-exportable (human-readable,
+      diffable, redactable). Any index (vector, keyword, temporal) is DERIVED
+      and fully rebuildable from promoted entries; deleting every index loses
+      zero knowledge.
+    rationale: "Storage research Part 10 verdict: 'prefer inspectable file/skill ledgers as SoT; add Mem0/Graphiti only as indexes over governed facts' (pattern OP-5, FF-11)"
+    assumption_status: KNOWN
+    test:
+      path: "tests/test_store.py::test_index_rebuild_is_lossless"
+      oracle: "Differential test: export SoT → drop all indexes → rebuild → byte-identical retrieval results"
+      test_provenance: ai_generated  # planned
+    verification_state: UNVERIFIED (no implementation yet)
+
+  - id: C5
+    name: no_llm_no_network_on_core_write_path
+    statement: |
+      The core write path makes zero LLM calls and zero network calls.
+      Writers submit already-structured entries; extraction/distillation is
+      the writer's job, outside Stele core. Optional semantic indexing uses
+      caller-supplied embedder callables only.
+    rationale: "Extract-on-write is disqualified for this data: LLM call per add + hallucinated facts + silent overwrite, and the writer already produces structured lessons (storage research Parts 2 + 5; pattern OP-4/OP-11). Purity is testable and keeps the core deterministic"
+    assumption_status: KNOWN
+    test:
+      path: "tests/test_purity.py::test_write_path_zero_llm_zero_network"
+      oracle: "Execution-derived: counting embedder receives 0 calls on default write path; sockets-disabled test passes"
+      test_provenance: ai_generated  # planned; execution oracle required
+    verification_state: UNVERIFIED (no implementation yet)
+
+  - id: C6
+    name: entry_schema_bitemporal_scoped_provenanced
+    statement: |
+      Every entry carries: (a) a content layer typed as goal / issue / decision /
+      failure-lesson / workflow / skill-artifact — where issue entries record
+      positions INCLUDING rejected options, and failures are first-class content,
+      never filtered as noise; (b) bi-temporal metadata — valid_from,
+      superseded_by, last_verified, expiry — where belief updates SUPERSEDE
+      (invalidate, not overwrite) and true DELETE exists only for erasure and
+      wrong lessons; (c) an abstraction scope tag (universal_insight |
+      project_scoped); (d) mandatory provenance — writing agent, task,
+      environment, subject/owner id (erasure index), oracle evidence pointer,
+      and a pointer back to the source session/trajectory for detail-on-demand;
+      (e) for workflow/skill entries, declared environment assumptions.
+      LINKs from entries to artifacts and tests are supported at the schema
+      level. Entries missing mandatory fields are rejected at ADD.
+    rationale: "Content layers incl. rejected options: ledger research Part 7.1, IBIS mapping (pattern OP-1, FF-7); failures are signal (OP-2: success-only traces waste learning). Bi-temporal supersede + true delete: Zep/Graphiti invalidate-not-delete (arXiv:2501.13956 §2) + OP-3 DELETE for erasure/wrong lessons; staleness hazard (FF-8). Scope tag: only Insight-level transfers cross-domain (FF-3/FF-4, MTL). Subject-id indexing: erasure requires it everywhere (FF-9, FF-12, OP-5, OP-12 open problems). Source pointer: gist + pointer to source, detail-on-demand (FF-2, ReadAgent). Env assumptions: consumer must be able to env-check before replaying (FF-4 gate). Provenance: multi-writer conflicts must be visible (OP-10); LINK to artifacts/tests because rationale alone answers <50% of reuser questions (Karsenty, FF-6)"
+    assumption_status: KNOWN
+    test:
+      path: "tests/test_schema.py::test_incomplete_entries_rejected"
+      oracle: "Golden fixtures: entries missing scope / provenance / temporal / subject-id / source-pointer fields raise; workflow entry without env assumptions raises; complete entry round-trips byte-stable"
+      test_provenance: ai_generated  # planned
+    verification_state: UNVERIFIED (no implementation yet)
+
+  - id: C7
+    name: quarantine_promotion_external_oracle
+    statement: |
+      Writes land in quarantine. Promotion to the retrievable ledger requires
+      external-oracle evidence (test result, environment feedback, independent
+      judge, or human sign-off) attached to the entry. A self-graded claim
+      ("the agent says it worked") can NEVER promote. REFLECT runs as a
+      batched consolidation pass (dedupe, merge, supersede, expire) over
+      promoted entries.
+    rationale: "Write-policy fork: hybrid quarantine = best governance (storage research Part 2; pattern OP-4). Self-graded reflections are the confirmation-bias anti-pattern (OP-2; MAR on Reflexion). Append-only is not a ledger (OP-3; Memory-R1: maintenance policy matters). Governance, not storage, is the hard part (FF-12)"
+    assumption_status: KNOWN
+    test:
+      path: "tests/test_governance.py::test_self_graded_never_promotes"
+      oracle: "Golden fixture: entry with oracle evidence promotes; identical entry with self-grade only stays quarantined forever; REFLECT merges duplicates without losing provenance"
+      test_provenance: ai_generated  # planned; human-authored assertion required before PASS
+    verification_state: UNVERIFIED (no implementation yet)
+
+# ------------------------------------------------------------------------------
+# Constraint satisfiability
+# ------------------------------------------------------------------------------
+
+constraint_satisfiability:
+  analysis: |
+    No pairwise conflicts detected. C4 (inspectable SoT) and C2 (hybrid
+    retrieval) compose because indexes are derived (C4) and consulted only at
+    read time (C2). C5 (no LLM on write) and C7 (oracle-gated promotion)
+    compose because oracle evidence is produced OUTSIDE Stele and attached as
+    data. Priority on conflict: C7 > C6 > C5 > C4 > C2 > C3 > C1
+    (governance and schema integrity win over convenience).
+  joint_satisfaction_test:
+    path: "tests/test_joint.py::test_full_lifecycle_all_constraints"
+    description: |
+      One test, one flow: agent ADDs a structured entry (C5, C6) → stays
+      quarantined and unretrievable (C2, C7) → oracle evidence attached →
+      promotes (C7) → retrievable with filters and staleness flags (C2) →
+      index dropped and rebuilt losslessly (C4) → exported as redacted,
+      audience-tiered pack with adaptation operators (C3) → DELETE by
+      subject id erases the entry and index rebuild propagates the erasure
+      (C4, C6) → core import scan stays pure (C1). All assertions on the
+      SAME store state.
+    status: PLANNED — gates completion of any implementation phase
+
+# ------------------------------------------------------------------------------
+# Success oracle (system level)
+# ------------------------------------------------------------------------------
+
+success_oracle: |
+  Task-outcome evaluation, never recall Q&A: agents completing tasks WITH
+  Stele retrieval vs without, on tasks that depend on prior lessons
+  (MemoryArena-shaped; pattern FF-5 / OP-12). A recall benchmark win is
+  explicitly NOT acceptance evidence.
+
+# ------------------------------------------------------------------------------
+# Failure-mode coverage (pattern OP-10 pre-mortem: every critical/high row
+# needs an explicit mitigation or a written acceptance) + accepted risks
+# ------------------------------------------------------------------------------
+
+failure_mode_coverage:
+  critical:
+    raw_trajectory_as_product: "Mitigated — C3 (packs are distilled; trajectories provenance-appendix only)"
+    capture_not_distill: "Mitigated by design + residual risk R4 — writers submit distilled entries (C5); distillation QUALITY is gated at promotion (C7) and consolidated at REFLECT"
+  high:
+    dr_incomplete_for_reusers: "Mitigated — C6 (LINKs to artifacts/tests; source pointer; rejected options recorded)"
+    no_short_term_payoff: "Accepted with mitigation — R1"
+    stale_facts: "Mitigated — C6 (bi-temporal) + C2 (validity filter + staleness abstention)"
+    privacy_cumulative_leakage: "Mitigated — C3 (redact-at-export, trajectory-level) + C6 (subject-id erasure index) + DELETE op"
+    expertise_mismatch: "Mitigated — C3 (audience tier, faded scaffolding)"
+    retrieval_noise: "Mitigated — C2 (promoted-only, scope + validity filters, budgeted slices, nothing-is-an-answer)"
+    eval_mismatch_false_confidence: "Mitigated — success_oracle (task-outcome eval only; recall wins are not acceptance)"
+  medium:
+    retrieval_inject_cost: "ACCEPTED — external memory adds latency/noise (survey tradeoffs); bounded by C2 budgeted injection; measure in Phase 5 harness"
+    false_validation_from_memory: "Mitigated — C6 env-assumption fields give consumers the data to env-check before replay (FF-4); consumer-side enforcement is out of Stele's control and documented as such"
+    multi_agent_ledger_merge: "Accepted with mitigation — R2 (open research frontier)"
+  assumed_unmeasured:
+    liability_wrong_lesson: "ACCEPTED — no case law in corpus (OP-10 '?' row); packs carry expiry + 'may be outdated' abstention (C2/C6); revisit before any pack is shared beyond an internal boundary"
+
+risks:
+  - id: R1
+    risk: "No short-term payoff → abandonment (killed gIBIS/QuestMap; pattern OP-10/FF-6)"
+    mitigation: "Agent pays capture cost automatically; human promotion review is batched (REFLECT cadence), never per-entry"
+  - id: R2
+    risk: "Multi-agent ledger merge is an open research frontier (Hu et al. survey; OP-10)"
+    mitigation: "Mandatory per-entry provenance (C6) makes conflicts visible and resolvable at REFLECT; no silent overwrite by construction"
+  - id: R3
+    risk: "Foreign-pack transfer value is unmeasured — no standard benchmark exists (OP-12)"
+    mitigation: "Pack export (C3) ships as capability only; value claims wait for the proposed eval (pack P, agent B, env E2 — ledger research Part 9.8)"
+  - id: R4
+    risk: "Distillation quality is assumed, not guaranteed — 'who pays to turn traces into Insights' is the modern capture cost (FF-6; ledger research Part 9.3)"
+    assumption_status: ASSUMED
+    mitigation: "Promotion gate (C7) blocks unevidenced junk; REFLECT merges/supersedes weak entries; if producers systematically under-distill, add a distillation-quality check to the oracle contract (do not relax C5 by adding LLM extraction to the core)"
