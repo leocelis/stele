@@ -106,6 +106,9 @@ Differential test asserts a post-delete rebuild is byte-identical to a store nev
 | `env_assumptions` | list | workflow/skill | what must hold for replay (FF-4 gate) |
 | `temporal` | object | ✓ | `valid_from`, `last_verified`, `expiry?`, `superseded_by?` (FF-8) |
 | `provenance` | object | ✓ | `agent`, `task`, `environment`, `subject_id`, `source` (session/trajectory pointer — FF-2), `written_at` |
+| `provenance.model_id` | string | — | model that produced/evaluated the lesson; consumers can re-verify after a model swap |
+| `assessment.domain_depth` | enum | — | `expert · practitioner · adjacent · novice` for a human judgment signal |
+| `receipt_projection` | object | receipt adapter | selected mapping in §4.4; never a raw receipt or source-tree copy |
 | `evidence` | list | promoted only | typed records (§5.2); empty ⇒ entry can never leave quarantine |
 | `links` | list | — | `{kind: artifact\|test\|entry\|source, ref, digest?}` (Karsenty; FF-6) |
 | `state` | enum | ✓ | `quarantined · promoted · superseded · expired · contested` (+ tombstone in journal for deleted) |
@@ -128,6 +131,28 @@ Only `promoted` entries are retrievable by default consumers (C2). `expired`/`su
 ### 4.3 Scope filter semantics (Q4)
 
 A consumer declares its context (`project:<p>`, optionally `domain:<d>`). Retrieval serves: exact project match ∪ matching domain ∪ `universal`. Cross-scope reads (another project's entries) require an explicit `scope_override` — never the default (isolate operator; FF-3/FF-4).
+
+### 4.4 Feedback Receipt adapter projection (C8)
+
+The adapter converts one selected, redacted receipt into an ADD payload. It
+does **not** read a source tree from core, copy a raw history, or expose private
+operator paths and inventory identifiers.
+
+|Receipt concern|Stele representation|
+|---|---|
+|expected|`layer=goal` or a `LINK` to a goal|
+|detection|`layer=issue` plus observation provenance|
+|diagnosis|`layer=failure_lesson` or `decision`, separate from detection|
+|change tried|`decision`, `workflow`, or `skill_artifact`|
+|outcome|`evidence[].verdict`; never an author self-grade|
+|resolution|`state` transition: promoted / superseded / expired / contested|
+|trace|`links[]` + redacted `provenance.source`|
+
+For a code-fix lesson, `promote()` rejects unless evidence includes
+`type=test_result`, a command, and a successful exit status. The adapter carries
+`assessment.domain_depth` and `provenance.model_id` when known. These optional
+fields preserve evaluation weight and permit model-change re-verification
+without forcing every producer into a private receipt taxonomy.
 
 ---
 
@@ -238,7 +263,8 @@ Redaction failures **block** export — there is no force flag.
 
 All producers speak the six ops — no exceptions (C1):
 - **IVD Judgment adapter:** reads codified judgments, maps → `decision`/`failure_lesson` entries, ADDs them (quarantined; the judgment's own verification artifacts become candidate evidence).
-- **Migration producer (Q6):** parses existing feedback files → entries with `provenance.agent="migration"`, `scope=project:<repo>`, `source` pointing at file+line; all quarantined; promotion via batch human sign-off (`human_signoff` evidence).
+- **Feedback Receipt adapter:** receives one selected, redacted receipt projection, preserves the causal mapping in §4.4, then ADDs it as quarantined. It never bulk-imports a private store or emits private paths/identifiers.
+- **Migration producer (Q6):** parses an explicitly selected, redacted source → entries with `provenance.agent="migration"`, `scope=project:<repo>`, and a redacted source pointer; all quarantined; promotion via batch human sign-off (`human_signoff` evidence).
 
 ---
 
@@ -253,6 +279,7 @@ All producers speak the six ops — no exceptions (C1):
 | `tests/test_retrieval.py::test_quarantine_never_served_and_filters_applied` | golden store: only valid promoted in-scope entry returned; staleness flag | C2 |
 | `tests/test_store.py::test_index_rebuild_is_lossless` | drop indexes → rebuild → byte-identical results | C4 |
 | `tests/test_export.py::test_pack_is_redacted_versioned_scoped` | property tests of §8.2 | C3 |
+| `tests/test_receipt_adapter.py::test_projection_preserves_structure_and_redacts_private_source` | causal mapping, code-fix test evidence, and private-boundary rejection | C8 |
 | `tests/test_joint.py::test_full_lifecycle_all_constraints` | the completion gate — full lifecycle incl. erasure cascade on one store | all |
 
 Provenance rule (intent): these AI-planned tests cannot self-certify — each needs a human-reviewed golden fixture or an execution-derived oracle before any constraint reports PASS.

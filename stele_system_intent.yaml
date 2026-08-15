@@ -95,6 +95,43 @@ ecosystem_linkage:
     boundary: "Stele defines WHAT evidence promotion requires; EIF is one way to produce it. Any oracle satisfying the evidence contract works"
 
 # ------------------------------------------------------------------------------
+# Interoperability boundary — public-safe receipt projection
+# ------------------------------------------------------------------------------
+
+feedback_receipt_interoperability:
+  purpose: >
+    A private operator may use Feedback Receipts to condition its own agents.
+    Stele can accept a selected, redacted projection as a generic producer
+    payload; Stele does not define that operator's private storage, migration
+    records, product prompt rules, or authority vocabulary.
+  boundary:
+    - "No private receipt directory, inventory identifier, repository path, or move provenance appears in Stele source, packs, tests, or examples."
+    - "Stele core never reads a foreign receipt file directly; an adapter supplies a schema-valid payload through ADD."
+    - "Migration is selected and redacted per entry, never a default bulk import of a private store."
+    - "Stele is an optional protocol store, not a replacement for an operator's private receipt inventory or product runtime source of truth."
+  receipt_projection:
+    expected: "goal layer or a LINK to a goal entry"
+    detection: "issue content with observation provenance"
+    diagnosis: "failure_lesson or decision content; never collapse it into detection"
+    change_tried: "decision, workflow, or skill_artifact content"
+    outcome: "independent evidence verdict; no self-grade representation"
+    resolution: "promoted, superseded, expired, or contested state"
+    trace: "links plus a redacted source pointer"
+    code_regression: "A code-fix lesson requires test_result evidence before promotion."
+    optional_provenance:
+      - "domain_depth for human judgment signals"
+      - "model_id so a model change can trigger re-verification"
+  retrieval_roles:
+    generator: "Receives compact promoted insight/skill slices only; never raw receipt histories."
+    reviewer_coordinator: "May receive a bounded recent-correction slice with open risks."
+    writer: "Can ADD only; cannot promote its own claim."
+    structural_judge: "May issue conformance evidence but is not a taste authority."
+  operating_preconditions:
+    - "A producer must prove autonomous write plus next-task read before claiming a compounding runtime loop."
+    - "A separate external oracle must emit promotion evidence; an adapter never promotes its own output."
+    - "The consuming product assembles any domain-specific prompt sections; Stele SEARCH returns budgeted slices, not a prompt template."
+
+# ------------------------------------------------------------------------------
 # Constraints
 # Ordered least → most critical (position bias: models weight later constraints
 # more heavily; governance and schema integrity are the load-bearing core).
@@ -227,6 +264,29 @@ constraints:
       test_provenance: ai_generated  # planned; human-authored assertion required before PASS
     verification_state: UNVERIFIED (no implementation yet)
 
+  - id: C8
+    name: receipt_adapter_projection_and_private_boundary
+    statement: |
+      A Feedback Receipt adapter submits only a selected, redacted projection
+      through ADD. Its mapping preserves expected, detection, diagnosis,
+      change, outcome, resolution, and trace as distinct concerns; code-fix
+      lessons require test_result evidence before promotion. The adapter may
+      carry domain_depth and model_id when known. Stele core never reads the
+      source receipt tree, and public artifacts contain no private paths,
+      inventory identifiers, or migration breadcrumbs.
+    rationale: "Preserves receipt causal structure while keeping a public protocol separate from private operator memory; prevents detection/diagnosis collapse, raw-store import, self-certification, and private-source leakage."
+    assumption_status: KNOWN
+    conflict_prone: true
+    anti_pattern: "Embedding a private receipt path or bulk-importing a private store into public Stele."
+    test:
+      path: "tests/test_receipt_adapter.py::test_projection_preserves_structure_and_redacts_private_source"
+      oracle: "Golden fixture: mapped receipt keeps distinct detection/diagnosis and required trace; a code-fix fixture cannot promote without test_result; private-source fields are rejected."
+      test_provenance: execution_derived
+      execution_oracle:
+        type: golden_fixture
+        property: "A human-reviewed public-safe fixture rejects private-source fields and invalid promotion."
+    verification_state: UNVERIFIED (no implementation yet)
+
 # ------------------------------------------------------------------------------
 # Constraint satisfiability
 # ------------------------------------------------------------------------------
@@ -237,8 +297,11 @@ constraint_satisfiability:
     retrieval) compose because indexes are derived (C4) and consulted only at
     read time (C2). C5 (no LLM on write) and C7 (oracle-gated promotion)
     compose because oracle evidence is produced OUTSIDE Stele and attached as
-    data. Priority on conflict: C7 > C6 > C5 > C4 > C2 > C3 > C1
-    (governance and schema integrity win over convenience).
+    data. C8 composes with C1 because adapters own projection and core receives only
+    the six-op payload; it composes with C3 because export redaction is a
+    second boundary, not a substitute for adapter redaction. Priority on
+    conflict: C7 > C8 > C6 > C5 > C4 > C2 > C3 > C1 (governance and schema
+    integrity win over convenience).
   joint_satisfaction_test:
     path: "tests/test_joint.py::test_full_lifecycle_all_constraints"
     description: |
@@ -248,8 +311,9 @@ constraint_satisfiability:
       index dropped and rebuilt losslessly (C4) → exported as redacted,
       audience-tiered pack with adaptation operators (C3) → DELETE by
       subject id erases the entry and index rebuild propagates the erasure
-      (C4, C6) → core import scan stays pure (C1). All assertions on the
-      SAME store state.
+      (C4, C6) → receipt-adapter fixture preserves causal fields and rejects
+      private-source fields (C8) → core import scan stays pure (C1). All
+      assertions on the SAME store state.
     status: PLANNED — gates completion of any implementation phase
 
 # ------------------------------------------------------------------------------
