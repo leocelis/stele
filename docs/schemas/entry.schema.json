@@ -1,0 +1,292 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:stele:schema:entry:v1",
+  "title": "SteleEntry",
+  "description": "Governed experiential-memory ledger entry (Stele schema_version 1).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "layer",
+    "title",
+    "body",
+    "scope",
+    "temporal",
+    "provenance",
+    "state"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^se_[0-9a-f]{16}$",
+      "description": "Content-derived id (se_ + first 16 hex of sha256)."
+    },
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "layer": {
+      "type": "string",
+      "enum": [
+        "decision",
+        "failure_lesson",
+        "goal",
+        "issue",
+        "skill_artifact",
+        "workflow"
+      ]
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "body": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Distilled Insight \u2014 not a raw transcript (FF-2)."
+    },
+    "rejected_options": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "IBIS rejected alternatives (FF-7)."
+    },
+    "scope": {
+      "type": "string",
+      "pattern": "^(universal|domain:[A-Za-z0-9_.-]+|project:[A-Za-z0-9_.-]+)$"
+    },
+    "env_assumptions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Required non-empty for workflow/skill_artifact (FF-4)."
+    },
+    "temporal": {
+      "type": "object",
+      "required": [
+        "valid_from",
+        "last_verified"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "valid_from": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "last_verified": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expiry": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "superseded_by": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "superseded_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "required": [
+        "agent",
+        "task",
+        "environment",
+        "subject_id",
+        "source",
+        "written_at"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "agent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "task": {
+          "type": "string",
+          "minLength": 1
+        },
+        "environment": {
+          "type": "string",
+          "minLength": 1
+        },
+        "subject_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source": {
+          "type": "string",
+          "minLength": 1
+        },
+        "written_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "model_id": {
+          "type": "string"
+        }
+      }
+    },
+    "assessment": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "domain_depth": {
+          "type": "string",
+          "enum": [
+            "adjacent",
+            "expert",
+            "novice",
+            "practitioner"
+          ]
+        }
+      }
+    },
+    "receipt_projection": {
+      "type": "object"
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "type",
+          "issuer",
+          "ref",
+          "observed_at",
+          "verdict"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "env_feedback",
+              "human_signoff",
+              "independent_judge",
+              "test_result"
+            ]
+          },
+          "issuer": {
+            "type": "string"
+          },
+          "ref": {
+            "type": "string"
+          },
+          "observed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "mixed",
+              "refutes",
+              "supports"
+            ]
+          },
+          "digest": {
+            "type": "string"
+          },
+          "command": {
+            "type": "string"
+          },
+          "exit_status": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    "links": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "kind",
+          "ref"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "artifact",
+              "entry",
+              "source",
+              "test"
+            ]
+          },
+          "ref": {
+            "type": "string"
+          },
+          "digest": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "contested_with": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "usage": {
+      "type": "object",
+      "properties": {
+        "helpful": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "harmful": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "ignored": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "pinned": {
+          "type": "boolean"
+        },
+        "last_outcome": {
+          "type": "string",
+          "enum": [
+            "harmful",
+            "helpful",
+            "ignored"
+          ]
+        },
+        "last_outcome_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "archived",
+        "contested",
+        "expired",
+        "promoted",
+        "quarantined",
+        "revoked",
+        "superseded"
+      ]
+    }
+  }
+}

@@ -9,61 +9,101 @@
 
 A **stele** is a stone raised to record what happened — deeds, laws, warnings — for those who come after. Stele is the same idea for AI agents: a **centralized ledger of task experience**. Agents automatically log what worked and what failed on each task; a governance gate promotes only lessons backed by external evidence; and any agent — today's or a future one — retrieves the distilled experience through one protocol before its next task.
 
-Sister project to [Cairn](https://github.com/leocelis/cairn): *Cairn marks the way; Stele records what was learned on it.*
+**Status: v18.15.0.** Design locked in [`stele_system_intent.yaml`](stele_system_intent.yaml). Packages: `stele-core` (zero runtime deps) + `stele-mcp` (stdio MCP server) + `stele` CLI.
 
-**Status: design phase.** The architecture is locked in [`stele_system_intent.yaml`](stele_system_intent.yaml), derived from two source-audited research documents published in this repository. No code yet — research first, intent second, implementation only after the intent clears human review. That ordering is the method, not an accident.
+## Why Stele (research-backed)
 
-## Why
+| Problem | Evidence | Stele answer |
+|---|---|---|
+| Recall wins ≠ better actions | MemoryArena (arXiv:2602.16313) | Task-outcome harnesses, not recall@k marketing |
+| Self-reflection poisons stores | Survey (arXiv:2603.07670) | Quarantine + external oracle only |
+| Every framework is a silo | memorywire (arXiv:2606.01138) | JSON Schema + projection helpers |
+| Stale lessons mislead | LongMemEval (arXiv:2410.10813) | Bi-temporal supersede + stale_policy |
 
-Agent sessions produce the most valuable knowledge a system has — what actually worked, what failed, and why — and today that value is thrown away. The research (all claims source-audited, see [`docs/research/`](docs/research/)) shows the naive fixes fail in documented ways:
+Full research: [`docs/research/`](docs/research/) · patterns: [`docs/patterns/`](docs/patterns/).
 
-- **Raw transcript dumps hurt.** Trajectory-level memory causes negative transfer across contexts — brittle command anchoring, false validation confidence (Memory Transfer Learning, [arXiv:2604.14004](https://arxiv.org/abs/2604.14004)). Only distilled, Insight-level content transfers safely.
-- **Unverified auto-extraction poisons the store.** Extract-on-write pipelines hallucinate facts and silently overwrite; a self-graded "it worked" is confirmation bias, not evidence.
-- **Append-only memories go stale and mislead.** "X worked" is a belief with a validity window, not a permanent fact ([LongMemEval](https://arxiv.org/abs/2410.10813): knowledge updates, temporal reasoning, abstention).
-- **Recall benchmarks lie about agentic value.** Systems that saturate conversational-recall benchmarks still perform poorly when memory must drive *actions* ([MemoryArena](https://arxiv.org/abs/2602.16313)).
+## Install
 
-Stele inverts each failure: distilled entries only, oracle-gated promotion, bi-temporal validity with supersede-not-delete, and task-outcome evaluation as the only acceptance evidence.
+```bash
+python3.11 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements-dev.txt
+pip install -e packages/stele-core -e packages/stele-mcp
+make check   # ruff + mypy + pytest
+make proof   # end-to-end PASS/FAIL proof
+```
 
-## Architecture (five planes)
+## Quick start (library)
 
-| Plane | What it does |
+```python
+from pathlib import Path
+from stele_core import Stele
+
+s = Stele.open(Path(".stele-store"), store_id="demo", now="2026-08-20T12:00:00Z")
+added = s.add({
+    "layer": "failure_lesson",
+    "title": "Pin cache keys to calendar buckets",
+    "body": "Day-scoped keys prevent stale cross-day reads.",
+    "scope": "project:demo",
+    "temporal": {"valid_from": "2026-08-20T12:00:00Z", "last_verified": "2026-08-20T12:00:00Z"},
+    "provenance": {
+        "agent": "agent-a", "task": "cache-fix", "environment": "local",
+        "subject_id": "subj-1", "source": "session:abc",
+        "written_at": "2026-08-20T12:00:00Z",
+    },
+})
+# → {"id": "se_…", "state": "quarantined"}  — not searchable yet
+
+s.promote(added["id"], [{
+    "type": "test_result", "issuer": "ci", "ref": "tests/test_cache.py",
+    "observed_at": "2026-08-20T12:00:00Z", "verdict": "supports",
+    "command": "pytest -q", "exit_status": 0,
+}], actor="ci", ts="2026-08-20T12:00:00Z")
+
+print(s.search("cache buckets", consumer_scope="project:demo"))
+print(s.doctor(now="2026-08-20T12:00:00Z")["ok"])
+```
+
+## CLI
+
+```bash
+stele init ./.stele-store --store-id demo
+stele doctor ./.stele-store --now 2026-08-20T12:00:00Z
+stele hygiene ./.stele-store --now 2026-08-20T12:00:00Z
+stele entangled ./.stele-store --source web_page --now 2026-08-20T12:00:00Z
+stele forget-check ./.stele-store --scope project:demo --subject-id subj-x --probe-query secret --now 2026-08-20T12:00:00Z
+stele schema --out docs/schemas/entry.schema.json
+stele snapshot ./.stele-store /tmp/stele-backup --now 2026-08-20T12:00:00Z --actor ops
+```
+
+## MCP (stdio)
+
+Requires the Model Context Protocol Python SDK **1.x** (`mcp>=1.0,<2`).
+mcp 2.x removed `mcp.server.fastmcp` and will not boot this server.
+
+```bash
+export STELE_STORE=./.stele-store
+stele-mcp
+```
+
+**41 tools:** add · update · promote · supersede · delete · search · reflect · link ·
+list_contested · resolve_contested · verify · reviewer_corrections · hydrate · export ·
+record_outcome · pin · stale_report · reverify · related · stats · timeline · verify_pack ·
+attach · snapshot · doctor · entry_schema · purge_by_provenance · diff_stores · add_batch ·
+entangled_suspects · hygiene_candidates · forget_compliance · lineage · belief_at · conflict_surface ·
+injection_scan · select_budget_plan · store_seal · verify_seal · attribution_receipt · replay_consistency
+
+## Architecture
+
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). Planes: Contract · Tools · Governance · Retrieval · Export · Living ledger · Ops.
+
+| Doc | Link |
 |---|---|
-| **Contract** | Entry schema (goal / issue / decision / failure-lesson / workflow / skill) + bi-temporal metadata (`valid_from`, `superseded_by`, `last_verified`, `expiry`) + abstraction scope (`universal_insight` vs `project_scoped`) + mandatory provenance |
-| **Tool surface** | Six operations — `ADD · UPDATE · DELETE/SUPERSEDE · SEARCH · REFLECT · LINK` — exposed as an MCP server and importable library. The only read/write path. `SUPERSEDE` invalidates a belief (history kept); `DELETE` truly erases (redaction, wrong lessons) |
-| **Governance** | Writes land in **quarantine**; promotion requires **external-oracle evidence** (test result, environment feedback, independent judge, human sign-off). Batched REFLECT pass consolidates, dedupes, expires |
-| **Retrieval** | Hybrid keyword + semantic + temporal search over **promoted entries only**, filtered by validity and scope, injected as budgeted slices. Returning nothing is a first-class answer; possibly-stale entries carry an explicit flag |
-| **Export** | Packs: redacted, versioned, purpose-scoped, **audience-tiered** distillates that ship adaptation operators (what to substitute, which environment assumptions must hold). The live store is never the sharing surface — **storage ≠ pack** |
-
-Core purity rules (test-enforced once implementation lands): zero LLM calls and zero network on the core write path; the source of truth is inspectable and file-exportable; every index is derived and losslessly rebuildable.
-
-## Ecosystem
-
-Stele composes with its sibling projects over **protocol boundaries only** — the core imports none of their code:
-
-- **[IVD](https://github.com/leocelis/ivd)** — *producer.* IVD's Judgment layer captures intent corrections inside the development loop; an adapter ships codified judgments into Stele through the same six-op protocol as every other writer.
-- **[Cairn](https://github.com/leocelis/cairn)** — *retrieval router (optional).* Cairn's selective gate decides whether and how to retrieve; Stele is one more store behind its adapters. Cairn routes, Stele stores — complementary by construction.
-- **[EIF](https://github.com/leocelis/eif)** — *promotion oracle (optional).* EIF's falsification/calibration pipeline is one way to produce the evidence promotion requires; any oracle satisfying the evidence contract works.
-
-## Repository layout
-
-```
-stele_system_intent.yaml     # the locked design decisions (start here)
-docs/PRD.md                  # product requirements — pains, use cases, metrics
-docs/TECH_SPEC.md            # technical design — storage, schema, ops, tests
-docs/research/               # source-audited research the design derives from
-docs/patterns/               # distilled pattern file (findings → rules)
-ROADMAP.md                   # phases; what is decided vs. what is pending
-CHANGELOG.md
-```
-
-## Reading order
-
-1. [`stele_system_intent.yaml`](stele_system_intent.yaml) — the decisions and their constraints
-2. [`docs/PRD.md`](docs/PRD.md) — who it's for, the 12 pains, the 12 use cases, success metrics
-3. [`docs/TECH_SPEC.md`](docs/TECH_SPEC.md) — the technical design: storage layout, entry schema, governance state machine, retrieval pipeline, MCP surface, test strategy
-4. [`docs/patterns/patterns_session_ledger_memory.yaml`](docs/patterns/patterns_session_ledger_memory.yaml) — the distilled evidence (13 foundational findings, 12 operational patterns, what research does *not* support)
-5. [`docs/research/`](docs/research/) — the full audited research (inference-time ledgers; memory storage landscape)
+| PRD v1.1 | [`docs/PRD.md`](docs/PRD.md) |
+| TECH_SPEC v1.1 | [`docs/TECH_SPEC.md`](docs/TECH_SPEC.md) |
+| Entry JSON Schema | [`docs/schemas/entry.schema.json`](docs/schemas/entry.schema.json) |
+| Intent (C1–C8) | [`stele_system_intent.yaml`](stele_system_intent.yaml) |
 
 ## License
 
-[MIT](LICENSE)
+MIT · Copyright (c) 2026 Stele contributors

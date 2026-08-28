@@ -10,25 +10,24 @@ You can expect an acknowledgment within 72 hours.
 
 ## Scope
 
-Stele is currently a **design-phase repository** (research, patterns, and a
-system intent — no executable code). Until implementation lands, the security
-surface is documentation only.
+Stele **v1.0** ships executable code: `stele-core` (library + CLI) and
+`stele-mcp` (stdio MCP server). Security surface includes the store on disk,
+pack export/hydrate, MCP tool inputs, and CLI argument handling.
 
-Security-relevant design commitments already locked in the intent, which
-implementation will be held to:
+Commitments enforced by tests and the system intent:
 
-- **Zero network / zero LLM calls on the core write path** (test-enforced
-  purity, static import scan).
-- **Redact-at-export** as a first-class step for any pack leaving a store —
-  leakage is treated as a trajectory-level property, not a per-message one.
-- **Subject-indexed erasure**: true `DELETE` (distinct from `SUPERSEDE`)
-  with erasure propagation through all derived indexes.
-- **No secrets in entries**: the schema review at promotion time is the
-  enforcement point; quarantined entries are never served.
+- **Zero network / zero LLM calls on the core write path** (purity + static import scan).
+- **Redact-at-export** for packs leaving a store (secret patterns + subject allowlist).
+- **Subject-indexed erasure**: true `DELETE` (distinct from `SUPERSEDE`) with index rebuild.
+- **Private-source path rejection** on ADD / adapters (C8) — selected redacted projection only.
+- **Quarantine never served** until external-oracle promotion (C7).
 
-If you spot a way the *design* itself enables a leak or an unsafe default,
-that is in scope — report it the same way.
+Out of scope for this policy: vulnerabilities only in caller-supplied embedders,
+oracles, or MCP hosts.
 
 ## Supported versions
 
-No releases yet. This policy activates for code with the first tagged release.
+| Version | Supported |
+|---|---|
+| 1.0.x | Yes |
+| < 1.0 | No (pre-release) |

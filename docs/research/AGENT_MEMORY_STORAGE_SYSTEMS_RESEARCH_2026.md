@@ -106,7 +106,7 @@ MemGPT → Letta ([arXiv:2310.08560](https://arxiv.org/abs/2310.08560); [Letta m
 |--------|----------|------------|--------------|
 | **Agent-managed tools** | Letta, Claude memory tool, repo NOTES | Low–medium per edit; LLM decides | Agent forgets to write / writes junk |
 | **Extract-on-write** | Mem0, Zep/Graphiti ingest | High (LLM extract + embed ± graph) | Hallucinated facts; silent overwrite |
-| **Human / intent authored** | IVD intents, feedback YAML | Human time | Incomplete unless workflow-enforced |
+| **Human / intent authored** | authored intents, feedback YAML | Human time | Incomplete unless workflow-enforced |
 | **Hybrid** | Extract candidates → quarantine → promote | Medium | Best governance; more plumbing |
 
 Ledger research + CONTEXT master spine agree: **unverified auto-extract → long-term store** is a poisoning path.
@@ -132,7 +132,7 @@ Confidence markers: ✓ paper/docs verified · ~ vendor/community · ? assumed.
 | **Claude memory tool** | Client files/DB | Agent file ops | N/A (API tool) | You host data | Prefix `/memories`; commands view/create/str_replace/insert/delete/rename ✓ [docs](https://platform.claude.com/docs/en/agents-and-tools/tool-use/memory-tool) |
 | **OpenAI ChatGPT memory** | Hosted consumer | Auto | No public agent API (~) | Yes | Not a buildable agent store for custom agents (~) |
 | **Supermemory / MemoryOS / MemOS** | Mixed | Mixed | Mixed (~) | Mixed (~) | Crowded long-tail — treat as alternatives, re-bench |
-| **Repo + IVD/feedback** | Files / git | Human + agent | Always | N/A | Reference procedural ledger ✓ practice |
+| **Repo + intent/feedback** | Files / git | Human + agent | Always | N/A | Reference procedural ledger ✓ practice |
 
 ### 3.2 Academic / reference systems (storage shape)
 

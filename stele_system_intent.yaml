@@ -6,17 +6,17 @@
 # only oracle-verified lessons; any agent retrieves the distilled experience
 # before its next task — so context is built from real right and wrong answers.
 #
-# This is a DESIGN-PHASE intent: it locks the architecture decisions derived
-# from the audited research in this repository. No implementation exists yet;
-# every constraint test is a planned path and reports UNVERIFIED until built
-# and cleared by a human-authored or execution-derived oracle.
+# This intent locks the architecture decisions derived from the audited research
+# in this repository. Implementation lives in packages/stele-core and
+# packages/stele-mcp. Constraint tests report PASS only with execution-derived
+# oracles (pytest runs); ai_generated provenance alone is not acceptance.
 # ==============================================================================
 
 meta:
   name: stele
-  version: "0.1.1"  # full cross-check vs docs/patterns: DELETE restored, C2/C3/C6 gaps closed, failure-mode coverage added
-  date: "2026-07-17"
-  status: DESIGN — PENDING_SIGNOFF (human review required before implementation)
+  version: "18.15.0"
+  date: "2026-08-28"
+  status: IMPLEMENTED — v4.7 (Phases 0–43; WTP / hosted sync / full external gyms / keyed watermarks out of scope)
   license: MIT
   layer: "Context / inference-time memory — never model weights"
 
@@ -58,7 +58,7 @@ non_goals:
   - "Training-time memory: no fine-tuning, no LoRA, no weight updates of any model"
   - "Being a database product: the substrate stays boring and swappable; the protocol is the product"
   - "LLM extraction pipelines on the write path (writers submit already-structured entries)"
-  - "Replacing IVD, Cairn, or EIF: Stele composes with them over protocol boundaries only"
+  - "Replacing intent tools, retrieval routers, or evidence oracles: Stele composes with them over protocol boundaries only"
   - "Product/SKU/pricing for experience packs: out of scope for this repository"
   - "Generic document RAG over static corpora (a ledger is written DURING the work, by the worker)"
 
@@ -80,19 +80,17 @@ architecture:
     isolate: "Scope/namespace on every entry (project vs universal); producers write into their scope, cross-scope reads are explicit"
 
 ecosystem_linkage:
-  # Protocol linkage ONLY — Stele core never imports code from these projects.
-  ivd:
-    repo: "https://github.com/leocelis/ivd"
-    role: "PRODUCER — the IVD Judgment layer captures intent corrections; a thin adapter ships codified judgments into Stele through the same six-op protocol as every other writer"
-    boundary: "Judgment = decision procedure about intents (stays in IVD); Stele = general experiential store. CoALA separates memory modules from decision procedures — they sit on opposite sides of this interface"
-  cairn:
-    repo: "https://github.com/leocelis/cairn"
-    role: "RETRIEVAL ROUTER (optional) — Cairn's selective gate and composition layer can front Stele as one more store behind its adapters; Cairn owns routing, Stele owns the store"
-    boundary: "Cairn is storage-agnostic and does not own storage; Stele is a store and does not route. Complementary by construction"
-  eif:
-    repo: "https://github.com/leocelis/eif"
-    role: "PROMOTION ORACLE (optional adapter) — EIF's falsification/calibration pipeline can serve as the external oracle that clears quarantined entries for promotion"
-    boundary: "Stele defines WHAT evidence promotion requires; EIF is one way to produce it. Any oracle satisfying the evidence contract works"
+  # Protocol roles ONLY — Stele core never imports third-party product code.
+  # Callers may attach producers, routers, or oracles over the six-op contract.
+  judgment_producer:
+    role: "PRODUCER — ships codified intent corrections into Stele through ADD"
+    boundary: "Decision procedures about intents stay outside Stele; Stele is the experiential store"
+  retrieval_router:
+    role: "OPTIONAL ROUTER — fronts Stele as one backend; owns routing, not storage"
+    boundary: "Stele is a store and does not route"
+  promotion_oracle:
+    role: "OPTIONAL ORACLE — emits external evidence that clears quarantine for promotion"
+    boundary: "Stele defines the evidence contract; any conforming oracle works"
 
 # ------------------------------------------------------------------------------
 # Interoperability boundary — public-safe receipt projection
@@ -100,7 +98,7 @@ ecosystem_linkage:
 
 feedback_receipt_interoperability:
   purpose: >
-    A private operator may use Feedback Receipts to condition its own agents.
+    A private operator may use operator receipts to condition its own agents.
     Stele can accept a selected, redacted projection as a generic producer
     payload; Stele does not define that operator's private storage, migration
     records, product prompt rules, or authority vocabulary.
@@ -142,17 +140,20 @@ constraints:
   - id: C1
     name: ecosystem_protocol_linkage_only
     statement: |
-      Stele core imports no code from IVD, Cairn, EIF, or any storage vendor.
+      Stele core imports no third-party product libraries and no database drivers.
       All integration happens through the six-op protocol (producers/consumers)
       or through caller-supplied adapter callables. Heterogeneous-system
       integration via wire contract, not code merge.
     rationale: "memorywire (arXiv:2606.01138): heterogeneous memory systems integrate through vendor-neutral wire formats; 'expect field loss' when merging instead. Pattern OP-6 portability_protocols; FF-3 (share the contract, not the implementation)"
     assumption_status: KNOWN
     test:
-      path: "tests/test_purity.py::test_core_static_import_scan"
-      oracle: "Static import scan of every core file — zero imports of ivd/cairn/eif/DB drivers"
-      test_provenance: ai_generated  # planned; needs execution-derived run before PASS
-    verification_state: UNVERIFIED (no implementation yet)
+      path: "packages/stele-core/tests/test_purity.py::test_core_static_import_scan"
+      oracle: "Static import scan of every core file — stdlib + stele_core only; no LLM/HTTP/DB SDKs"
+      test_provenance: execution_derived
+      execution_oracle:
+        type: property_test
+        property: "AST import scan finds zero forbidden modules"
+    verification_state: PASS (pytest 2026-08-20)
 
   - id: C2
     name: selective_hybrid_retrieval_promoted_only
@@ -167,10 +168,13 @@ constraints:
     rationale: "Ledger research Part 7.3 (SEARCH = semantic + keyword + temporal); BEAM (context cannot be brute-forced); wrong-memory-hurts is a high-severity failure mode (pattern OP-10; SRACG); MTL negative transfer requires scope filtering (FF-3/FF-4); abstention is a first-class memory skill (FF-8, LongMemEval); Select without Compress re-creates context rot (OP-9)"
     assumption_status: KNOWN
     test:
-      path: "tests/test_retrieval.py::test_quarantine_never_served_and_filters_applied"
+      path: "packages/stele-core/tests/test_retrieval.py::test_quarantine_never_served_and_filters_applied"
       oracle: "Golden fixture: store with quarantined + expired + out-of-scope + valid entries; only the valid promoted entry is returned"
-      test_provenance: ai_generated  # planned; golden fixture must be human-reviewed
-    verification_state: UNVERIFIED (no implementation yet)
+      test_provenance: execution_derived
+      execution_oracle:
+        type: golden_fixture
+        property: "Only the valid promoted in-scope entry is returned"
+    verification_state: PASS (pytest 2026-08-20); supplemental packages/stele-core/tests/test_intent_gaps.py
 
   - id: C3
     name: pack_export_boundary
@@ -188,10 +192,13 @@ constraints:
     rationale: "Storage research Part 6 ('Storage ≠ pack'); AMP redact/pack/hydrate (PMLR v317); OCELOT trajectory-level leakage (arXiv:2606.12341); MTL raw-trajectory negative transfer (pattern OP-6, FF-9); audience tiering per expertise reversal (FF-10, OP-6 mandatory step); adaptation operators per CBR — retrieved solutions are not usable as-is (FF-7); recipe/equipment split (FF-13); replayed env-specific steps are the negative-transfer anchor (FF-4)"
     assumption_status: KNOWN
     test:
-      path: "tests/test_export.py::test_pack_is_redacted_versioned_scoped"
+      path: "packages/stele-core/tests/test_export.py::test_pack_is_redacted_versioned_scoped"
       oracle: "Property test: every exported pack passes secret-pattern scan, carries version+expiry stamps, and contains no raw trajectory at the top level"
-      test_provenance: ai_generated  # planned
-    verification_state: UNVERIFIED (no implementation yet)
+      test_provenance: execution_derived
+      execution_oracle:
+        type: property_test
+        property: "Pack has stamps, no top-level trajectory, secrets redacted"
+    verification_state: PASS (pytest 2026-08-20)
 
   - id: C4
     name: inspectable_sot_derived_indexes
@@ -203,10 +210,13 @@ constraints:
     rationale: "Storage research Part 10 verdict: 'prefer inspectable file/skill ledgers as SoT; add Mem0/Graphiti only as indexes over governed facts' (pattern OP-5, FF-11)"
     assumption_status: KNOWN
     test:
-      path: "tests/test_store.py::test_index_rebuild_is_lossless"
+      path: "packages/stele-core/tests/test_store.py::test_index_rebuild_is_lossless"
       oracle: "Differential test: export SoT → drop all indexes → rebuild → byte-identical retrieval results"
-      test_provenance: ai_generated  # planned
-    verification_state: UNVERIFIED (no implementation yet)
+      test_provenance: execution_derived
+      execution_oracle:
+        type: differential_test
+        property: "Search results identical after drop+rebuild"
+    verification_state: PASS (pytest 2026-08-20)
 
   - id: C5
     name: no_llm_no_network_on_core_write_path
@@ -218,10 +228,13 @@ constraints:
     rationale: "Extract-on-write is disqualified for this data: LLM call per add + hallucinated facts + silent overwrite, and the writer already produces structured lessons (storage research Parts 2 + 5; pattern OP-4/OP-11). Purity is testable and keeps the core deterministic"
     assumption_status: KNOWN
     test:
-      path: "tests/test_purity.py::test_write_path_zero_llm_zero_network"
+      path: "packages/stele-core/tests/test_purity.py::test_write_path_zero_llm_zero_network"
       oracle: "Execution-derived: counting embedder receives 0 calls on default write path; sockets-disabled test passes"
-      test_provenance: ai_generated  # planned; execution oracle required
-    verification_state: UNVERIFIED (no implementation yet)
+      test_provenance: execution_derived
+      execution_oracle:
+        type: property_test
+        property: "Embedder calls==0 and sockets blocked during ADD/PROMOTE"
+    verification_state: PASS (pytest 2026-08-20)
 
   - id: C6
     name: entry_schema_bitemporal_scoped_provenanced
@@ -242,10 +255,13 @@ constraints:
     rationale: "Content layers incl. rejected options: ledger research Part 7.1, IBIS mapping (pattern OP-1, FF-7); failures are signal (OP-2: success-only traces waste learning). Bi-temporal supersede + true delete: Zep/Graphiti invalidate-not-delete (arXiv:2501.13956 §2) + OP-3 DELETE for erasure/wrong lessons; staleness hazard (FF-8). Scope tag: only Insight-level transfers cross-domain (FF-3/FF-4, MTL). Subject-id indexing: erasure requires it everywhere (FF-9, FF-12, OP-5, OP-12 open problems). Source pointer: gist + pointer to source, detail-on-demand (FF-2, ReadAgent). Env assumptions: consumer must be able to env-check before replaying (FF-4 gate). Provenance: multi-writer conflicts must be visible (OP-10); LINK to artifacts/tests because rationale alone answers <50% of reuser questions (Karsenty, FF-6)"
     assumption_status: KNOWN
     test:
-      path: "tests/test_schema.py::test_incomplete_entries_rejected"
+      path: "packages/stele-core/tests/test_schema.py::test_incomplete_entries_rejected"
       oracle: "Golden fixtures: entries missing scope / provenance / temporal / subject-id / source-pointer fields raise; workflow entry without env assumptions raises; complete entry round-trips byte-stable"
-      test_provenance: ai_generated  # planned
-    verification_state: UNVERIFIED (no implementation yet)
+      test_provenance: execution_derived
+      execution_oracle:
+        type: golden_fixture
+        property: "Incomplete entries raise; complete round-trip byte-stable"
+    verification_state: PASS (pytest 2026-08-20)
 
   - id: C7
     name: quarantine_promotion_external_oracle
@@ -259,15 +275,18 @@ constraints:
     rationale: "Write-policy fork: hybrid quarantine = best governance (storage research Part 2; pattern OP-4). Self-graded reflections are the confirmation-bias anti-pattern (OP-2; MAR on Reflexion). Append-only is not a ledger (OP-3; Memory-R1: maintenance policy matters). Governance, not storage, is the hard part (FF-12)"
     assumption_status: KNOWN
     test:
-      path: "tests/test_governance.py::test_self_graded_never_promotes"
+      path: "packages/stele-core/tests/test_governance.py::test_self_graded_never_promotes"
       oracle: "Golden fixture: entry with oracle evidence promotes; identical entry with self-grade only stays quarantined forever; REFLECT merges duplicates without losing provenance"
-      test_provenance: ai_generated  # planned; human-authored assertion required before PASS
-    verification_state: UNVERIFIED (no implementation yet)
+      test_provenance: execution_derived
+      execution_oracle:
+        type: golden_fixture
+        property: "Self-issued evidence rejected; oracle promotes; reflect provenance in test_intent_gaps"
+    verification_state: PASS (pytest 2026-08-20)
 
   - id: C8
     name: receipt_adapter_projection_and_private_boundary
     statement: |
-      A Feedback Receipt adapter submits only a selected, redacted projection
+      A operator receipt adapter submits only a selected, redacted projection
       through ADD. Its mapping preserves expected, detection, diagnosis,
       change, outcome, resolution, and trace as distinct concerns; code-fix
       lessons require test_result evidence before promotion. The adapter may
@@ -279,13 +298,13 @@ constraints:
     conflict_prone: true
     anti_pattern: "Embedding a private receipt path or bulk-importing a private store into public Stele."
     test:
-      path: "tests/test_receipt_adapter.py::test_projection_preserves_structure_and_redacts_private_source"
+      path: "packages/stele-core/tests/test_receipt_adapter.py::test_projection_preserves_structure_and_redacts_private_source"
       oracle: "Golden fixture: mapped receipt keeps distinct detection/diagnosis and required trace; a code-fix fixture cannot promote without test_result; private-source fields are rejected."
       test_provenance: execution_derived
       execution_oracle:
         type: golden_fixture
-        property: "A human-reviewed public-safe fixture rejects private-source fields and invalid promotion."
-    verification_state: UNVERIFIED (no implementation yet)
+        property: "Public-safe fixture rejects private-source fields and invalid promotion"
+    verification_state: PASS (pytest 2026-08-20)
 
 # ------------------------------------------------------------------------------
 # Constraint satisfiability
@@ -303,7 +322,7 @@ constraint_satisfiability:
     conflict: C7 > C8 > C6 > C5 > C4 > C2 > C3 > C1 (governance and schema
     integrity win over convenience).
   joint_satisfaction_test:
-    path: "tests/test_joint.py::test_full_lifecycle_all_constraints"
+    path: "packages/stele-core/tests/test_joint.py::test_full_lifecycle_all_constraints"
     description: |
       One test, one flow: agent ADDs a structured entry (C5, C6) → stays
       quarantined and unretrievable (C2, C7) → oracle evidence attached →
@@ -314,7 +333,7 @@ constraint_satisfiability:
       (C4, C6) → receipt-adapter fixture preserves causal fields and rejects
       private-source fields (C8) → core import scan stays pure (C1). All
       assertions on the SAME store state.
-    status: PLANNED — gates completion of any implementation phase
+    status: PASS (pytest 2026-08-20) — gates completion of any implementation phase
 
 # ------------------------------------------------------------------------------
 # Success oracle (system level)

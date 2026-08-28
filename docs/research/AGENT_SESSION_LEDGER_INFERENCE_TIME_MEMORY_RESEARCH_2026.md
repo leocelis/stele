@@ -262,7 +262,7 @@ Combining DR/IBIS, CoALA, and agent memory papers:
 
 | Layer | Contents | Primary sources |
 |-------|----------|-----------------|
-| **Goal / intent** | Success criteria, constraints, non-goals | IVD intents; DR commitments; CoALA planning |
+| **Goal / intent** | Success criteria, constraints, non-goals | authored intents; DR commitments; CoALA planning |
 | **Issue ledger** | Open issues, positions, rejected options, arguments | IBIS; Potts & Bruns |
 | **Decision log** | What was chosen, when, with evidence pointer | DR; Hindsight belief updates |
 | **Failure / lesson** | What failed, why, verbal reflection | Reflexion; ExpeL insights |
@@ -304,7 +304,7 @@ Practitioner patterns **not** always peer-reviewed:
 | **LangGraph** | Checkpointed state + store | Thread memory as scratchpad |
 | **Mem0 / Zep / Graphiti** | Managed memory layers | Commercial; benchmark marketing — verify on your workload |
 | **Cursor / IDE agents** | Rules, handoffs, `@` codebase | **Procedural + episodic** ledger in repo; operator-maintained |
-| **IVD intents + feedback YAML** | Constraint spine + iteration ledger | IVD framework pattern — intent as goal, feedback as issue trail |
+| **authored intents + feedback YAML** | Constraint spine + iteration ledger | intent framework pattern — intent as goal, feedback as issue trail |
 
 **Full storage landscape (substrates, write policies, product matrix):** → `AGENT_MEMORY_STORAGE_SYSTEMS_RESEARCH_2026.md`
 
@@ -490,7 +490,7 @@ Packaging agent sessions for sale collides with privacy research that treats lea
 | `docs/handoff/*.md` | Session distillate for next operator/agent |
 | `patterns/*_patterns.yaml` | Distilled workflows (AWM-like) |
 | `docs/research/**/*.md` | Evidence base — not runtime ledger |
-| Horizon / fidelity monitors | Meta-ledger on conversation health (orthogonal) |
+| Conversation-health monitors | Meta-ledger on conversation health (orthogonal) |
 
 **Split rule:** Research/patterns inform humans; the **runtime** ledger for agents = intents, feedback, handoffs, memory tools. Strategy/reference documents never wire into pipeline code.
 
