@@ -118,22 +118,33 @@ def build_app():
             }
         )
 
+    def _strip_core_prefix(scope):
+        # FastMCP's sse_app(mount_path=...) only prefixes the *advertised*
+        # POST endpoint it hands back to clients in the SSE "endpoint" event
+        # (via _normalize_path) — the GET route stays registered at the bare
+        # settings.sse_path ("/sse") and the message Mount stays at the bare
+        # settings.message_path ("/messages/"), regardless of mount_path. So
+        # core_sse_starlette/core_http_starlette only ever match unprefixed
+        # paths; every /core/* request must be stripped before dispatch, or
+        # it 404s even with valid auth (confirmed live on /core/sse).
+        path = scope.get("path", "/")
+        scope = dict(scope)
+        scope["path"] = path[len("/core") :] or "/"
+        if isinstance(scope.get("raw_path"), (bytes, bytearray)):
+            scope["raw_path"] = scope["path"].encode("utf-8")
+        return scope
+
     class _Dispatcher:
         async def __call__(self, scope, receive, send):
             path = scope.get("path", "/")
             if path == "/core/mcp" or path.startswith("/core/mcp/"):
-                # FastMCP HTTP app expects /mcp — strip the /core prefix.
-                scope = dict(scope)
-                scope["path"] = path[len("/core") :] or "/"
-                if "raw_path" in scope and isinstance(scope["raw_path"], (bytes, bytearray)):
-                    scope["raw_path"] = scope["path"].encode("utf-8")
-                await core_http_starlette(scope, receive, send)
+                await core_http_starlette(_strip_core_prefix(scope), receive, send)
             elif (
                 path == "/core/sse"
                 or path.startswith("/core/sse")
                 or path.startswith("/core/messages")
             ):
-                await core_sse_starlette(scope, receive, send)
+                await core_sse_starlette(_strip_core_prefix(scope), receive, send)
             elif path == "/mcp" or path.startswith("/mcp/"):
                 await http_starlette(scope, receive, send)
             else:
