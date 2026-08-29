@@ -9,7 +9,7 @@ its joint-satisfaction test gates every implementation phase.
 
 | | |
 |---|---|
-| **Shipped** | **v18.15.0** — Phase 191 (SDT + MEFT). MCP **2003**. pytest 287. Proof ALL PASS. |
+| **Shipped** | **v18.16.0** — Hosted MCP (HTTP + Bearer + optional MySQL SoT). MCP tools unchanged. pytest 301. |
 | **Next** | Phase 192 / v18.16 — two unused PEFT proxies. **Not started.** Prefixes not locked. |
 | **Pending** | Phase 192 + Post-v18.15 list below. Phases 0–191 are done. |
 
