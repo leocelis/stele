@@ -88,7 +88,14 @@ stele-mcp
 
 ## MCP (hosted HTTP)
 
-Same tools over HTTPS (SSE + streamable HTTP), Horizon-style:
+Same tools over HTTPS (SSE + streamable HTTP). Production:
+
+- **URL:** `https://stele.leocelis.com/sse` (Bearer required)
+- **Fallback:** `https://stele-mcp-2vlrd.ondigitalocean.app/sse`
+- Client setup: [`docs/integrations/CURSOR.md`](docs/integrations/CURSOR.md) · [`CLAUDE_CODE.md`](docs/integrations/CLAUDE_CODE.md) · [`CLAUDE_DESKTOP.md`](docs/integrations/CLAUDE_DESKTOP.md)
+- Agent rule: [`docs/cursor-rules/stele-hosted-mcp.mdc`](docs/cursor-rules/stele-hosted-mcp.mdc)
+
+Local run (dev):
 
 ```bash
 bash deploy/build.sh
@@ -98,18 +105,16 @@ STELE_API_KEYS=stl_local_dev STELE_AUTH_DISABLED=false \
 ```
 
 - `GET /health` — unauthenticated
-- `/sse` + `/mcp` — Bearer auth via `STELE_API_KEYS`
-- Hosted durable SoT: set `STELE_STORE_DSN` (`mysql://…`) + `STELE_MYSQL_SSL_CA` or `STELE_MYSQL_SSL_CA_B64` (DSN wins over file path)
-- Never commit API keys, DSNs, or PEMs — platform secrets only
-
-Cursor client shape (placeholders only):
+- `/sse` + `/mcp` — Bearer via `STELE_API_KEYS`
+- Hosted durable SoT: `STELE_STORE_DSN` + TLS CA (DSN wins over file path)
+- Never commit API keys, DSNs, or PEMs
 
 ```json
 {
   "mcpServers": {
     "stele": {
-      "url": "https://stele.example.com/sse",
-      "headers": { "Authorization": "Bearer stl_…" }
+      "url": "https://stele.leocelis.com/sse",
+      "headers": { "Authorization": "Bearer YOUR_KEY_HERE" }
     }
   }
 }
