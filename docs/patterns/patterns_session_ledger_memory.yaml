@@ -369,7 +369,7 @@ operational_patterns:
       docs_handoff: "Session distillate for the next operator/agent"
       patterns_yaml: "Distilled workflows (AWM-like) — this file is itself an instance"
       docs_research: "Evidence base — NOT a runtime ledger"
-      horizon_monitors: "Meta-ledger on conversation health (orthogonal)"
+      conversation_health_monitors: "Meta-ledger on conversation health (orthogonal)"
     design_rule: |
       The runtime ledger for agents = intents + feedback + handoffs + memory tools.
       Research/patterns inform humans. Keep the split: strategy/reference documents

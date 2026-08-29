@@ -24,7 +24,7 @@ Use Stele tools when the task needs **durable, governed memory** of what worked 
 - Hosted calls need a valid Bearer key in MCP config. HTTP 401 → stop; do not bypass auth.
 - Never commit API keys, DSNs, or PEMs into the Stele repo.
 - Quarantined entries are invisible to search until promoted with external evidence.
-- Do **not** treat Stele like Horizon: Stele is **explicit memory I/O**, not invisible per-turn monitoring. Do not call Stele on every chat turn.
+- Stele is **explicit memory I/O**, not invisible per-turn monitoring. Do not call Stele on every chat turn.
 
 ## Minimal loop
 

@@ -46,7 +46,7 @@ from starlette.routing import Mount, Route  # noqa: E402
 
 
 def _patch_server_session_auto_init() -> None:
-    """Allow Cursor CallMcpTool to skip MCP initialize (same quirk as Horizon)."""
+    """Allow Cursor CallMcpTool to skip MCP initialize (hosted HTTP clients)."""
     try:
         from mcp.server.session import InitializationState, ServerSession
         from mcp.types import InitializeRequest as _InitReq

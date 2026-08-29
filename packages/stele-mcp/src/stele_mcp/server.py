@@ -35,9 +35,9 @@ def store_mode() -> str:
 def _transport_security():
     """DNS-rebinding settings for hosted HTTP (stdio ignores this).
 
-    Mirror Horizon: in production, either allow an explicit host list via
-    STELE_ALLOWED_HOSTS, or disable rebinding protection and rely on Bearer
-    auth. Default FastMCP (localhost-only hosts) breaks App Platform ingress.
+    In production, either allow an explicit host list via STELE_ALLOWED_HOSTS,
+    or disable rebinding protection and rely on Bearer auth. Default FastMCP
+    (localhost-only hosts) breaks App Platform ingress.
     """
     if os.environ.get("STELE_ENV") != "production":
         return None
