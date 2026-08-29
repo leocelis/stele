@@ -17,11 +17,27 @@ def get_store() -> Stele:
     if _STORE is None:
         root = Path(os.environ.get("STELE_STORE", "./.stele-store"))
         now = os.environ.get("STELE_NOW")  # optional fixed clock for tests
-        _STORE = Stele.open(root, store_id=os.environ.get("STELE_STORE_ID"), now=now)
+        # STELE_STORE_DSN wins over file path when set (hosted durable SoT).
+        _STORE = Stele.open(
+            root,
+            store_id=os.environ.get("STELE_STORE_ID"),
+            now=now,
+            dsn=os.environ.get("STELE_STORE_DSN"),
+        )
     return _STORE
 
 
+def store_mode() -> str:
+    """Return 'mysql' when DSN is configured, else 'file'."""
+    return "mysql" if os.environ.get("STELE_STORE_DSN") else "file"
+
+
 mcp = FastMCP("stele")
+
+
+def create_app() -> FastMCP:
+    """Return the FastMCP app (stdio CLI and hosted wsgi share this instance)."""
+    return mcp
 
 
 @mcp.tool()

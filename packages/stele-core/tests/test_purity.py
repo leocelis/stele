@@ -23,16 +23,23 @@ FORBIDDEN_MODULES = {
     "aiohttp",
     "psycopg2",
     "pymongo",
+    "pymysql",
     "sqlalchemy",
     "redis",
 }
 
 
 def test_core_static_import_scan() -> None:
-    """Every import in stele-core is stdlib or stele_core itself."""
+    """Every import in stele-core is stdlib or stele_core itself.
+
+    Exception: ``mysql_store.py`` is the optional ``[mysql]`` extra (hosted SoT).
+    It must stay out of the default install path; purity of the file SoT is unchanged.
+    """
     stdlib = set(sys.stdlib_module_names)
     hits: list[str] = []
     for path in CORE_SRC.rglob("*.py"):
+        if path.name == "mysql_store.py":
+            continue
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         for node in ast.walk(tree):
             names: list[str] = []
@@ -50,6 +57,17 @@ def test_core_static_import_scan() -> None:
                     if root:
                         hits.append(f"{path.name}: non-stdlib import {root}")
     assert hits == [], hits
+
+
+def test_mysql_store_is_optional_extra_not_imported_by_default() -> None:
+    """File SoT path must not pull PyMySQL; only explicit mysql_store import may."""
+    import stele_core.store as store_mod
+
+    src = (CORE_SRC / "store.py").read_text(encoding="utf-8")
+    assert "pymysql" not in src
+    assert "mysql_store" not in src
+    assert hasattr(store_mod, "SteleStore")
+
 
 
 class CountingEmbedder:

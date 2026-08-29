@@ -1,0 +1,5 @@
+# App Platform / buildpack install path (editable packages + hosted extras).
+# Secrets are NEVER listed here — set STELE_API_KEYS / STELE_STORE_DSN /
+# STELE_MYSQL_SSL_CA_B64 in the platform console only.
+-e packages/stele-core[mysql]
+-e packages/stele-mcp[hosted]

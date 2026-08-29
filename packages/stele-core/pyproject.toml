@@ -1,6 +1,6 @@
 [project]
 name = "stele-core"
-version = "18.15.0"
+version = "18.16.0"
 description = "Governed experiential-memory ledger for AI agents — quarantine, oracle promotion, hybrid retrieval, pack export. Zero runtime dependencies."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -27,6 +27,9 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = []
+
+[project.optional-dependencies]
+mysql = ["PyMySQL>=1.1,<2"]
 
 [project.scripts]
 stele = "stele_core.cli:main"

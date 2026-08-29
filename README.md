@@ -9,7 +9,7 @@
 
 A **stele** is a stone raised to record what happened — deeds, laws, warnings — for those who come after. Stele is the same idea for AI agents: a **centralized ledger of task experience**. Agents automatically log what worked and what failed on each task; a governance gate promotes only lessons backed by external evidence; and any agent — today's or a future one — retrieves the distilled experience through one protocol before its next task.
 
-**Status: v18.15.0.** Design locked in [`stele_system_intent.yaml`](stele_system_intent.yaml). Packages: `stele-core` (zero runtime deps) + `stele-mcp` (stdio MCP server) + `stele` CLI.
+**Status: v18.16.0.** Design locked in [`stele_system_intent.yaml`](stele_system_intent.yaml). Packages: `stele-core` (zero runtime deps; optional `[mysql]`) + `stele-mcp` (stdio + hosted HTTP) + `stele` CLI.
 
 ## Why Stele (research-backed)
 
@@ -84,6 +84,35 @@ mcp 2.x removed `mcp.server.fastmcp` and will not boot this server.
 ```bash
 export STELE_STORE=./.stele-store
 stele-mcp
+```
+
+## MCP (hosted HTTP)
+
+Same tools over HTTPS (SSE + streamable HTTP), Horizon-style:
+
+```bash
+bash deploy/build.sh
+STELE_API_KEYS=stl_local_dev STELE_AUTH_DISABLED=false \
+  STELE_STORE=./.stele-store \
+  python deploy/wsgi.py --port 8080
+```
+
+- `GET /health` — unauthenticated
+- `/sse` + `/mcp` — Bearer auth via `STELE_API_KEYS`
+- Hosted durable SoT: set `STELE_STORE_DSN` (`mysql://…`) + `STELE_MYSQL_SSL_CA` or `STELE_MYSQL_SSL_CA_B64` (DSN wins over file path)
+- Never commit API keys, DSNs, or PEMs — platform secrets only
+
+Cursor client shape (placeholders only):
+
+```json
+{
+  "mcpServers": {
+    "stele": {
+      "url": "https://stele.example.com/sse",
+      "headers": { "Authorization": "Bearer stl_…" }
+    }
+  }
+}
 ```
 
 **41 tools:** add · update · promote · supersede · delete · search · reflect · link ·

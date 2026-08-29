@@ -1,6 +1,6 @@
 [project]
 name = "stele-mcp"
-version = "18.15.0"
+version = "18.16.0"
 description = "MCP stdio server for Stele — named tools over the governed experiential-memory ledger."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -20,6 +20,14 @@ classifiers = [
 dependencies = [
     "stele-core",
     "mcp>=1.0,<2",
+]
+
+[project.optional-dependencies]
+hosted = [
+    "stele-core[mysql]",
+    "uvicorn>=0.30",
+    "starlette>=0.37",
+    "httpx>=0.27",
 ]
 
 [project.urls]

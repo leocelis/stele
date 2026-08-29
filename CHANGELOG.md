@@ -2,7 +2,17 @@
 
 All notable changes to Stele are documented here.
 
-## [18.15.0] — 2026-08-28
+## [18.16.0] — 2026-08-29
+
+### Added
+- Hosted MCP HTTP shell (Horizon twin): `deploy/wsgi.py`, `deploy/build.sh`, Procfile, runtime, App Platform spec template (SECRET *names* only).
+- `stele_mcp.auth.SteleAuthMiddleware` — Bearer `STELE_API_KEYS`, fail-closed, in-process rate limit.
+- Optional MySQL durable SoT: `stele_core.mysql_store.MySQLSteleStore` via `STELE_STORE_DSN` + TLS CA (`stele-core[mysql]` / `stele-mcp[hosted]`).
+- Tests: auth, hosted wsgi health, MySQL parity (skipped without DSN).
+
+### Notes
+- Prod must use MySQL SoT (App Platform disk is ephemeral). Secrets never in git.
+
 
 ### Added
 - **SDT** (arXiv:2410.09016): dim, mask, tune, score (`sdt_*`).

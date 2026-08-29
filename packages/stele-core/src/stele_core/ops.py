@@ -2755,9 +2755,24 @@ class Stele:
         now: str | None = None,
         staleness_horizon: str | None = None,
         create: bool = True,
+        dsn: str | None = None,
     ) -> Stele:
+        import os
+
+        resolved_dsn = dsn if dsn is not None else os.environ.get("STELE_STORE_DSN")
+        if resolved_dsn:
+            from stele_core.mysql_store import MySQLSteleStore
+
+            store: Any = MySQLSteleStore(
+                resolved_dsn,
+                scratch_root=Path(root),
+                store_id=store_id,
+                create=create,
+            )
+        else:
+            store = SteleStore(Path(root), store_id=store_id, create=create)
         return cls(
-            SteleStore(Path(root), store_id=store_id, create=create),
+            store,
             embedder=embedder,
             now=now,
             staleness_horizon=staleness_horizon,

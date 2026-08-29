@@ -10,13 +10,17 @@ You can expect an acknowledgment within 72 hours.
 
 ## Scope
 
-Stele **v1.0** ships executable code: `stele-core` (library + CLI) and
-`stele-mcp` (stdio MCP server). Security surface includes the store on disk,
-pack export/hydrate, MCP tool inputs, and CLI argument handling.
+Stele ships executable code: `stele-core` (library + CLI; optional MySQL SoT)
+and `stele-mcp` (stdio MCP server + hosted HTTP via `deploy/wsgi.py`). Security
+surface includes the store on disk or MySQL, pack export/hydrate, MCP tool
+inputs, CLI argument handling, and hosted Bearer auth.
 
 Commitments enforced by tests and the system intent:
 
 - **Zero network / zero LLM calls on the core write path** (purity + static import scan).
+  MySQL storage I/O for hosted SoT is allowed; it is not an LLM call.
+- **Hosted auth fail-closed**: empty `STELE_API_KEYS` rejects non-health HTTP requests
+  unless `STELE_AUTH_DISABLED=true` (local only). Never commit live keys/DSNs/PEMs.
 - **Redact-at-export** for packs leaving a store (secret patterns + subject allowlist).
 - **Subject-indexed erasure**: true `DELETE` (distinct from `SUPERSEDE`) with index rebuild.
 - **Private-source path rejection** on ADD / adapters (C8) — selected redacted projection only.
