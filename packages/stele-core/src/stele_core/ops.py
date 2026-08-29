@@ -4186,9 +4186,14 @@ class Stele:
         Cold copy of SoT (manifest, journal, entries, attachments) — not indexes.
 
         Indexes are derived; rebuild after restore. Journal records SNAPSHOT.
+        File-backed stores only — MySQL durable SoT is not a Path tree to copy.
         """
         import shutil
 
+        if getattr(self.store, "backend", "file") != "file":
+            raise SchemaError(
+                "snapshot is file-store only; hosted MySQL SoT has no Path layout to copy"
+            )
         ts = require_ts(ts or self._now)
         dest_p = Path(dest)
         if dest_p.exists() and any(dest_p.iterdir()):

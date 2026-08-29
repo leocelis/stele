@@ -1,6 +1,6 @@
 [project]
 name = "stele-mcp"
-version = "18.16.0"
+version = "18.16.1"
 description = "MCP stdio server for Stele — named tools over the governed experiential-memory ledger."
 readme = "README.md"
 requires-python = ">=3.11"

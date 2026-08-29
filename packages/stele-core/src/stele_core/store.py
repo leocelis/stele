@@ -31,6 +31,8 @@ class StoreError(RuntimeError):
 class SteleStore:
     """Inspectable file SoT. Indexes under index/ are derived and rebuildable."""
 
+    backend = "file"
+
     def __init__(self, root: Path, *, store_id: str | None = None, create: bool = True):
         self.root = Path(root)
         self.entries_q = self.root / "entries" / "quarantine"

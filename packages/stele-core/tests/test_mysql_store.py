@@ -75,5 +75,12 @@ def test_mysql_add_promote_search_roundtrip(tmp_path: Path) -> None:
     dig = stele.store.put_attachment(b"stele-mysql-blob")
     assert stele.store.verify_attachment_digest(dig)
 
+    # Hosted regression: doctor must not require file-layout attrs
+    assert not hasattr(stele.store, "manifest_path")
+    doc = stele.doctor(now=TS)
+    assert doc["ok"] is True
+    assert doc["verify"]["ok"] is True
+    assert doc["stats"]["total"] >= 1
+
     stele.store.delete_entry_file(eid, actor="ci", ts="2026-08-29T12:02:00Z", reason="test cleanup")
     assert stele.store.read_entry(eid) is None

@@ -114,6 +114,8 @@ def _caller_or_placeholder_ts() -> str:
 class MySQLSteleStore:
     """Duck-typed SteleStore using MySQL for entries/journal/attachments."""
 
+    backend = "mysql"
+
     def __init__(
         self,
         dsn: str,

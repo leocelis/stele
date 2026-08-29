@@ -9,7 +9,7 @@
 
 A **stele** is a stone raised to record what happened — deeds, laws, warnings — for those who come after. Stele is the same idea for AI agents: a **centralized ledger of task experience**. Agents automatically log what worked and what failed on each task; a governance gate promotes only lessons backed by external evidence; and any agent — today's or a future one — retrieves the distilled experience through one protocol before its next task.
 
-**Status: v18.16.0.** Design locked in [`stele_system_intent.yaml`](stele_system_intent.yaml). Packages: `stele-core` (zero runtime deps; optional `[mysql]`) + `stele-mcp` (stdio + hosted HTTP) + `stele` CLI.
+**Status: v18.16.1.** Design locked in [`stele_system_intent.yaml`](stele_system_intent.yaml). Packages: `stele-core` (zero runtime deps; optional `[mysql]`) + `stele-mcp` (stdio + hosted HTTP) + `stele` CLI.
 
 ## Why Stele (research-backed)
 

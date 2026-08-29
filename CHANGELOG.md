@@ -2,6 +2,14 @@
 
 All notable changes to Stele are documented here.
 
+## [18.16.1] — 2026-08-29
+
+### Fixed
+- Hosted `stele_doctor` / `verify_store`: integrity checks are backend-agnostic (no
+  `manifest_path` / `journal_path` required). MySQL SoT no longer raises
+  `AttributeError` on doctor. Regression: `test_store_backend_parity.py`.
+- `snapshot` refuses non-file backends with a clear error (MySQL has no Path tree).
+
 ## [18.16.0] — 2026-08-29
 
 ### Added

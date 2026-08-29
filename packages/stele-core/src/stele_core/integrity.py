@@ -1,12 +1,30 @@
-"""Store integrity checks (C4) — SoT inspectable and consistent."""
+"""Store integrity checks (C4) — SoT inspectable and consistent.
+
+Checks are backend-agnostic: they use ``store_id``, ``iter_entries``, and
+``iter_journal``. File-layout dual-location (quarantine + promoted) is checked
+only when the store exposes ``entries_q`` / ``entries_p`` Path dirs.
+"""
 
 from __future__ import annotations
 
 import hashlib
-from typing import Any
+from typing import Any, Protocol, runtime_checkable
 
 from stele_core.schema import SchemaError, canonical_dumps, canonical_loads, validate_entry
-from stele_core.store import SteleStore
+
+
+@runtime_checkable
+class StoreLike(Protocol):
+    """Minimal store surface for integrity / doctor (file or MySQL)."""
+
+    @property
+    def store_id(self) -> str: ...
+
+    def iter_entries(self, *, states: Any = None): ...
+
+    def iter_journal(self, *, entry_id: str | None = None): ...
+
+    def read_entry(self, entry_id: str) -> dict[str, Any] | None: ...
 
 # Belief-content keys for MemMark-shaped content digests (exclude volatile usage counters).
 _DIGEST_KEYS = (
@@ -35,11 +53,17 @@ def entry_content_digest(entry: dict[str, Any]) -> str:
     return hashlib.sha256(blob).hexdigest()
 
 
-def journal_digest(store: SteleStore) -> str:
-    """SHA-256 of journal file bytes (empty file → known digest)."""
-    if not store.journal_path.exists():
-        return hashlib.sha256(b"").hexdigest()
-    return hashlib.sha256(store.journal_path.read_bytes()).hexdigest()
+def journal_digest(store: StoreLike) -> str:
+    """SHA-256 over journal content (file bytes when present; else row JSON)."""
+    journal_path = getattr(store, "journal_path", None)
+    if journal_path is not None and hasattr(journal_path, "exists"):
+        if not journal_path.exists():
+            return hashlib.sha256(b"").hexdigest()
+        return hashlib.sha256(journal_path.read_bytes()).hexdigest()
+    # Non-file backends (MySQL): hash canonical NDJSON of iter_journal rows.
+    parts = [canonical_dumps(row).encode("utf-8") for row in store.iter_journal()]
+    blob = b"\n".join(parts) + (b"\n" if parts else b"")
+    return hashlib.sha256(blob).hexdigest()
 
 
 _GENESIS = "0" * 64
@@ -50,7 +74,7 @@ def _journal_row_digest(row: dict[str, Any]) -> str:
     return hashlib.sha256(canonical_dumps(material).encode("utf-8")).hexdigest()
 
 
-def verify_journal_chain(store: SteleStore) -> dict[str, Any]:
+def verify_journal_chain(store: StoreLike) -> dict[str, Any]:
     """
     GPM-shaped journal hash-chain verification (fail-closed report).
 
@@ -112,7 +136,7 @@ def verify_journal_chain(store: SteleStore) -> dict[str, Any]:
     }
 
 
-def journal_chain_head(store: SteleStore) -> dict[str, Any]:
+def journal_chain_head(store: StoreLike) -> dict[str, Any]:
     """Return current journal chain head + counts."""
     report = verify_journal_chain(store)
     return {
@@ -124,7 +148,7 @@ def journal_chain_head(store: SteleStore) -> dict[str, Any]:
     }
 
 
-def store_seal(store: SteleStore) -> dict[str, Any]:
+def store_seal(store: StoreLike) -> dict[str, Any]:
     """
     Tamper-evident seal over entry content digests + journal (Merkle-flat root).
 
@@ -148,7 +172,7 @@ def store_seal(store: SteleStore) -> dict[str, Any]:
     }
 
 
-def verify_seal(store: SteleStore, seal: dict[str, Any]) -> dict[str, Any]:
+def verify_seal(store: StoreLike, seal: dict[str, Any]) -> dict[str, Any]:
     """Compare a prior seal to the live store."""
     live = store_seal(store)
     expected = str(seal.get("root") or "")
@@ -164,7 +188,7 @@ def verify_seal(store: SteleStore, seal: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def attribution_receipt(store: SteleStore, entry_id: str) -> dict[str, Any]:
+def attribution_receipt(store: StoreLike, entry_id: str) -> dict[str, Any]:
     """
     Snapshot-usable attribution receipt for one entry (MemMark R3-shaped).
 
@@ -191,7 +215,7 @@ def attribution_receipt(store: SteleStore, entry_id: str) -> dict[str, Any]:
     }
 
 
-def replay_consistency(store: SteleStore) -> dict[str, Any]:
+def replay_consistency(store: StoreLike) -> dict[str, Any]:
     """
     Soft journal↔SoT consistency checks (TOKI replay-adjacent; no LLM).
 
@@ -229,33 +253,51 @@ def replay_consistency(store: SteleStore) -> dict[str, Any]:
     }
 
 
-def verify_store(store: SteleStore) -> dict[str, Any]:
+def verify_store(store: StoreLike) -> dict[str, Any]:
     """
     Read-only integrity report. Does not mutate the store.
 
-    Checks: manifest present, entries schema-valid, no dual-location ids,
-    journal parseable. Indexes are derived — absence is not an error.
+    Checks: store_id present, entries schema-valid, no dual-location ids
+    (file layout only), journal rows parseable via ``iter_journal``.
+    Indexes are derived — absence is not an error.
     """
     errors: list[str] = []
     warnings: list[str] = []
     entry_count = 0
     ids: set[str] = set()
 
-    if not store.manifest_path.exists():
-        errors.append("missing stele.json manifest")
-    else:
-        try:
-            manifest = canonical_loads(store.manifest_path.read_text(encoding="utf-8"))
-            if "store_id" not in manifest:
-                errors.append("manifest missing store_id")
-        except Exception as exc:  # noqa: BLE001 — surface parse failures
-            errors.append(f"manifest unreadable: {exc}")
+    try:
+        sid = store.store_id
+        if not sid:
+            errors.append("store_id missing or empty")
+    except Exception as exc:  # noqa: BLE001 — surface backend failures
+        errors.append(f"store_id unreadable: {exc}")
 
-    q_ids = {p.stem for p in store.entries_q.glob("*.json")}
-    p_ids = {p.stem for p in store.entries_p.glob("*.json")}
-    dual = q_ids & p_ids
-    if dual:
-        errors.append(f"entries present in quarantine and promoted: {sorted(dual)}")
+    manifest_path = getattr(store, "manifest_path", None)
+    if manifest_path is not None and hasattr(manifest_path, "exists"):
+        if not manifest_path.exists():
+            errors.append("missing stele.json manifest")
+        else:
+            try:
+                manifest = canonical_loads(manifest_path.read_text(encoding="utf-8"))
+                if "store_id" not in manifest:
+                    errors.append("manifest missing store_id")
+            except Exception as exc:  # noqa: BLE001 — surface parse failures
+                errors.append(f"manifest unreadable: {exc}")
+
+    entries_q = getattr(store, "entries_q", None)
+    entries_p = getattr(store, "entries_p", None)
+    if (
+        entries_q is not None
+        and entries_p is not None
+        and hasattr(entries_q, "glob")
+        and hasattr(entries_p, "glob")
+    ):
+        q_ids = {p.stem for p in entries_q.glob("*.json")}
+        p_ids = {p.stem for p in entries_p.glob("*.json")}
+        dual = q_ids & p_ids
+        if dual:
+            errors.append(f"entries present in quarantine and promoted: {sorted(dual)}")
 
     for entry in store.iter_entries():
         entry_count += 1
@@ -272,18 +314,26 @@ def verify_store(store: SteleStore) -> dict[str, Any]:
             errors.append(f"{eid}: {exc}")
 
     journal_lines = 0
-    if store.journal_path.exists():
-        for line in store.journal_path.read_text(encoding="utf-8").splitlines():
-            if not line.strip():
-                continue
-            journal_lines += 1
-            try:
-                canonical_loads(line)
-            except Exception as exc:  # noqa: BLE001
-                errors.append(f"journal line unreadable: {exc}")
-                break
+    journal_path = getattr(store, "journal_path", None)
+    if journal_path is not None and hasattr(journal_path, "exists"):
+        if journal_path.exists():
+            for line in journal_path.read_text(encoding="utf-8").splitlines():
+                if not line.strip():
+                    continue
+                journal_lines += 1
+                try:
+                    canonical_loads(line)
+                except Exception as exc:  # noqa: BLE001
+                    errors.append(f"journal line unreadable: {exc}")
+                    break
+        else:
+            warnings.append("missing journal.ndjson")
     else:
-        warnings.append("missing journal.ndjson")
+        for row in store.iter_journal():
+            journal_lines += 1
+            if not isinstance(row, dict):
+                errors.append("journal row is not an object")
+                break
 
     return {
         "ok": len(errors) == 0,

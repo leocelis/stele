@@ -14,8 +14,8 @@
 
 meta:
   name: stele
-  version: "18.16.0"
-  date: "2026-08-28"
+  version: "18.16.1"
+  date: "2026-08-29"
   status: IMPLEMENTED — v4.7 (Phases 0–43; WTP / hosted sync / full external gyms / keyed watermarks out of scope)
   license: MIT
   layer: "Context / inference-time memory — never model weights"
