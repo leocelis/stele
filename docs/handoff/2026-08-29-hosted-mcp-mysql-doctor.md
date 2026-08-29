@@ -16,6 +16,7 @@ Session distillate only. Product contract = `stele_system_intent.yaml` + PRD + T
 3. **Client docs:** `docs/integrations/{README,CURSOR,CLAUDE_CODE,CLAUDE_DESKTOP}.md` + `docs/cursor-rules/stele-hosted-mcp.mdc`.
 4. **Doctor bugfix (v18.16.1):** `stele_doctor` crashed on MySQL with `'MySQLSteleStore' object has no attribute 'manifest_path'`. Integrity checks are now backend-agnostic (`verify_store` / `journal_digest` use `store_id` + `iter_*`, not file paths).
 5. **Regression:** `packages/stele-core/tests/test_store_backend_parity.py` (CI, no DSN required). MySQL parity test also asserts doctor when DSN+CA set.
+6. **Core tool surface:** `/core/sse` + `/core/mcp` (+ stdio `stele-mcp-core` / `STELE_TOOL_SET=core`) expose governed-ledger tools only (~34), not the ~2000 PEFT research tools. Tests: `test_core_tool_surface.py`.
 
 ---
 

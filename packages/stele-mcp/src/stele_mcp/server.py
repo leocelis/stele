@@ -61,10 +61,93 @@ def _transport_security():
 
 mcp = FastMCP("stele", transport_security=_transport_security())
 
+# Governed-ledger surface only — TECH_SPEC §7.1-7.9 (Core six + promote,
+# contested/export/hydrate, living ledger/ops, recovery+batch, hygiene+
+# entangled, ACL+forgetting, bi-temporal lineage+conflict). Deliberately
+# excludes every tool added from v2.0 onward (release-gate/rebuild-index
+# infra, and the PEFT/agent-pattern research-reproduction sprint — see
+# ROADMAP.md Phase 9+ / CHANGELOG.md). This is the set README.md's Quick
+# Start and docs/integrations/*.md actually document and expect a caller
+# to use for "log what worked/failed, promote only oracle-verified lessons."
+_CORE_TOOL_NAMES: frozenset[str] = frozenset(
+    {
+        # §7.1 core six (+ promote/supersede/delete/reflect/link)
+        "stele_add",
+        "stele_update",
+        "stele_promote",
+        "stele_supersede",
+        "stele_delete",
+        "stele_search",
+        "stele_reflect",
+        "stele_link",
+        # §7.3 contested + export/hydrate
+        "stele_list_contested",
+        "stele_resolve_contested",
+        "stele_export",
+        "stele_hydrate",
+        "stele_verify_pack",
+        # §7.4 living ledger + ops
+        "stele_record_outcome",
+        "stele_pin",
+        "stele_stale_report",
+        "stele_reverify",
+        "stele_related",
+        "stele_verify",
+        "stele_reviewer_corrections",
+        "stele_stats",
+        "stele_timeline",
+        "stele_attach",
+        "stele_snapshot",
+        "stele_doctor",
+        "stele_entry_schema",
+        # §7.6 recovery + batch
+        "stele_purge_by_provenance",
+        "stele_add_batch",
+        "stele_diff_stores",
+        # §7.7 hygiene + entangled + governance eval
+        "stele_entangled_suspects",
+        "stele_hygiene_candidates",
+        # §7.8 ACL + forgetting
+        "stele_forget_compliance",
+        # §7.9 bi-temporal lineage + conflict surface
+        "stele_lineage",
+        "stele_belief_at",
+        "stele_conflict_surface",
+    }
+)
+
 
 def create_app() -> FastMCP:
-    """Return the FastMCP app (stdio CLI and hosted wsgi share this instance)."""
+    """Return the full FastMCP app — every registered tool (stdio CLI and
+    hosted wsgi's /sse + /mcp routes share this instance)."""
     return mcp
+
+
+def create_core_app() -> FastMCP:
+    """Return a second, independent FastMCP instance exposing only the
+    governed-ledger tool set (`_CORE_TOOL_NAMES`) — none of the PEFT/agent-
+    pattern research tools that ride on the full `mcp` instance.
+
+    Reuses the already-registered tool functions from `mcp` (no re-
+    implementation, no duplicated decorators) so the two surfaces can never
+    drift in behavior — only in which names are exposed. Raises at call time
+    if `_CORE_TOOL_NAMES` references a name that was never registered on
+    `mcp`, so a stale allowlist fails loudly instead of silently shrinking
+    the core surface.
+    """
+    core = FastMCP("stele-core", transport_security=_transport_security())
+    missing: list[str] = []
+    for name in sorted(_CORE_TOOL_NAMES):
+        tool = mcp._tool_manager.get_tool(name)
+        if tool is None:
+            missing.append(name)
+            continue
+        core.add_tool(tool.fn, name=tool.name, description=tool.description)
+    if missing:
+        raise RuntimeError(
+            f"stele-core tool allowlist references unregistered tools: {missing}"
+        )
+    return core
 
 
 @mcp.tool()
@@ -15906,7 +15989,19 @@ def stele_mef_loop_plan(phase: str) -> str:
 
 
 def main() -> None:
-    mcp.run(transport="stdio")
+    """Stdio entrypoint. STELE_TOOL_SET=core restricts to the governed-ledger
+    tool set (see `_CORE_TOOL_NAMES`); default ("full", or unset) exposes
+    every registered tool."""
+    if os.environ.get("STELE_TOOL_SET") == "core":
+        create_core_app().run(transport="stdio")
+    else:
+        mcp.run(transport="stdio")
+
+
+def main_core() -> None:
+    """Stdio entrypoint that always runs the governed-ledger tool set,
+    regardless of STELE_TOOL_SET. Console script: `stele-mcp-core`."""
+    create_core_app().run(transport="stdio")
 
 
 if __name__ == "__main__":

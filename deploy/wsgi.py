@@ -1,10 +1,19 @@
 """
 Production entry point for the Stele MCP Server on DigitalOcean App Platform.
 
-Serves both transports from a single process:
-  /health  — unauthenticated health check (DO load balancer)
-  /sse     — SSE transport (Cursor and legacy MCP clients)
-  /mcp     — Streamable HTTP transport (modern clients)
+Serves both transports, full and core-only, from a single process:
+  /health       — unauthenticated health check (DO load balancer)
+  /sse          — SSE transport, full tool surface (Cursor and legacy MCP clients)
+  /mcp          — Streamable HTTP transport, full tool surface (modern clients)
+  /core/sse     — SSE transport, governed-ledger tools only (see
+                  stele_mcp.server._CORE_TOOL_NAMES)
+  /core/mcp     — Streamable HTTP transport, governed-ledger tools only
+
+The core-only routes exist because the full surface carries ~2000 PEFT/agent-
+pattern research-reproduction tools alongside the ~34-tool governed ledger
+(ROADMAP.md Phase 9+ / CHANGELOG.md) — a client that only wants the ledger
+(stele_add/promote/search/doctor/...) should point at /core/sse or /core/mcp
+instead of /sse or /mcp.
 
 Auth:  Bearer token via SteleAuthMiddleware (reads STELE_API_KEYS env var).
        /health is always exempt.
@@ -37,7 +46,7 @@ os.environ.setdefault("STELE_ENV", "production")
 
 from stele_core import __version__  # noqa: E402
 from stele_mcp.auth import SteleAuthMiddleware  # noqa: E402
-from stele_mcp.server import create_app, store_mode  # noqa: E402
+from stele_mcp.server import create_app, create_core_app, store_mode  # noqa: E402
 
 import uvicorn  # noqa: E402
 from starlette.applications import Starlette  # noqa: E402
@@ -73,14 +82,20 @@ _patch_server_session_auto_init()
 def build_app():
     """
     Build the combined Starlette app:
-      /health         — unauthenticated
-      /sse + /messages — FastMCP SSE transport
-      /mcp            — FastMCP Streamable HTTP transport
+      /health          — unauthenticated
+      /sse + /messages — FastMCP SSE transport, full tool surface
+      /mcp             — FastMCP Streamable HTTP transport, full tool surface
+      /core/sse        — FastMCP SSE transport, governed-ledger tools only
+      /core/mcp        — FastMCP Streamable HTTP transport, governed-ledger tools only
     Wrapped with SteleAuthMiddleware (/health exempt).
     """
     fastmcp = create_app()
     sse_starlette = fastmcp.sse_app()
     http_starlette = fastmcp.streamable_http_app()
+
+    core_fastmcp = create_core_app()
+    core_sse_starlette = core_fastmcp.sse_app(mount_path="/core")
+    core_http_starlette = core_fastmcp.streamable_http_app()
 
     async def health(request):
         return JSONResponse(
@@ -88,16 +103,38 @@ def build_app():
                 "status": "healthy",
                 "server": "stele",
                 "version": __version__,
-                "transports": ["streamable-http", "sse"],
+                "transports": [
+                    "streamable-http",
+                    "sse",
+                    "core-streamable-http",
+                    "core-sse",
+                ],
                 "store_mode": store_mode(),
                 "resumable": False,
+                "tool_counts": {
+                    "full": len(fastmcp._tool_manager.list_tools()),
+                    "core": len(core_fastmcp._tool_manager.list_tools()),
+                },
             }
         )
 
     class _Dispatcher:
         async def __call__(self, scope, receive, send):
             path = scope.get("path", "/")
-            if path == "/mcp" or path.startswith("/mcp/"):
+            if path == "/core/mcp" or path.startswith("/core/mcp/"):
+                # FastMCP HTTP app expects /mcp — strip the /core prefix.
+                scope = dict(scope)
+                scope["path"] = path[len("/core") :] or "/"
+                if "raw_path" in scope and isinstance(scope["raw_path"], (bytes, bytearray)):
+                    scope["raw_path"] = scope["path"].encode("utf-8")
+                await core_http_starlette(scope, receive, send)
+            elif (
+                path == "/core/sse"
+                or path.startswith("/core/sse")
+                or path.startswith("/core/messages")
+            ):
+                await core_sse_starlette(scope, receive, send)
+            elif path == "/mcp" or path.startswith("/mcp/"):
                 await http_starlette(scope, receive, send)
             else:
                 await sse_starlette(scope, receive, send)
@@ -105,7 +142,8 @@ def build_app():
     @asynccontextmanager
     async def _lifespan(app):
         async with http_starlette.router.lifespan_context(app):
-            yield
+            async with core_http_starlette.router.lifespan_context(app):
+                yield
 
     inner_app = Starlette(
         lifespan=_lifespan,

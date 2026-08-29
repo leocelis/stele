@@ -35,6 +35,7 @@ Documentation = "docs/TECH_SPEC.md"
 
 [project.scripts]
 stele-mcp = "stele_mcp.server:main"
+stele-mcp-core = "stele_mcp.server:main_core"
 
 [build-system]
 requires = ["hatchling"]

@@ -42,6 +42,9 @@ def test_health_unauthenticated(tmp_path, monkeypatch) -> None:
     assert body["server"] == "stele"
     assert body["store_mode"] == "file"
     assert "sse" in body["transports"]
+    assert "core-sse" in body["transports"]
+    assert body["tool_counts"]["full"] > body["tool_counts"]["core"]
+    assert body["tool_counts"]["core"] >= 30
 
 
 def test_protected_path_requires_auth_when_enabled(tmp_path, monkeypatch) -> None:
