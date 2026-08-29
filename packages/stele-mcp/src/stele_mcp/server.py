@@ -32,7 +32,34 @@ def store_mode() -> str:
     return "mysql" if os.environ.get("STELE_STORE_DSN") else "file"
 
 
-mcp = FastMCP("stele")
+def _transport_security():
+    """DNS-rebinding settings for hosted HTTP (stdio ignores this).
+
+    Mirror Horizon: in production, either allow an explicit host list via
+    STELE_ALLOWED_HOSTS, or disable rebinding protection and rely on Bearer
+    auth. Default FastMCP (localhost-only hosts) breaks App Platform ingress.
+    """
+    if os.environ.get("STELE_ENV") != "production":
+        return None
+    try:
+        from mcp.server.transport_security import TransportSecuritySettings
+    except ImportError:  # pragma: no cover
+        try:
+            from mcp.server.sse import TransportSecuritySettings
+        except ImportError:
+            return None
+
+    raw = os.environ.get("STELE_ALLOWED_HOSTS", "")
+    hosts = [h.strip() for h in raw.split(",") if h.strip()]
+    if hosts:
+        return TransportSecuritySettings(
+            enable_dns_rebinding_protection=True,
+            allowed_hosts=hosts,
+        )
+    return TransportSecuritySettings(enable_dns_rebinding_protection=False)
+
+
+mcp = FastMCP("stele", transport_security=_transport_security())
 
 
 def create_app() -> FastMCP:

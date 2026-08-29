@@ -26,6 +26,13 @@ services:
       - key: STELE_STORE
         value: /tmp/stele-scratch
         scope: RUN_TIME
+      - key: STELE_STORE_ID
+        value: stele_hosted_v1
+        scope: RUN_TIME
+      # Optional Host allowlist. Empty = disable DNS-rebinding; Bearer auth gates access.
+      - key: STELE_ALLOWED_HOSTS
+        value: ""
+        scope: RUN_TIME
       - key: STELE_API_KEYS
         type: SECRET
         scope: RUN_TIME
