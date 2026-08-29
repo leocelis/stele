@@ -81,17 +81,35 @@ stele snapshot ./.stele-store /tmp/stele-backup --now 2026-08-20T12:00:00Z --act
 Requires the Model Context Protocol Python SDK **1.x** (`mcp>=1.0,<2`).
 mcp 2.x removed `mcp.server.fastmcp` and will not boot this server.
 
+The full server registers **2003 tools**: the 35-tool governed ledger below
+plus ~1970 PEFT/agent-pattern research-reproduction tools accumulated across
+the roadmap (see `CHANGELOG.md`, `ROADMAP.md`). Most callers want the ledger
+only — use `stele-mcp-core` (or `STELE_TOOL_SET=core stele-mcp`) for that.
+
 ```bash
 export STELE_STORE=./.stele-store
+
+# Full surface (2003 tools) — everything, including the research library.
 stele-mcp
+
+# Governed-ledger only (35 tools) — recommended for agent memory I/O.
+stele-mcp-core
 ```
 
 ## MCP (hosted HTTP)
 
-Same tools over HTTPS (SSE + streamable HTTP). Production:
+Same tools over HTTPS (SSE + streamable HTTP). Two independent tool surfaces,
+same process, same auth, same store:
 
-- **URL:** `https://stele.leocelis.com/sse` (Bearer required)
-- **Fallback:** `https://stele-mcp-2vlrd.ondigitalocean.app/sse`
+| Surface | SSE | Streamable HTTP | Tools |
+|---|---|---|---|
+| Full | `/sse` | `/mcp` | 2003 (ledger + PEFT/pattern research library) |
+| Core (governed ledger only) | `/core/sse` | `/core/mcp` | 35 — see list below |
+
+Production:
+
+- **URL:** `https://stele.leocelis.com/sse` · core: `https://stele.leocelis.com/core/sse` (Bearer required)
+- **Fallback:** `https://stele-mcp-2vlrd.ondigitalocean.app/sse` · core: `.../core/sse`
 - Client setup: [`docs/integrations/CURSOR.md`](docs/integrations/CURSOR.md) · [`CLAUDE_CODE.md`](docs/integrations/CLAUDE_CODE.md) · [`CLAUDE_DESKTOP.md`](docs/integrations/CLAUDE_DESKTOP.md)
 - Agent rule: [`docs/cursor-rules/stele-hosted-mcp.mdc`](docs/cursor-rules/stele-hosted-mcp.mdc)
 
@@ -104,8 +122,8 @@ STELE_API_KEYS=stl_local_dev STELE_AUTH_DISABLED=false \
   python deploy/wsgi.py --port 8080
 ```
 
-- `GET /health` — unauthenticated
-- `/sse` + `/mcp` — Bearer via `STELE_API_KEYS`
+- `GET /health` — unauthenticated; reports `tool_counts: {full, core}`
+- `/sse` + `/mcp` (full) and `/core/sse` + `/core/mcp` (ledger-only) — both Bearer via `STELE_API_KEYS`
 - Hosted durable SoT: `STELE_STORE_DSN` + TLS CA (DSN wins over file path)
 - Never commit API keys, DSNs, or PEMs
 
@@ -113,19 +131,19 @@ STELE_API_KEYS=stl_local_dev STELE_AUTH_DISABLED=false \
 {
   "mcpServers": {
     "stele": {
-      "url": "https://stele.leocelis.com/sse",
+      "url": "https://stele.leocelis.com/core/sse",
       "headers": { "Authorization": "Bearer YOUR_KEY_HERE" }
     }
   }
 }
 ```
 
-**41 tools:** add · update · promote · supersede · delete · search · reflect · link ·
+**35 governed-ledger tools** (TECH_SPEC §7.1-7.9 — everything `create_core_app()` exposes):
+add · update · promote · supersede · delete · search · reflect · link ·
 list_contested · resolve_contested · verify · reviewer_corrections · hydrate · export ·
 record_outcome · pin · stale_report · reverify · related · stats · timeline · verify_pack ·
 attach · snapshot · doctor · entry_schema · purge_by_provenance · diff_stores · add_batch ·
-entangled_suspects · hygiene_candidates · forget_compliance · lineage · belief_at · conflict_surface ·
-injection_scan · select_budget_plan · store_seal · verify_seal · attribution_receipt · replay_consistency
+entangled_suspects · hygiene_candidates · forget_compliance · lineage · belief_at · conflict_surface
 
 ## Architecture
 

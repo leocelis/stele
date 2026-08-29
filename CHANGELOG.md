@@ -2,6 +2,25 @@
 
 All notable changes to Stele are documented here.
 
+## [Unreleased]
+
+### Added
+- **Core-only tool surface.** `stele_mcp.server.create_core_app()` exposes just
+  the 35 governed-ledger tools (TECH_SPEC §7.1-7.9) — none of the ~2000
+  PEFT/agent-pattern research-reproduction tools on the full `mcp` instance.
+  Reuses the same registered functions (no re-implementation, can't drift).
+  - Stdio: `STELE_TOOL_SET=core stele-mcp`, or the new `stele-mcp-core`
+    console script.
+  - Hosted: `/core/sse` and `/core/mcp` alongside the existing `/sse` / `/mcp`
+    (same `deploy/wsgi.py` process, same auth, same store).
+  - `/health` now reports `tool_counts: {full, core}`.
+  - Tests: `test_create_core_app_is_strict_subset_of_full`,
+    `test_create_core_app_raises_on_stale_allowlist` (test_mcp_runtime.py),
+    `test_core_mcp_route_serves_only_governed_ledger_tools` (test_hosted_wsgi.py).
+  - Why: `packages/stele-mcp/src/stele_mcp/server.py`'s own module docstring
+    said "eight named tools" while shipping 2003 — every hosted client was
+    getting the full research-reproduction surface with no way to opt out.
+
 ## [18.16.1] — 2026-08-29
 
 ### Fixed
