@@ -487,7 +487,11 @@ Packaging agent sessions for sale collides with privacy research that treats lea
 |---------------|-------------|
 | `*_intent.yaml` | Goal + constraints (procedural spine) |
 | `*_feedback.yaml` | Issue trail / iteration ledger |
+<<<<<<< HEAD
 | Operator session handoffs | Session distillate for next operator/agent (private operator vault, not in OSS repo) |
+=======
+| `docs/handoff/*.md` | Session distillate for next operator/agent |
+>>>>>>> origin/main
 | `patterns/*_patterns.yaml` | Distilled workflows (AWM-like) |
 | `docs/research/**/*.md` | Evidence base — not runtime ledger |
 | Conversation-health monitors | Meta-ledger on conversation health (orthogonal) |

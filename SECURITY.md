@@ -33,5 +33,10 @@ oracles, or MCP hosts.
 
 | Version | Supported |
 |---|---|
+<<<<<<< HEAD
 | 18.x | Yes (current) |
 | < 18 | No |
+=======
+| 1.0.x | Yes |
+| < 1.0 | No (pre-release) |
+>>>>>>> origin/main

@@ -19,3 +19,8 @@ Edit `claude_desktop_config.json`:
 ```
 
 Restart Claude Desktop. Tools appear in the MCP panel.
+<<<<<<< HEAD
+=======
+
+DNS fallback URL: `https://stele-mcp-2vlrd.ondigitalocean.app/sse`
+>>>>>>> origin/main
