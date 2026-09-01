@@ -1,0 +1,223 @@
+"""Bearer auth + in-process rate limit for hosted Stele MCP (HTTP only).
+
+Reads API keys from STELE_API_KEYS (comma-separated). Stdio transport never
+uses this middleware (process isolation).
+
+Fail-closed: empty STELE_API_KEYS rejects all non-exempt requests unless
+STELE_AUTH_DISABLED=true (local tests only — never on hosted).
+
+Key generation:
+    python -c "import secrets; print('stl_deploy_' + secrets.token_urlsafe(24))"
+"""
+
+from __future__ import annotations
+
+import collections
+import contextvars
+import hashlib
+import hmac
+import logging
+import os
+import secrets
+import threading
+import time
+
+from starlette.requests import Request
+from starlette.responses import JSONResponse
+
+current_key_id: contextvars.ContextVar[str] = contextvars.ContextVar(
+    "stele_current_key_id", default="local"
+)
+current_key_sha: contextvars.ContextVar[str] = contextvars.ContextVar(
+    "stele_current_key_sha", default=""
+)
+
+_log = logging.getLogger("stele_mcp.auth")
+
+_raw = os.environ.get("STELE_API_KEYS", "")
+VALID_API_KEYS: set[str] = {k.strip() for k in _raw.split(",") if k.strip()}
+AUTH_DISABLED: bool = os.environ.get("STELE_AUTH_DISABLED", "false").lower() == "true"
+_EXEMPT_PATHS: frozenset[str] = frozenset({"/health", "/healthz"})
+
+RATE_LIMIT_PER_MINUTE: float = float(os.environ.get("STELE_RATE_LIMIT_PER_MINUTE", "120"))
+RATE_LIMIT_BURST: float = float(os.environ.get("STELE_RATE_LIMIT_BURST", "20"))
+_MAX_TRACKED_RATE_LIMIT_KEYS = 1000
+
+
+class _TokenBucket:
+    __slots__ = ("tokens", "last_refill")
+
+    def __init__(self, capacity: float, now: float) -> None:
+        self.tokens = capacity
+        self.last_refill = now
+
+
+class RateLimiter:
+    """In-process per-key token bucket. Correct for instance_count=1 only."""
+
+    def __init__(
+        self,
+        rate_per_minute: float = RATE_LIMIT_PER_MINUTE,
+        burst: float = RATE_LIMIT_BURST,
+        max_tracked_keys: int = _MAX_TRACKED_RATE_LIMIT_KEYS,
+    ) -> None:
+        self._rate_per_second = rate_per_minute / 60.0
+        self._burst = burst
+        self._max_tracked = max_tracked_keys
+        self._buckets: collections.OrderedDict[str, _TokenBucket] = collections.OrderedDict()
+        self._lock = threading.Lock()
+
+    def allow(self, key: str) -> tuple[bool, float]:
+        now = time.monotonic()
+        with self._lock:
+            bucket = self._buckets.get(key)
+            if bucket is None:
+                bucket = _TokenBucket(self._burst, now)
+                self._buckets[key] = bucket
+                if len(self._buckets) > self._max_tracked:
+                    self._buckets.popitem(last=False)
+            else:
+                self._buckets.move_to_end(key)
+
+            elapsed = now - bucket.last_refill
+            bucket.tokens = min(self._burst, bucket.tokens + elapsed * self._rate_per_second)
+            bucket.last_refill = now
+
+            if bucket.tokens >= 1.0:
+                bucket.tokens -= 1.0
+                return True, 0.0
+
+            deficit = 1.0 - bucket.tokens
+            retry_after = deficit / self._rate_per_second if self._rate_per_second > 0 else 60.0
+            return False, retry_after
+
+
+_rate_limiter = RateLimiter()
+
+
+class SteleAuthMiddleware:
+    """ASGI middleware: Bearer tokens for all non-exempt HTTP paths."""
+
+    def __init__(self, app) -> None:
+        self.app = app
+
+    async def __call__(self, scope, receive, send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        path: str = scope.get("path", "")
+
+        if path in _EXEMPT_PATHS or AUTH_DISABLED:
+            await self.app(scope, receive, send)
+            return
+
+        err, key_id, key_sha = _extract_and_validate(scope)
+        if err is not None:
+            response = JSONResponse(err, status_code=401)
+            await response(scope, receive, send)
+            return
+
+        allowed, retry_after = _rate_limiter.allow(key_id)
+        if not allowed:
+            _log.warning(
+                "AUTH  rate_limited  key=%s  path=%s  retry_after=%.1fs", key_id, path, retry_after
+            )
+            response = JSONResponse(
+                {"error": "Rate limit exceeded", "retry_after_seconds": round(retry_after, 1)},
+                status_code=429,
+                headers={
+                    "Retry-After": str(int(retry_after) + 1),
+                    "RateLimit-Policy": f'"default";q={int(RATE_LIMIT_PER_MINUTE)};w=60',
+                    "RateLimit": '"default";r=0',
+                },
+            )
+            await response(scope, receive, send)
+            return
+
+        _log.info("AUTH  ok  key=%s  path=%s", key_id, path)
+        token = current_key_id.set(key_id)
+        sha_token = current_key_sha.set(key_sha)
+        try:
+            await self.app(scope, receive, send)
+        finally:
+            current_key_sha.reset(sha_token)
+            current_key_id.reset(token)
+
+
+def _extract_and_validate(scope) -> tuple[dict | None, str | None, str]:
+    path = scope.get("path", "")
+
+    if not VALID_API_KEYS and not AUTH_DISABLED:
+        _log.warning("AUTH  no_keys_configured  path=%s  — rejecting (fail-closed)", path)
+        return {
+            "error": (
+                "Server has no API keys configured (STELE_API_KEYS is unset). "
+                "Refusing all requests. Set STELE_API_KEYS, or "
+                "STELE_AUTH_DISABLED=true for local dev only."
+            )
+        }, None, ""
+
+    headers: dict[bytes, bytes] = dict(scope.get("headers", []))
+    raw_auth: str = headers.get(b"authorization", b"").decode("utf-8", errors="replace")
+
+    if not raw_auth:
+        _log.warning("AUTH  missing_header  path=%s", path)
+        return {"error": "Missing Authorization header"}, None, ""
+
+    if not raw_auth.startswith("Bearer "):
+        _log.warning("AUTH  bad_format  path=%s", path)
+        return {"error": "Invalid Authorization header. Expected: Bearer <token>"}, None, ""
+
+    api_key = raw_auth[7:].strip()
+
+    if not api_key:
+        _log.warning("AUTH  empty_key  path=%s", path)
+        return {"error": "Empty API key"}, None, ""
+
+    if AUTH_DISABLED and not VALID_API_KEYS:
+        _log.warning(
+            "AUTH  no_keys_configured  path=%s  — allowed (STELE_AUTH_DISABLED=true)", path
+        )
+        return None, "unconfigured", ""
+
+    if not _key_matches(api_key):
+        _log.warning("AUTH  invalid_key  key_prefix=%s  path=%s", api_key[:8], path)
+        return {"error": "Invalid API key"}, None, ""
+
+    return None, _key_id(api_key), hashlib.sha256(api_key.encode()).hexdigest()
+
+
+def _key_matches(candidate: str) -> bool:
+    matched = False
+    for valid_key in VALID_API_KEYS:
+        if hmac.compare_digest(candidate, valid_key):
+            matched = True
+    return matched
+
+
+def _key_id(api_key: str) -> str:
+    return hashlib.sha256(api_key.encode()).hexdigest()[:8]
+
+
+async def validate_api_key(request: Request) -> tuple[JSONResponse | None, str | None]:
+    if AUTH_DISABLED:
+        return None, None
+
+    path = request.url.path
+    if path in _EXEMPT_PATHS:
+        return None, None
+
+    err, key_id, _sha = _extract_and_validate({"headers": list(request.headers.raw), "path": path})
+    if err is not None:
+        return JSONResponse(err, status_code=401), None
+    return None, key_id
+
+
+def generate_api_key(username: str = "user") -> str:
+    token = secrets.token_urlsafe(24)
+    return f"stl_{username}_{token}"
+
+
+def hash_api_key(api_key: str) -> str:
+    return hashlib.sha256(api_key.encode()).hexdigest()

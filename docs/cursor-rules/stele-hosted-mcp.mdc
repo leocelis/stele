@@ -1,0 +1,39 @@
+---
+description: Use hosted Stele MCP for governed experiential memory (Bearer required)
+globs:
+alwaysApply: false
+---
+
+# Stele — hosted MCP (experiential memory)
+
+**Endpoint:** `https://stele.leocelis.com/sse` (Bearer required)  
+**Config:** `~/.cursor/mcp.json` → `mcpServers.stele` with `Authorization: Bearer …`
+
+## When to use
+
+Use Stele tools when the task needs **durable, governed memory** of what worked / failed:
+
+- Before repeating a fix that may already be a promoted lesson → `stele_search`
+- After an externally verified lesson → `stele_add` (quarantine) then `stele_promote` with **external** oracle evidence (writer ≠ judge)
+- Hygiene / doctor / forget-compliance when operating on the ledger
+
+## Hard rules
+
+- Prefer the **hosted** MCP server named `stele` when it is configured — do not invent a parallel local store unless the operator asks for stdio.
+- Hosted calls need a valid Bearer key in MCP config. HTTP 401 → stop; do not bypass auth.
+- Never commit API keys, DSNs, or PEMs into the Stele repo.
+- Quarantined entries are invisible to search until promoted with external evidence.
+- Stele is **explicit memory I/O**, not invisible per-turn monitoring. Do not call Stele on every chat turn.
+
+## Minimal loop
+
+1. `stele_search` with `consumer_scope` for the active project
+2. If missing lesson: implement / verify externally
+3. `stele_add` → `stele_promote` (actor ≠ writer; evidence required)
+4. `stele_doctor` if the store looks wrong
+
+## Docs
+
+- `docs/integrations/CURSOR.md`
+- `docs/integrations/CLAUDE_CODE.md`
+- `docs/integrations/README.md`

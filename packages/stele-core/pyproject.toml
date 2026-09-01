@@ -1,0 +1,45 @@
+[project]
+name = "stele-core"
+version = "18.16.1"
+description = "Governed experiential-memory ledger for AI agents — quarantine, oracle promotion, hybrid retrieval, pack export. Zero runtime dependencies."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Stele contributors" }]
+keywords = [
+    "ai-agents",
+    "memory",
+    "ledger",
+    "experiential-memory",
+    "mcp",
+    "deterministic",
+    "local-first",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries",
+    "Typing :: Typed",
+]
+dependencies = []
+
+[project.optional-dependencies]
+mysql = ["PyMySQL>=1.1,<2"]
+
+[project.scripts]
+stele = "stele_core.cli:main"
+
+[project.urls]
+Documentation = "docs/TECH_SPEC.md"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/stele_core"]

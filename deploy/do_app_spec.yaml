@@ -1,0 +1,44 @@
+# DigitalOcean App Platform — SECRET *names* only. Values set in the console.
+# Never put live DSN / API keys / PEMs in this file.
+name: stele-mcp
+region: sfo
+services:
+  - name: stele-mcp
+    github:
+      repo: leocelis/stele
+      branch: main
+      deploy_on_push: true
+    build_command: bash deploy/build.sh
+    run_command: python deploy/wsgi.py --port 8080
+    http_port: 8080
+    instance_count: 1
+    instance_size_slug: apps-s-1vcpu-1gb
+    health_check:
+      http_path: /health
+      initial_delay_seconds: 30
+    envs:
+      - key: STELE_ENV
+        value: production
+        scope: RUN_TIME
+      - key: STELE_LOG_LEVEL
+        value: INFO
+        scope: RUN_TIME
+      - key: STELE_STORE
+        value: /tmp/stele-scratch
+        scope: RUN_TIME
+      - key: STELE_STORE_ID
+        value: stele_hosted_v1
+        scope: RUN_TIME
+      # Optional Host allowlist. Empty = disable DNS-rebinding; Bearer auth gates access.
+      - key: STELE_ALLOWED_HOSTS
+        value: ""
+        scope: RUN_TIME
+      - key: STELE_API_KEYS
+        type: SECRET
+        scope: RUN_TIME
+      - key: STELE_STORE_DSN
+        type: SECRET
+        scope: RUN_TIME
+      - key: STELE_MYSQL_SSL_CA_B64
+        type: SECRET
+        scope: RUN_TIME

@@ -1,0 +1,627 @@
+# patterns_session_ledger_memory.yaml
+# ============================================================
+# Question: Can a frozen model + agent tools + external ledger
+# (goals, issues, decisions, failures, workflows) improve
+# outcomes at inference time? What should the ledger contain,
+# where should it be stored, and what transfers to a foreign
+# reuser (session packs)?
+# ============================================================
+# Version: 1.3 (2026-08-20 frontiers pass — MemoryArena, Governed Memory, memorywire, survey;
+#   v1.2 product: MemArchitect / SSGM / governance metrics → hygiene + entangled + prefer_fresh)
+# Date: 2026-08-20
+# Sources (3 audited research docs in this repository + private-corpus companions):
+#   1. docs/research/AGENT_SESSION_LEDGER_INFERENCE_TIME_MEMORY_RESEARCH_2026.md (source-audited)
+#   2. docs/research/AGENT_MEMORY_STORAGE_SYSTEMS_RESEARCH_2026.md (source-audited)
+#   3. docs/research/GOVERNED_EXPERIENTIAL_MEMORY_FRONTIERS_2026.md (source-audited)
+#   Companions (private research corpus, not included — do not re-derive blindly):
+#   3. Context building & maintenance research (Write/Select/Compress/Isolate)
+#   4. Error-feedback self-evolving workflows (failure → memory loop)
+#   5. Research-to-patterns-to-prompts (ExpeL / rule induction)
+#   6. FalkorDB/Graphiti deep research (Graphiti ops caveats)
+# Audit logs live INSIDE the research docs (ledger Part 14; storage Part 11).
+# Re-verify any load-bearing number against arXiv/docs before changing a claim here.
+
+# ============================================================
+# SECTION 1 — FOUNDATIONAL FINDINGS
+# (empirical results that constrain every downstream pattern)
+# ============================================================
+
+foundational_findings:
+
+  - id: FF-1
+    claim: "Frozen model + agent + tool-updated external ledger improves outcomes — validated, not speculative"
+    evidence:
+      - system: "CoALA (Sumers et al., TMLR 2024; arXiv:2309.02427)"
+        finding: "Canonical architecture: learning as MEMORY WRITE (episodic/semantic/procedural modules) separated from parametric learning; agents persist information across LLM calls"
+      - system: "MemGPT → Letta (Packer et al. 2023; arXiv:2310.08560)"
+        finding: "Context window = RAM; archival/recall/files = disk; agent autonomously calls memory tools mid-reasoning. Shipped as Letta (Apache-2.0), Claude API memory tool, LangGraph stores"
+      - system: "Reflexion (Shinn et al., NeurIPS 2023; arXiv:2303.11366)"
+        finding: "Verbal reflections on failure stored in episodic buffer → next episode conditions on them. HumanEval 91% pass@1 vs GPT-4 80% (paper). No fine-tuning"
+      - system: "CER (Yitao Liu et al., ACL 2025; arXiv:2506.06698)"
+        finding: "Training-free experience buffer replay: +51.0% relative success on WebArena vs GPT-4o BrowserGym baseline (36.7% absolute SR)"
+      - system: "Hindsight (Latimer et al. 2025; arXiv:2512.12818)"
+        finding: "Four networks (world/experience/entity/beliefs) + retain·recall·reflect: 39% → 83.6% on LongMemEval vs same-backbone full-context (20B OSS model)"
+    canonical_systems_all:
+      # Full Part-3 roster (ledger research) — frozen LLM + external store + agent read/write; no base-model training unless noted
+      MemGPT_Letta: "Core/archival/recall tiers → Letta editable memory blocks; agent memory tools"
+      Generative_Agents: "Memory stream (observations) + reflections; retrieve by recency × importance × relevance; reflect → write back (Park et al., UIST 2023; arXiv:2304.03442)"
+      Reflexion: "Verbal reflections on failure, bounded episodic buffer"
+      ExpeL: "Insights + successful trajectories in experience pool; retrieve both at test time"
+      Voyager: "Skill library of executable code; retrieve + compose; reduces catastrophic forgetting vs weight updates (NeurIPS 2023 ALOE workshop)"
+      AWM: "Workflows (reusable sub-routines induced from trajectories) injected into memory"
+      CER: "Synthesized experience buffer (env dynamics + patterns); training-free replay"
+      ReadAgent: "Gist memories of episodes + pointer to source text; lookup original when detail needed"
+      Mem0: "Extracted, consolidated memory facts; ADD/retrieve; graph variant for relations"
+      Hindsight: "Four networks; retain · recall · reflect (CARA)"
+      A_Mem: "Agentic memory notes with links, Zettelkasten-style; agent decides add/update/link/retrieve; memories evolve (Xu et al., NeurIPS 2025; arXiv:2502.12110)"
+      AgentHER: "HYBRID — relabels failure trajectories as training data for SFT/DPO; downstream training, not a runtime ledger (arXiv:2603.21357)"
+      SWE_agent_traj: ".traj JSON per instance (thought/action/observation); replayable as demonstrations (swe-agent.com)"
+      SWE_Replay: "Trajectory archive; branch from critical/reasoning-intensive intermediate steps at test time — cheaper than from-scratch sampling (arXiv:2601.22129)"
+    academic_label: "'Experiential memory' (Hu et al. survey, arXiv:2512.13564: Forms × Functions × Dynamics taxonomy) is the closest academic label for a session ledger of builds"
+    verdict: "✓ locked — the mechanism layer is proven across many systems and benchmarks; zero base-model weight updates required"
+    design_rule: "Do not wait for fine-tuning to compound agent experience. The ledger layer (external, tool-updated, selectively retrieved) is the validated path."
+
+  - id: FF-2
+    claim: "Distillation beats raw logs — structured memory >> transcript dumps"
+    evidence:
+      - system: "ReadAgent (Lee et al., ICML 2024)"
+        finding: "Gist memories + pointer to source; look up original only when detail needed"
+      - system: "ExpeL (Zhao et al., AAAI 2024; arXiv:2308.10144)"
+        finding: "Pools success AND failure trajectories → extracts NL insights (UPVOTE/DOWNVOTE/EDIT) → retrieves insights + similar successes at test time"
+      - system: "Trace2Skill (Ni et al. 2026; arXiv:2603.25158)"
+        finding: "Distills many trajectories IN PARALLEL into a unified skill directory (SoPs) — beats sequential overfitting to one trajectory and ReasoningBank-style episodic retrieval banks"
+      - practice: "Anthropic context engineering + Chroma context rot"
+        finding: "Raw transcripts = noise, context rot, cost; note-taking/compaction persist the distillate, not the stream"
+    verdict: "✓ locked"
+    design_rule: |
+      Capture is cheap (the agent auto-generates traces); VALUE lives in the distillation step.
+      Never treat the raw transcript as the memory. Distill to insight / workflow / skill,
+      keep an addressable pointer back to the source for detail-on-demand.
+
+  - id: FF-3
+    claim: "Abstraction level dictates transferability — the MTL format ladder"
+    source: "Memory Transfer Learning for coding agents (Kim et al. 2026; arXiv:2604.14004) — 6 benchmarks; GPT-5-mini, DeepSeek, Qwen3-Coder"
+    format_ladder:
+      trajectory: "Lowest abstraction (action–obs pairs) → often NEGATIVE transfer — brittle command anchoring"
+      workflow: "Medium (filtered key steps) → medium transfer"
+      summary: "Medium–high → medium–high transfer"
+      insight: "Highest (task-agnostic principles) → BEST transfer — meta-knowledge (validation habits, inspect-structure-first)"
+    corroboration:
+      - "Trace2Skill: skills transfer across model scales/families and OOD — Qwen3.5-35B-derived skills improved Qwen3.5-122B up to +57.65 pp on WikiTableQuestions"
+      - "ExpeL: when domains differ, experience-pool retrieval is DROPPED; only distilled insights transfer (HotpotQA → FEVER)"
+      - "AWM (arXiv:2409.07429): induced workflows generalize — online Table 4 (gpt-4) step-SR deltas +7.4–8.9 / +3.6–3.8 / +14.0–16.9 abs on cross-task/website/domain vs MindAct"
+      - "Cross-domain memory improves avg Pass@3 by ~3.7% (MTL) — gains from meta-knowledge, not task-specific code"
+      - "Voyager nuance: skill library transfers to a NEW Minecraft world — same game engine, different instance. Supports procedural portability inside a FIXED ontology; weaker evidence for cross-stack software packs"
+    verdict: "✓ locked — abstraction ↑ → transferability ↑"
+    design_rule: |
+      Anything meant to be reused OUTSIDE the session that produced it must be shipped at
+      Insight / skill / workflow level. Raw trajectories are the highest negative-transfer
+      format in current literature — never the product, at most the provenance appendix.
+
+  - id: FF-4
+    claim: "Raw trajectory reuse actively hurts — three documented negative-transfer modes"
+    source: "MTL (Kim et al. 2026) case studies"
+    negative_transfer_modes:
+      - "Domain-mismatched misleading anchors: superficially similar steps replayed in the wrong context"
+      - "False validation confidence: agent skips real checks because memory says 'validated'"
+      - "Misapplied best-practice transfer: right principle, wrong language/tooling"
+    verdict: "✓ locked"
+    design_rule: "A foreign memory can subtract value. Gate imported memories: require env-assumption checks before replaying any remembered command sequence."
+
+  - id: FF-5
+    claim: "High recall on chat benchmarks does NOT imply memory helps agentic action"
+    evidence:
+      - benchmark: "MemoryArena (He et al. 2026; arXiv:2602.16313)"
+        finding: "Interdependent multi-session tasks where memory must be USED to act: systems near-saturated on LoCoMo perform poorly (paper wording) in the agentic setting"
+      - benchmark: "DMR (MemGPT)"
+        finding: "Short multi-session retrieval — easy for modern context windows; weak discriminator alone (noted in Zep paper itself)"
+      - benchmark: "BEAM"
+        finding: "1M–10M token scale: context cannot be brute-forced; selective memory is required"
+    verdict: "✓ locked — eval mismatch is a real false-confidence trap"
+    design_rule: |
+      Never validate a ledger/memory feature with recall-style QA alone. The oracle is
+      task completion that DEPENDS on the memory (MemoryArena-shaped), not Q&A over the store.
+
+  - id: FF-6
+    claim: "Capture cost killed industrial design-rationale systems; agents remove the blank page, not the whole cost"
+    evidence:
+      - "Buckingham Shum & Hammond 1994: argumentation-based DR = cognitive overhead of structuring ideas mid-design ('what use at what cost?')"
+      - "Conklin QuestMap/SCE: adoption requires SHORT-TERM payoff for participants; long-term documentation value alone does not sustain use"
+      - "Lee (AI Magazine survey): gIBIS at NCR caught omissions worth 3–6× capture cost — but only when capture was done and used"
+      - "Karsenty (CHI 1996): >50% of reusing designers' questions concerned rationale, yet <50% of those were answered by the QOC doc — captured DR is useful but INSUFFICIENT"
+    verdict: "✓ locked (historical) — agent sessions auto-generate raw material, so cost shifts to distillation, sanitization, maintenance, buyer adaptation"
+    design_rule: |
+      Any ledger/pack workflow must pay off IN the session that writes it (Conklin's rule),
+      not only for a future reader. Rationale alone never suffices: link issues to artifacts,
+      tests, and env constraints so reuser questions land on something executable.
+
+  - id: FF-7
+    claim: "The ledger is old information architecture: DR/IBIS + CBR + worked examples — and ADAPTATION is the hard part"
+    lineage:
+      design_rationale: "Potts & Bruns ICSE 1988 (issues/alternatives/justifications); Conklin & Begeman gIBIS 1988 (issues → positions → arguments, incl. rejected options); QOC = MacLean, Young, Bellotti, Moran, HCI 1991; Kuaba (Medeiros et al. 2008): DR + formal semantics for model-based design reuse"
+      case_based_reasoning: "Kolodner 1993; a session pack is a CASE indexed by goal class, adapted to a new env"
+      worked_examples: "Collins/Brown/Holum cognitive apprenticeship 1991; process-oriented worked examples (van Gog et al. 2004); far-transfer evidence MIXED (Kim 2015)"
+    ibis_to_ledger_mapping:
+      issue: "Open problem / bug class / requirement tension"
+      position_incl_rejected: "Option tried or explicitly ruled out"
+      argument_criteria: "Evidence, test result, constraint from intent"
+      artifact: "Code, schema, config, deliverable"
+      commitment: "Decision locked for this build"
+    adaptation_evidence:
+      - "Khan 2014 (IET Softw., CBR-in-SE mapping): retrieved solutions are NOT usable as-is; adaptation modes = substitution / transformation / generative (replay the process)"
+      - "Minor et al. AIKE 2021: cross-domain process transfer works at WORKFLOW abstraction (BPMN), via substitution/generalisation/abstraction operators"
+      - "ACIIDS 2023: failed cases are repulsion signal (what not to do); successes are attraction — ignoring failures wastes learning"
+    verdict: "✓ locked"
+    design_rule: |
+      Ship adaptation operators with any reusable case: what to substitute, which env
+      assumptions must hold, which steps are generative (re-derive, don't copy).
+      Store failures alongside successes — both carry signal.
+
+  - id: FF-8
+    claim: "Stale memory is hazardous — versioning, expiry, and abstention are first-class"
+    evidence:
+      - benchmark: "LongMemEval (Wu et al., ICLR 2025; arXiv:2410.10813)"
+        finding: "Five abilities incl. knowledge updates, temporal reasoning, ABSTENTION. Abstract: ~30% accuracy drop on sustained histories; long-context vs oracle sessions drop 30–60% on LongMemEvalS; time-aware indexing improves temporal-reasoning recall 6.8–11.3%"
+      - "Hindsight / Mem0: explicit belief/fact UPDATE pathways — memory is mutable, not append-only forever"
+      - "MemoryArena: early facts become constraints later; stale memory breaks the loop"
+    verdict: "✓ locked"
+    design_rule: |
+      Every durable ledger entry carries: version stamps (library versions, API dates,
+      model ID), last-verified date, and expiry/confidence. 'This may be outdated' is a
+      capability, not a weakness. Append-only stores without UPDATE/DELETE are disqualified
+      for long-lived facts.
+
+  - id: FF-9
+    claim: "Privacy leakage is a TRAJECTORY property — per-message filters miss it"
+    evidence:
+      - "OCELOT (2026; arXiv:2606.12341): agent privacy = cumulative, bidirectional, task-dependent leakage across a trajectory; many innocuous steps → inference"
+      - "AMP — Agent-Memory Protocol (Wu, Hu, Zhu, Wang, Jin; PMLR v317): redact at rest, pack for purpose, hydrate on return — PII never leaves user boundary"
+      - "AAAI 2026 (doi:10.1002/aaai.70036): memory must be optional, bounded, visible; cascade erasure + receipts; purpose-aware egress"
+      - "~ GDPR practitioner guidance: Art. 17 erasure requires user_id-indexed memories; explicit remember() easier to defend than opaque auto-extract"
+    verdict: "✓ locked"
+    design_rule: |
+      Redact-at-export is a first-class pipeline step, never optional polish. Exhausted
+      sessions routinely contain API keys, customer names, private repo paths. Purpose-scoped
+      packing beats shipping full trajectories. Index every memory by subject/user id.
+
+  - id: FF-10
+    claim: "Expertise reversal — one scaffolding level cannot serve novices and experts"
+    evidence:
+      - "Kalyuga, Ayres, Chandler, Sweller 2003: techniques that help novices HURT experts (redundant guidance consumes working memory)"
+      - "Kalyuga 2007; Renkl & Atkinson: fade worked-example steps toward problem solving as expertise grows"
+      - "The Effortless Trap (2026; arXiv:2606.26181): worked examples land best AFTER productive struggle, not as instant answer keys"
+    verdict: "✓ locked (learning science, mirrors MTL abstraction ladder)"
+    design_rule: "Declare audience level on any reusable pack/ledger export. Tier or fade: Insight-only for experts; full process worked example for novices."
+
+  - id: FF-11
+    claim: "Storage: five substrate families, no single winner — choose by write policy + shape + temporality"
+    substrate_families:
+      A_file_tool_ledger: "Markdown/YAML in repo, Claude memory tool (/memories, six commands, client executes). Human-readable, git-diffable, pack-friendly; weak semantic search without an index"
+      B_tiered_os_runtime: "Letta/MemGPT: core blocks (RAM) + recall + archival (disk); agent self-manages via tools; runtime, not a drop-in library"
+      C_extract_and_retrieve: "Mem0-class: platform LLM extracts salient facts → vector (± graph) on write; cheap recall; weak on temporal contradiction"
+      D_temporal_knowledge_graph: "Zep/Graphiti: bi-temporal (valid + transaction time), facts invalidated not deleted; expensive write path (LLM extract) + graph-DB ops"
+      E_framework_store_checkpoint: "LangGraph checkpoints (thread scratchpad) + Store/LangMem KV + Cloudflare Durable Objects (~ edge-persistent actor state); promotion policy is YOUR job"
+    structured_multi_network_note: "Research → product hybrids sit across families: Hindsight (world/experience/entity/belief networks, MIT license) and A-MEM (Zettelkasten linked notes) are storage SHAPES, not just algorithms"
+    product_matrix_compact:
+      # Substrate | write policy | open path (licenses via GitHub API, storage audit v1.1)
+      Letta: "Tiered blocks + DB | agent tools | Apache-2.0; runtime, not a drop-in library; emerging cloud"
+      Mem0: "Vector ± graph (Mem0g) | extract-on-add | Apache-2.0 + managed"
+      Zep: "Temporal KG (Graphiti) | extract + bi-temporal stamp | Graphiti Apache-2.0; Zep Cloud managed"
+      Graphiti: "Bi-temporal KG | episode ingest | Apache-2.0; backend Neo4j/FalkorDB/… (see FalkorDB deep dive)"
+      Hindsight: "4-network hybrid | retain/recall/reflect | MIT (vectorize-io/hindsight)"
+      A_MEM: "Linked notes | agentic organize | research code (NeurIPS 2025)"
+      Cognee: "~ Graph + vector ECL | pipeline ingest | open core; multi-source cognify"
+      LangMem_LangGraph_Store: "~ KV + vector | app-defined | MIT; best if already on LangGraph"
+      Claude_memory_tool: "Client files/DB | agent file ops | API tool — YOU host the data; /memories prefix, six commands"
+      OpenAI_ChatGPT_memory: "~ Hosted consumer, auto-write; NO public agent memory API — not a buildable store for custom agents"
+      Supermemory_MemoryOS_MemOS: "~ crowded long-tail — treat as alternatives, re-benchmark on your traffic"
+      Repo_plus_intent_feedback: "Files/git | human + agent | always open — reference procedural ledger (✓ practice)"
+    verdict: "✓ locked (landscape)"
+    design_rule: "Pick by WHO writes (agent tools vs auto-extract vs human), WHAT shape (facts/graph/files/tiers), and WHETHER time matters — never by GitHub stars or vendor benchmark blogs."
+
+  - id: FF-12
+    claim: "Governance, not storage, is the hard part — unverified auto-extract into long-term store is a poisoning path"
+    evidence:
+      - "Write-policy fork (storage research Part 2): extract-on-write fails via hallucinated facts + silent overwrite; agent-tool writes fail via forgetting/junk; hybrid (extract → quarantine → promote) has best governance"
+      - "Ledger + CONTEXT master spine agree on the poisoning risk of unreviewed extraction"
+      - "memorywire (arXiv:2606.01138): vendor stores are heterogeneous (user_id vs agent_id vs internal ids) — expect field loss on migration"
+    verdict: "✓ locked"
+    design_rule: |
+      Dedupe, UPDATE/DELETE semantics, subject_id indexing, TTL/expiry, and redaction are
+      the acceptance criteria for any memory layer — evaluate products on governance first,
+      recall benchmarks second.
+
+  - id: FF-13
+    claim: "Non-LLM industry already packages engineering knowledge — recipe/equipment split is the reuse mechanism"
+    confidence: "~ practitioner packaging analogies — no LLM-agent RCTs (flagged as thin in ledger audit)"
+    precedents:
+      ISA_88_batch_control: "Phases, equipment modules, recipes — separate EQUIPMENT LOGIC from RECIPE; change the recipe without rewriting control code"
+      reusable_AOI_template_libraries: "Bosch/Rockwell case studies — configure variants from a validated block library, not greenfield"
+      MasterDesign: "International Paper — 1.8M+ structural designs + R&D know-how in a searchable visual catalog of institutional expertise"
+    verdict: "~ analogy — mechanism precedent, not measured evidence"
+    design_rule: |
+      Session pack = RECIPE + RATIONALE; the buyer's agent = EQUIPMENT MODULE that executes
+      adapted steps in its own environment. Package the recipe layer (workflow + constraints),
+      never the equipment layer (env-specific commands) — that is what ISA-88 got right.
+
+# ============================================================
+# SECTION 2 — OPERATIONAL PATTERNS
+# (concrete implementation decisions for the super agent)
+# ============================================================
+
+operational_patterns:
+
+  - id: OP-1
+    name: "Ledger content layers (what a ledger contains)"
+    question: "What goes INTO the ledger of an exhausted build?"
+    source: "Ledger research Part 7 (DR/IBIS + CoALA + agent memory synthesis)"
+    layers:
+      goal_intent: { contents: "Success criteria, constraints, non-goals", sources: "authored intents; DR commitments; CoALA planning" }
+      issue_ledger: { contents: "Open issues, positions, REJECTED options, arguments", sources: "IBIS; Potts & Bruns" }
+      decision_log: { contents: "What was chosen, when, with evidence pointer", sources: "DR; Hindsight belief updates" }
+      failure_lesson: { contents: "What failed, why, verbal reflection", sources: "Reflexion; ExpeL insights" }
+      workflow: { contents: "Reusable sub-routine ABSTRACTED from the instance", sources: "AWM; ISA-88 phases" }
+      skill_artifact: { contents: "Code, schema, tests, configs", sources: "Voyager; SWE-agent trajectories" }
+      provenance: { contents: "Model, agent, date, env, test commands", sources: "Trust requirement — underweighted in most papers" }
+    design_rule: |
+      Rejected options and failures are load-bearing content, not exhaust. A ledger that
+      records only what shipped answers <50% of reuser questions (Karsenty). Provenance
+      (who/what/when/env) is mandatory for trust and staleness checks.
+
+  - id: OP-2
+    name: "Ledger anti-patterns (what NOT to store)"
+    question: "What must be kept OUT of the durable store?"
+    source: "Ledger research Part 7.2"
+    never_store:
+      - { anti_pattern: "Raw full transcript", why: "Noise, context rot, cost", evidence: "Anthropic context engineering; Chroma context rot" }
+      - { anti_pattern: "Success-only traces", why: "Wastes majority of runs; misses lessons", evidence: "AgentHER; ExpeL uses failures" }
+      - { anti_pattern: "Unversioned stale facts", why: "Wrong guidance after env change", evidence: "DR reuse warnings; LongMemEval knowledge updates" }
+      - { anti_pattern: "Self-graded reflections only", why: "Confirmation bias", evidence: "MAR (arXiv:2512.20845) on Reflexion — needs external or multi-judge oracle" }
+      - { anti_pattern: "One-size-fits-all pack", why: "Expertise reversal", evidence: "Kalyuga; worked-examples literature" }
+    design_rule: "Every reflection needs an external oracle (test result, env feedback, second judge) before promotion to long-term memory — never let the session grade itself."
+
+  - id: OP-3
+    name: "Minimal ledger CRUD (six operations)"
+    question: "What operations must a ledger implementation expose?"
+    source: "MemGPT, Mem0, Memory-R1, Hindsight (ledger research Part 7.3)"
+    operations:
+      ADD: "New issue, observation, decision"
+      UPDATE: "Supersede belief, close issue, merge duplicate"
+      DELETE_SUPERSEDE: "GDPR erasure, wrong lessons, outdated workarounds"
+      SEARCH: "Semantic + keyword + temporal + graph"
+      REFLECT: "Periodic synthesis pass (Generative Agents; Hindsight CARA)"
+      LINK: "Issue → artifact → test → workflow step"
+    note: "Memory-R1 (arXiv:2508.19828) shows maintenance POLICY matters: RL-trained manager beats heuristic append-only. Store stays external either way."
+    design_rule: "Append-only is not a ledger. If UPDATE/DELETE/REFLECT are missing, you are building the stale-facts hazard of FF-8 by construction."
+
+  - id: OP-4
+    name: "Write-policy selection"
+    question: "Who writes memory, and how is junk kept out?"
+    source: "Storage research Part 2"
+    policies:
+      agent_managed_tools: { examples: "Letta, Claude memory tool, repo NOTES", cost: "Low–medium per edit", failure_mode: "Agent forgets to write / writes junk" }
+      extract_on_write: { examples: "Mem0, Zep/Graphiti ingest", cost: "High (LLM extract + embed ± graph)", failure_mode: "Hallucinated facts; silent overwrite" }
+      human_intent_authored: { examples: "authored intents, feedback YAML", cost: "Human time", failure_mode: "Incomplete unless workflow-enforced" }
+      hybrid_quarantine: { examples: "Extract candidates → quarantine → promote", cost: "Medium", failure_mode: "More plumbing — but best governance" }
+    design_rule: "Default to agent/human-authored writes into files. If auto-extract is added, candidates enter a quarantine tier and are PROMOTED after verification — never straight into the long-term store."
+
+  - id: OP-5
+    name: "Reference default storage stack (host-project selection)"
+    question: "Which substrate does a host agent project use for what?"
+    source: "Storage research Part 7 selection guide"
+    stack:
+      1_primary_ltm: "Git-backed files — intents, feedback YAML, handoffs, patterns (established host practice)"
+      2_agent_write_surface: "Claude-style memory tool OR Letta blocks ONLY IF autonomous mid-session curation beyond files is needed"
+      3_optional_recall_index: "Mem0-class extract over APPROVED facts only — never raw transcripts; require subject_id + TTL"
+      4_temporal_kg: "Graphiti only if a workload genuinely needs 'what was true when?' AND accepts extract cost + backend ops; prefer Neo4j over FalkorDB for prod (FalkorDB = dev-only until critical open bugs clear — see FalkorDB deep dive)"
+      5_orchestration_state: "LangGraph checkpoints = thread scratchpad; NOT long-term memory — do not conflate"
+    design_rule: |
+      Files are the system of record; databases are INDEXES over governed facts.
+      Do not start with a managed memory SaaS as SoT — export/redact/version live in
+      files and skills.
+
+  - id: OP-6
+    name: "Session-pack export rules (pre-product)"
+    question: "How is an exhausted session exported for reuse by someone else?"
+    source: "Ledger research Parts 9–13 verdict; storage research Part 6"
+    pack_composition:
+      ship: "Distilled Insight / skill / workflow layers + issue ledger (incl. rejected options) + adaptation operators + provenance"
+      pointer_only: "Raw trajectory kept as provenance appendix, retrievable on demand — never the product surface"
+    mandatory_steps:
+      - "Redact-at-export (FF-9): keys, names, private paths — trajectory-level review, not per-message"
+      - "Version + expiry stamps on every claim (FF-8)"
+      - "Audience tier declared; fade scaffolding by expertise (FF-10)"
+      - "Adaptation operators: what to substitute, env assumptions, which steps to re-derive (FF-7)"
+    substrate_mapping:
+      human_review_before_sharing: { prefer: "Files / AMP-style pack", avoid: "Opaque vector blobs without export" }
+      cross_org_transfer: { prefer: "Insight/skill artifacts", avoid: "Raw Mem0 dump / full trajectories" }
+      time_sensitive_apis: { prefer: "Temporal graph OR versioned files with expiry", avoid: "Append-only vectors" }
+      coding_agent_reuse: { prefer: "Repo ledger + optional skill dir", avoid: "Chat-only personalization stores" }
+      privacy: { prefer: "Redact-at-export + user_id index", avoid: "Unindexed embeddings of PII" }
+    portability_protocols:
+      AMP_pmlr: "Agent-Memory Protocol (Wu et al., PMLR v317): redact / pack / hydrate — the privacy-preserving pack boundary"
+      memorywire: "arXiv:2606.01138 — vendor-neutral wire format for memory ops; migration without full rebuild; not yet adopted"
+      oss_amp_pack_formats: "~ GitHub 'Agent Memory Protocol' signed markdown packs — adjacent to the packaging idea; NOT the same as the PMLR AMP paper"
+    design_rule: |
+      Storage ≠ pack. A Mem0/Zep/Letta DB is a RUNTIME; a shareable pack is a distilled,
+      redacted, versioned EXPORT — closer to Trace2Skill skills + IBIS issue ledger than
+      to a live graph DB. Product shape/pricing/wedge are out of scope for this
+      document.
+
+  - id: OP-7
+    name: "Benchmark interpretation rules for memory claims"
+    question: "How to read vendor/paper memory numbers without being fooled?"
+    source: "Ledger research Part 5; storage research Parts 4–5 + audit logs"
+    rules:
+      - "Prefer paper tables over vendor blogs; LongMemEval leaderboards disagree wildly across blogs (~)"
+      - "LoCoMo/DMR measure RECALL; MemoryArena measures memory → ACTION. Validate on the second before believing the first (FF-5)"
+      - "Never pair numbers across different papers as head-to-head (see quantitative_reference landmines)"
+      - "Re-benchmark on your own harness/traffic before adopting any memory product"
+    design_rule: "A memory claim without its exact source table, baseline, and backbone model is marketing, not evidence."
+
+  - id: OP-8
+    name: "Host-project construct mapping (ledger roles in a typical agent repo)"
+    question: "Which common repo artifacts play which ledger role?"
+    source: "Ledger research Part 11"
+    mapping:
+      intent_yaml: "Goal + constraints (procedural spine)"
+      feedback_yaml: "Issue trail / iteration ledger"
+      docs_handoff: "Session distillate for the next operator/agent"
+      patterns_yaml: "Distilled workflows (AWM-like) — this file is itself an instance"
+      docs_research: "Evidence base — NOT a runtime ledger"
+      conversation_health_monitors: "Meta-ledger on conversation health (orthogonal)"
+    design_rule: |
+      The runtime ledger for agents = intents + feedback + handoffs + memory tools.
+      Research/patterns inform humans. Keep the split: strategy/reference documents
+      never wire into pipeline code.
+
+  - id: OP-9
+    name: "Context operators → ledger roles (and compaction ≠ ledger)"
+    question: "How does the ledger relate to Write/Select/Compress/Isolate and to compaction?"
+    source: "Ledger research Part 2.2 (taxonomy = LangChain / Lance Martin; Anthropic = note-taking / memory tool / compaction)"
+    operator_mapping:
+      Write: "Agent APPENDS/UPDATES ledger files, memory tool, DB — outside the window"
+      Select: "Retrieve relevant ledger SLICES into working context for this step"
+      Compress: "Summarize ledger sections; drop redundant tool output"
+      Isolate: "Sub-agents write to sub-ledgers; parent gets distilled summary only"
+    compaction_distinction: |
+      Compaction SUMMARIZES the conversation (rolling summary). A ledger keeps ADDRESSABLE
+      records (issues, decisions) that can be SELECTIVELY retrieved later. They are not
+      substitutes: compaction manages the window; the ledger persists structure.
+    scope_note: "Generic RAG over static docs is related but NOT the same as live ledger maintenance — the ledger is written DURING the work, by the worker"
+    design_rule: "Implement all four operators against the ledger. A system with Write but no Select degenerates into a write-only log; Select without Compress re-creates context rot."
+
+  - id: OP-10
+    name: "Failure-mode register (consult before any ledger/pack work)"
+    question: "What breaks ledger and packaging efforts, ranked by severity?"
+    source: "Ledger research Part 10 (expanded table)"
+    register:
+      critical:
+        - { mode: "Raw trajectory as product", evidence: "MTL negative transfer via brittle anchoring" }
+        - { mode: "Capture ≠ distill", evidence: "ReadAgent gists; Mem0 extraction; Trace2Skill parallel consolidation" }
+      high:
+        - { mode: "DR incomplete for reusers", evidence: "Karsenty: <50% of DR questions answered" }
+        - { mode: "No short-term payoff → abandonment", evidence: "Conklin/SCE; Shum & Hammond cost/benefit" }
+        - { mode: "Stale facts", evidence: "LongMemEval knowledge-update/temporal; MemoryArena constraints" }
+        - { mode: "Privacy / cumulative leakage", evidence: "OCELOT; AMP; AAAI runtime privacy" }
+        - { mode: "Expertise mismatch", evidence: "Kalyuga expertise reversal" }
+        - { mode: "Retrieval noise — wrong memory hurts", evidence: "context-research corpus; SRACG selective-retrieval results" }
+        - { mode: "Eval mismatch / false confidence", evidence: "LoCoMo ≠ MemoryArena" }
+      medium:
+        - { mode: "Retrieval / ledger inject cost", evidence: "External memory adds latency + noise (survey tradeoffs). Do NOT cite arXiv:2603.29002's 22–97% here — wrong scope (model-internal pipelines)" }
+        - { mode: "False validation from memory", evidence: "MTL negative-transfer mode 2" }
+        - { mode: "Multi-agent ledger merge", evidence: "Hu et al. 2025 survey: emerging frontier, underexplored" }
+      assumed_unmeasured:
+        - { mode: "Liability for a wrong lesson in a shared pack", evidence: "? no case law in corpus; analogy to DR 'outdated advice'" }
+    design_rule: "Walk this register as a pre-mortem checklist for any ledger feature or pack export; every 'critical' and 'high' row needs an explicit mitigation or a written acceptance."
+
+  - id: OP-11
+    name: "Cost & ops shapes per storage path"
+    question: "What does each storage path cost to write, read, and operate?"
+    source: "Storage research Part 5"
+    shapes:
+      file_or_claude_memory_tool: { write: "Cheap I/O", read: "Agent must search/list", ops: "Low — you own backup/ACL" }
+      mem0_extract: { write: "LLM call on EVERY add", read: "Cheap ANN", ops: "Medium" }
+      graphiti_zep: { write: "Very high (LLM extract + graph)", read: "Cheap traversal + RRF", ops: "High (graph DB)" }
+      letta_tiers: { write: "Tool calls + DB", read: "Tool calls (extra turns)", ops: "Medium–high (server runtime)" }
+      langgraph_checkpoint_only: { write: "Cheap", read: "Thread-local", ops: "Low — but NOT cross-session LTM" }
+    design_rule: |
+      Match write-cost to write-frequency: high-churn working notes never belong in an
+      extract-on-write store. FalkorDB backend = dev-only until its critical open bugs
+      clear (FalkorDB companion research); prefer Neo4j for any prod Graphiti.
+
+  - id: OP-12
+    name: "Evaluation status + proposed foreign-pack eval (open problems)"
+    question: "What is measured, what is missing, and how would the missing piece be measured?"
+    source: "Ledger research Part 9.8 + storage research Part 8"
+    evidence_status:
+      measured:
+        - "Same-agent, same-domain memory helps (LoCoMo, LongMemEval, AWM, CER)"
+        - "Cross-domain Insight transfer for coding (MTL +3.7% avg; format ranking)"
+        - "Cross-model skill transfer (Trace2Skill, large gains)"
+      partially_measured:
+        - "Memory helps agentic ACTION (MemoryArena exists; LoCoMo-saturated systems perform poorly on it)"
+      unmeasured:
+        - "Foreign org pack → buyer agent completes analogous goal (NO standard benchmark)"
+        - "Willingness to pay for packs (no academic evidence)"
+    open_problems:
+      - "Shared wire format across vendors: emerging (memorywire), not adopted"
+      - "Fair cross-vendor LongMemEval comparison: contested (~ blogs disagree)"
+      - "GDPR erase across vector + graph + files: requires subject_id EVERYWHERE"
+      - "Foreign pack import into a buyer's store: no standard"
+    proposed_eval_design: |
+      Not yet built (research-only). Load pack P distilled from agent A's goal G in env E1;
+      measure success of agent B on G′ in env E2 with/without P, stratified by
+      (a) pack format: Trajectory / Workflow / Insight, and (b) buyer expertise tier —
+      mirrors MTL + MemoryArena + expertise reversal. This is the eval to build BEFORE
+      believing any pack-value claim.
+    design_rule: "Treat every unmeasured cell as an assumption, not a fact. If a pack initiative starts, the proposed eval (or a scoped-down version) is the success oracle — not recall Q&A."
+
+# ============================================================
+# SECTION 3 — CONTESTED / PRACTITIONER-GRADE FINDINGS
+# (marked ~ in the research docs: vendor-reported, community
+#  consensus, or provenance-thin — usable with the caveat, never
+#  as ✓ evidence)
+# ============================================================
+
+contested_findings:
+
+  - claim: "Files in repo (rules, handoffs, intents) outperform hoping the model 'remembers'"
+    status: "~ practitioner consensus — aligns with Write operator + Anthropic note-taking, but no controlled benchmark"
+
+  - claim: "Mem0 token-efficient retrieval ~7k tokens/call vs ~26k full-context on LoCoMo"
+    status: "~ vendor-reported (Mem0 'State of Agent Memory 2026' blog) — distinct from the paper's >90% token-cut claim; re-benchmark"
+
+  - claim: "Vendor LongMemEval leaderboards"
+    status: "~ contested — blogs disagree wildly; prefer paper tables + your own harness"
+
+  - claim: "Reflexion suffers confirmation bias from self-graded reflections"
+    status: "~ MAR preprint (arXiv:2512.20845) replication claim — not the Reflexion authors' own limitation section"
+
+  - claim: "Karsenty >50% / <50% figures"
+    status: "~ provenance note — kept from prior audit pass; CHI PDF re-fetch timed out in v1.2; re-verify before load-bearing use"
+
+  - claim: "Memory-R1 venue = ACL 2025"
+    status: "~ Semantic Scholar metadata only; ACL Anthology page not confirmed — cite arXiv:2508.19828"
+
+  - claim: "Letta memory tool names (core_memory_append, archival_memory_insert, …)"
+    status: "~ MemGPT paper names describe the PATTERN; current Letta centers on editable memory blocks — verify tool names against the deployed Letta version"
+
+  - claim: "Cognee open-core details; LangMem MIT license; Supermemory/MemoryOS/MemOS capabilities"
+    status: "~ community/vendor info — not verified via primary sources in the audits"
+
+  - claim: "OpenAI ChatGPT memory as an agent building block"
+    status: "~ hosted consumer feature; no public agent memory API (Mem0 paper also notes lack of selective-retrieval API)"
+
+  - claim: "ISA-88 / AOI libraries / MasterDesign as packaging evidence"
+    status: "~ industry analogies (see FF-13) — mechanism precedent only, no LLM-agent measurements"
+
+  - claim: "Cursor / IDE agents' rules + handoffs as procedural+episodic ledger"
+    status: "~ practitioner pattern — operator-maintained, not peer-reviewed"
+
+  - claim: "Conklin's short-term-payoff adoption rule applies to agent-era distillation"
+    status: "~ historical extrapolation — marked as such in the ledger doc (Part 9.3)"
+
+# ============================================================
+# SECTION 4 — RESEARCH DOES NOT SUPPORT
+# (claims that are refuted, unsourced, or still open — do not
+#  assert these; several were removed in the v1.2–v1.3 audits)
+# ============================================================
+
+research_does_not_support:
+
+  - claim: "Raw trajectory packs transfer safely across stacks"
+    status: "REFUTED — MTL negative transfer (brittle command anchoring, false validation confidence)"
+
+  - claim: "High LoCoMo/recall scores mean the memory helps complete builds"
+    status: "REFUTED as a general rule — MemoryArena gap: LoCoMo-saturated systems perform poorly on agentic use"
+
+  - claim: "Captured design rationale alone answers reuser questions"
+    status: "INSUFFICIENT — Karsenty CHI 1996: <50% of rationale questions answered by the QOC doc"
+
+  - claim: "'Foreign org pack → buyer agent completes analogous goal' is a validated product category"
+    status: "OPEN — mechanism yes, SKU no; no standard benchmark, no willingness-to-pay evidence in academic literature"
+
+  - claim: "Agent-ledger retrieval adds 22–97% latency (arXiv:2603.29002)"
+    status: "WRONG SCOPE — that paper profiles LLM-internal memory-processing pipelines (sparse attn / RAG FPGA), not external session ledgers. Retracted as ledger evidence in v1.2 audit"
+
+  - claim: "Graphiti 63.8% vs Mem0 49.0% on LongMemEval (head-to-head)"
+    status: "FALSE PAIRING — 63.8% is Zep + gpt-4o-mini vs full-context 55.4% (Zep paper Table 2); Mem0 49% is not in that paper. Removed in storage v1.1 audit"
+
+  - claim: "Graphiti costs 1.68–2.25× Mem0 in tokens"
+    status: "UNSOURCED — removed in storage v1.1 audit"
+
+  - claim: "Vector extract (Mem0-class) suffices for all agent memory"
+    status: "FALSE — weak on temporal contradiction and agentic action"
+
+  - claim: "Temporal knowledge graphs are a free lunch"
+    status: "FALSE — heavy LLM extract write cost + graph-DB ops; FalkorDB backend has critical open bugs (dev-only)"
+
+  - claim: "Managed memory SaaS should be the system of record for shareable packs"
+    status: "REJECTED — export/redact/version belong in inspectable files/skills; DBs are indexes"
+
+  - claim: "Write/Select/Compress/Isolate is an Anthropic taxonomy"
+    status: "MISATTRIBUTION — LangChain / Lance Martin taxonomy; Anthropic's post covers note-taking / memory tool / compaction without those labels"
+
+  - claim: "Worked examples reliably produce far transfer"
+    status: "MIXED — Kim 2015 review: far-transfer benefits are inconsistent; self-explanation / fading / subgoals may help; effects moderated by prior knowledge. 'Effortless Trap' (2026): examples land best AFTER productive struggle"
+
+  - claim: "Industrial DR capture without short-term payoff sticks"
+    status: "HISTORICALLY FAILED — QuestMap / gIBIS succumbed despite pilot value; needed facilitators + immediate participant payoff"
+
+# ============================================================
+# SECTION 5 — QUANTITATIVE REFERENCE
+# (audited numbers; re-verify against the paper before reuse.
+#  Full audit trail: ledger doc Part 14, storage doc Part 11)
+# ============================================================
+
+quantitative_reference:
+
+  verified_keepers:
+    - "Reflexion: HumanEval 91% pass@1 vs GPT-4 80% (NeurIPS 2023 paper)"
+    - "AWM: +24.6% relative step-wise SR (Mind2Web) / +51.1% relative SR (WebArena) — headline; offline +4.0–8.9% rel / +0.4–2.8 abs; online Table 4 step-SR +7.4–8.9 / +3.6–3.8 / +14.0–16.9 abs (cross-task/website/domain)"
+    - "CER: +51.0% relative success WebArena (36.7% abs SR); 31.9% VisualWebArena"
+    - "MTL: ~3.7% avg Pass@3 improvement from cross-domain memory; Insight format best, Trajectory often negative"
+    - "Trace2Skill: up to +57.65 pp WikiTableQuestions (35B-derived skills → 122B model)"
+    - "Hindsight: 39% → 83.6% LongMemEval vs same-backbone full-context (20B OSS)"
+    - "Zep: DMR 94.8% vs MemGPT 93.4%; LongMemEvalS Table 2: 63.8%/71.2% vs full-context 55.4%/60.2% (gpt-4o-mini/gpt-4o); ~1.6k vs 115k context tokens; ~90% latency cut"
+    - "Mem0: +26% relative LLM-as-Judge vs OpenAI memory on LOCOMO; >90% token cost cut; ~91% lower p95 latency vs full-context (paper)"
+    - "LongMemEval: ~30% drop on sustained histories (abstract); 30–60% long-context vs oracle sessions; temporal recall +6.8–11.3% with time-aware indexing"
+    - "gIBIS at NCR: omissions caught worth 3–6× capture cost (Lee survey)"
+    - "Karsenty CHI 1996: >50% of reuser questions concern rationale; <50% of those answered by QOC doc"
+
+  attribution_corrections_locked:
+    - "QOC = MacLean, Young, Bellotti, Moran (HCI 1991); Buckingham Shum's PhD analyzes it"
+    - "CADET = Sycara & Navinchandra (CMU), not Kolodner"
+    - "CBR-reuse DOI ip-sen:20000897 = P.A. González, IEE Proc. Softw. 2000"
+    - "Voyager = NeurIPS 2023 ALOE WORKSHOP, not main conference"
+    - "Memory-R1: cite arXiv:2508.19828; Semantic Scholar lists ACL 2025 (Anthology not confirmed)"
+    - "MemoryArena wording: systems 'perform poorly', not 'fail'"
+    - "Licenses via GitHub API: Letta/Mem0/Graphiti = Apache-2.0; Hindsight = MIT"
+    - "Claude memory tool: /memories prefix; commands view/create/str_replace/insert/delete/rename; CLIENT executes storage"
+
+# ============================================================
+# SECTION 6 — CHANGELOG
+# ============================================================
+
+changelog:
+  - version: "1.3"
+    date: "2026-08-20"
+    changes: |
+      Frontiers research companion added. FF-5 hardened with MemoryArena (arXiv:2602.16313)
+      action-coupled eval. OP-6 strengthened with memorywire wire-format primary
+      (arXiv:2606.01138). New production-governance contrast from Governed Memory
+      (arXiv:2603.17787). Survey arXiv:2603.07670 cited for write/manage/read +
+      reflection poison risk. Stele v1.0 product bar: JSON Schema export, CLI,
+      snapshot/doctor, memorywire projection helpers — protocol stays SoT.
+  - version: "1.2"
+    date: "2026-07-17"
+    changes: |
+      Relocated to the Stele repository (docs/patterns/). Host-project references
+      genericized for public release; no content/claim changes.
+  - version: "1.1"
+    date: "2026-07-17"
+    changes: |
+      Full cross-check vs both research docs; gaps addressed:
+      FF-1 gains the full Part-3 canonical-systems roster (Generative Agents, A-Mem,
+      AgentHER, SWE-agent/.traj, SWE-Replay, Voyager, ReadAgent) + 'experiential memory'
+      label (Hu et al. taxonomy). FF-3 adds the Voyager fixed-ontology transfer nuance.
+      FF-5 adds BEAM. FF-7 adds the IBIS→ledger node mapping + Kuaba. FF-11 adds
+      structured multi-network note (Hindsight/A-MEM), Durable Objects, and the compact
+      product matrix (incl. Cognee, LangMem, OpenAI, long-tail). New FF-13: industry
+      packaging precedents (ISA-88 recipe/equipment split, AOI, MasterDesign — ~ analogy).
+      OP-6 adds privacy substrate row + portability protocols (AMP, memorywire, OSS pack
+      formats). New OP-9 (Write/Select/Compress/Isolate → ledger roles; compaction ≠
+      ledger; RAG scope note), OP-10 (full Part-10 failure-mode register incl. retrieval
+      noise, inject cost, multi-agent merge, liability), OP-11 (cost & ops shapes),
+      OP-12 (evaluation status, open problems, proposed foreign-pack eval design).
+      New Section 3 contested_findings (12 ~ items). research_does_not_support +2
+      (worked-examples far transfer; DR capture without short-term payoff).
+  - version: "1.0"
+    date: "2026-07-17"
+    changes: |
+      Initial translation of AGENT_SESSION_LEDGER_INFERENCE_TIME_MEMORY_RESEARCH_2026.md
+      (v1.3) + AGENT_MEMORY_STORAGE_SYSTEMS_RESEARCH_2026.md (v1.1) into pattern form.
+      12 foundational findings, 8 operational patterns, 11 not-supported claims,
+      audited quantitative reference. Product/SKU inference intentionally excluded
+      (out of scope).
