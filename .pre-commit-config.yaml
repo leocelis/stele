@@ -1,0 +1,13 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.4
+    hooks:
+      - id: ruff
+        args: [--fix]
+  - repo: local
+    hooks:
+      - id: verify-oss-public
+        name: verify OSS public tree
+        entry: bash scripts/verify_oss_public.sh
+        language: system
+        pass_filenames: false

@@ -155,7 +155,7 @@ class MySQLSteleStore:
             raise ValueError("DSN must be mysql://user:pass@host:port/dbname")
         import pymysql.cursors
 
-        return {
+        params: dict = {
             "host": u.hostname,
             "port": u.port or 3306,
             "user": urllib.parse.unquote(u.username),
@@ -164,12 +164,15 @@ class MySQLSteleStore:
             "charset": "utf8mb4",
             "init_command": "SET NAMES utf8mb4 COLLATE utf8mb4_bin",
             "cursorclass": pymysql.cursors.DictCursor,
-            "ssl": {"ca": _resolve_ca_path()},
             "connect_timeout": 30,
             "read_timeout": 60,
             "write_timeout": 60,
             "autocommit": False,
         }
+        if os.environ.get("STELE_MYSQL_SSL_DISABLED") == "1":
+            return params
+        params["ssl"] = {"ca": _resolve_ca_path()}
+        return params
 
     def _ensure_scratch(self) -> None:
         for d in (

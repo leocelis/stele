@@ -18,12 +18,14 @@ Add to **`~/.cursor/mcp.json`** (merge into existing `mcpServers` — never wipe
 {
   "mcpServers": {
     "stele": {
-      "url": "https://stele.leocelis.com/sse",
+      "url": "https://stele.leocelis.com/core/sse",
       "headers": { "Authorization": "Bearer YOUR_KEY_HERE" }
     }
   }
 }
 ```
+
+Full research library (~2000 tools): use `https://stele.leocelis.com/sse` instead.
 
 Reload MCP (Cursor Settings → Features → Model Context Protocol → toggle off/on).
 
@@ -32,8 +34,7 @@ Reload MCP (Cursor Settings → Features → Model Context Protocol → toggle o
 ### Option B — local stdio
 
 ```bash
-cd /path/to/stele
-pip install -e packages/stele-core -e 'packages/stele-mcp'
+pip install stele-core stele-mcp
 export STELE_STORE=./.stele-store
 ```
 
@@ -41,12 +42,14 @@ export STELE_STORE=./.stele-store
 {
   "mcpServers": {
     "stele": {
-      "command": "/path/to/stele/.venv/bin/stele-mcp",
-      "env": { "STELE_STORE": "/path/to/stele/.stele-store" }
+      "command": "stele-mcp",
+      "env": { "STELE_STORE": "/path/to/.stele-store" }
     }
   }
 }
 ```
+
+Full research library: use `stele-mcp-full` as the command.
 
 ---
 
@@ -60,7 +63,7 @@ when experiential memory is needed — not as invisible monitoring.
 
 ## 3. Smoke check
 
-After reload, the agent tool list should include `stele_*` tools. Quick probe:
+After reload, the agent tool list should include `stele_*` tools (35 for default `stele-mcp`). Quick probe:
 
 1. Call `stele_doctor` with a fixed `now` ISO timestamp.
 2. Expect JSON with `"ok": true` (empty store is fine).

@@ -12,8 +12,14 @@ import pytest
 
 pytestmark = pytest.mark.skipif(
     not os.environ.get("STELE_STORE_DSN")
-    or not (os.environ.get("STELE_MYSQL_SSL_CA") or os.environ.get("STELE_MYSQL_SSL_CA_B64")),
-    reason="STELE_STORE_DSN + TLS CA not configured",
+    or (
+        os.environ.get("STELE_MYSQL_SSL_DISABLED") != "1"
+        and not (
+            os.environ.get("STELE_MYSQL_SSL_CA")
+            or os.environ.get("STELE_MYSQL_SSL_CA_B64")
+        )
+    ),
+    reason="STELE_STORE_DSN + (TLS CA or STELE_MYSQL_SSL_DISABLED=1) not configured",
 )
 
 TS = "2026-08-29T12:00:00Z"

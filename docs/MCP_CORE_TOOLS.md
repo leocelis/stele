@@ -1,0 +1,38 @@
+# MCP core tools (35)
+Auto-generated — do not edit by hand.
+
+- `stele_add`
+- `stele_add_batch`
+- `stele_attach`
+- `stele_belief_at`
+- `stele_conflict_surface`
+- `stele_delete`
+- `stele_diff_stores`
+- `stele_doctor`
+- `stele_entangled_suspects`
+- `stele_entry_schema`
+- `stele_export`
+- `stele_forget_compliance`
+- `stele_hydrate`
+- `stele_hygiene_candidates`
+- `stele_lineage`
+- `stele_link`
+- `stele_list_contested`
+- `stele_pin`
+- `stele_promote`
+- `stele_purge_by_provenance`
+- `stele_record_outcome`
+- `stele_reflect`
+- `stele_related`
+- `stele_resolve_contested`
+- `stele_reverify`
+- `stele_reviewer_corrections`
+- `stele_search`
+- `stele_snapshot`
+- `stele_stale_report`
+- `stele_stats`
+- `stele_supersede`
+- `stele_timeline`
+- `stele_update`
+- `stele_verify`
+- `stele_verify_pack`

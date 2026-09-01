@@ -31,11 +31,15 @@ hosted = [
 ]
 
 [project.urls]
-Documentation = "docs/TECH_SPEC.md"
+Homepage = "https://github.com/leocelis/stele"
+Documentation = "https://github.com/leocelis/stele/blob/main/docs/OSS_GUIDE.md"
+Repository = "https://github.com/leocelis/stele"
+Changelog = "https://github.com/leocelis/stele/blob/main/CHANGELOG.md"
 
 [project.scripts]
-stele-mcp = "stele_mcp.server:main"
+stele-mcp = "stele_mcp.server:main_core"
 stele-mcp-core = "stele_mcp.server:main_core"
+stele-mcp-full = "stele_mcp.server:main"
 
 [build-system]
 requires = ["hatchling"]

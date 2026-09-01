@@ -115,6 +115,8 @@ def build_app():
                     "full": len(fastmcp._tool_manager.list_tools()),
                     "core": len(core_fastmcp._tool_manager.list_tools()),
                 },
+                "recommended_surface": "core",
+                "docs_url": "https://github.com/leocelis/stele/blob/main/docs/QUICKSTART.md",
             }
         )
 

@@ -1,13 +1,9 @@
 # Stele in Claude Code (via MCP)
 
-Same MCP tools as Cursor. Prefer the hosted endpoint + Bearer key.
+Same MCP tools as Cursor. Prefer the hosted **core** endpoint + Bearer key.
 
-**Full vs. core.** The full server exposes 2003 tools: the 35-tool governed
-ledger plus ~1970 PEFT/agent-pattern research-reproduction tools (see
-`../../ROADMAP.md`). If you only want the ledger — `stele_add` / `stele_promote`
-/ `stele_search` / `stele_doctor` / etc. — use the `/core/sse` URL or the
-`stele-mcp-core` command below instead of `/sse` / `stele-mcp`. Every option
-below has a core-only variant.
+**Default vs full.** `stele-mcp` (stdio) and `/core/sse` (hosted) expose the 35-tool
+governed ledger. `stele-mcp-full` and `/sse` add ~2000 PEFT/agent-pattern research tools.
 
 ---
 
@@ -16,15 +12,15 @@ below has a core-only variant.
 ### Option A — Hosted (recommended)
 
 ```bash
-claude mcp add --transport http stele https://stele.leocelis.com/sse \
+claude mcp add --transport http stele https://stele.leocelis.com/core/sse \
   --header "Authorization: Bearer YOUR_KEY_HERE" \
   --scope user
 ```
 
-Core-only (governed ledger, 35 tools — no PEFT/pattern research tools):
+Full research library:
 
 ```bash
-claude mcp add --transport http stele https://stele.leocelis.com/core/sse \
+claude mcp add --transport http stele-full https://stele.leocelis.com/sse \
   --header "Authorization: Bearer YOUR_KEY_HERE" \
   --scope user
 ```
@@ -41,28 +37,23 @@ claude mcp get stele
 {
   "mcpServers": {
     "stele": {
-      "url": "https://stele.leocelis.com/sse",
+      "url": "https://stele.leocelis.com/core/sse",
       "headers": { "Authorization": "Bearer YOUR_KEY_HERE" }
     }
   }
 }
 ```
 
-Core-only: use `"url": "https://stele.leocelis.com/core/sse"` instead.
-
 ### Option C — local stdio
 
 ```bash
+pip install stele-core stele-mcp
 claude mcp add stele -- stele-mcp --scope user
 ```
 
-Core-only (governed ledger, 35 tools):
-
-```bash
-claude mcp add stele -- stele-mcp-core --scope user
-```
-
 (Requires `STELE_STORE` in the environment.)
+
+Full library: `stele-mcp-full` instead of `stele-mcp`.
 
 ---
 

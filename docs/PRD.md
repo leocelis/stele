@@ -1,6 +1,6 @@
 # Stele — Product Requirements Document
 
-**Version:** 18.15.0 · **Date:** 2026-08-28 · **Status:** Active — **v18.15 shipped** (`stele-core` + `stele-mcp`)
+**Version:** 18.16.1 · **Date:** 2026-09-01 · **Status:** Active — **v18.16 shipped** (`stele-core` + `stele-mcp`)
 **License:** MIT · Copyright (c) 2026 Stele contributors
 
 **Derived from:** `stele_system_intent.yaml` v18.15.0 · `docs/patterns/patterns_session_ledger_memory.yaml` v1.3 · `docs/research/**` · shipped packages

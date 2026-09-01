@@ -1,0 +1,12 @@
+services:
+  stele-mcp:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      STELE_API_KEYS: "stl_local_dev"
+      STELE_STORE: /data/store
+    volumes:
+      - stele-data:/data
+volumes:
+  stele-data:

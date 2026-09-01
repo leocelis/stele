@@ -25,6 +25,12 @@ Full research: [`docs/research/`](docs/research/) · patterns: [`docs/patterns/`
 ## Install
 
 ```bash
+pip install stele-core stele-mcp
+```
+
+From git (contributors):
+
+```bash
 python3.11 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements-dev.txt
@@ -32,6 +38,8 @@ pip install -e packages/stele-core -e packages/stele-mcp
 make check   # ruff + mypy + pytest
 make proof   # end-to-end PASS/FAIL proof
 ```
+
+Quick path: [`docs/QUICKSTART.md`](docs/QUICKSTART.md) · comparison: [`docs/COMPARISON.md`](docs/COMPARISON.md).
 
 ## Quick start (library)
 
@@ -81,20 +89,14 @@ stele snapshot ./.stele-store /tmp/stele-backup --now 2026-08-20T12:00:00Z --act
 Requires the Model Context Protocol Python SDK **1.x** (`mcp>=1.0,<2`).
 mcp 2.x removed `mcp.server.fastmcp` and will not boot this server.
 
-The full server registers **2003 tools**: the 35-tool governed ledger below
-plus ~1970 PEFT/agent-pattern research-reproduction tools accumulated across
-the roadmap (see `CHANGELOG.md`, `ROADMAP.md`). Most callers want the ledger
-only — use `stele-mcp-core` (or `STELE_TOOL_SET=core stele-mcp`) for that.
+**Default (`stele-mcp`):** 35 governed-ledger tools — add, promote, search, doctor, export, …
 
 ```bash
 export STELE_STORE=./.stele-store
-
-# Full surface (2003 tools) — everything, including the research library.
 stele-mcp
-
-# Governed-ledger only (35 tools) — recommended for agent memory I/O.
-stele-mcp-core
 ```
+
+Full research library (~2000 PEFT/agent-pattern tools): `stele-mcp-full`.
 
 ## MCP (hosted HTTP)
 
@@ -150,7 +152,9 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). Planes: Contract · Tools ·
 
 | Doc | Link |
 |---|---|
-| PRD v1.1 | [`docs/PRD.md`](docs/PRD.md) |
+| OSS guide (start here) | [`docs/OSS_GUIDE.md`](docs/OSS_GUIDE.md) |
+| Quickstart | [`docs/QUICKSTART.md`](docs/QUICKSTART.md) |
+| PRD | [`docs/PRD.md`](docs/PRD.md) |
 | TECH_SPEC v1.1 | [`docs/TECH_SPEC.md`](docs/TECH_SPEC.md) |
 | Entry JSON Schema | [`docs/schemas/entry.schema.json`](docs/schemas/entry.schema.json) |
 | Intent (C1–C8) | [`stele_system_intent.yaml`](stele_system_intent.yaml) |

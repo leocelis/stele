@@ -1,6 +1,6 @@
 # Stele Architecture
 
-**Version:** 1.0.0 · **Date:** 2026-08-20
+**Version:** 18.16.1 · **Date:** 2026-09-01
 
 Stele is a **governed experiential-memory protocol**: agents write distilled lessons, an external oracle promotes them, and any consumer retrieves a budgeted, still-valid slice — with zero LLM/network on the core write path.
 
@@ -8,7 +8,7 @@ Stele is a **governed experiential-memory protocol**: agents write distilled les
 ┌─────────────────────────────────────────────────────────────┐
 │  Agents / MCP hosts / CLI / library callers                 │
 └───────────────┬─────────────────────────────┬───────────────┘
-                │ stele-mcp (26 named tools)  │ stele CLI
+                │ stele-mcp-core (35 governed-ledger tools) │ stele CLI
                 ▼                             ▼
 ┌─────────────────────────────────────────────────────────────┐
 │  stele-core (zero runtime deps)                             │

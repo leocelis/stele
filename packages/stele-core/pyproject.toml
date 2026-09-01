@@ -35,7 +35,10 @@ mysql = ["PyMySQL>=1.1,<2"]
 stele = "stele_core.cli:main"
 
 [project.urls]
-Documentation = "docs/TECH_SPEC.md"
+Homepage = "https://github.com/leocelis/stele"
+Documentation = "https://github.com/leocelis/stele/blob/main/docs/OSS_GUIDE.md"
+Repository = "https://github.com/leocelis/stele"
+Changelog = "https://github.com/leocelis/stele/blob/main/CHANGELOG.md"
 
 [build-system]
 requires = ["hatchling"]

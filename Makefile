@@ -25,6 +25,13 @@ demo:
 proof:
 	$(PY)/python examples/proof_run.py
 
+verify-oss:
+	bash scripts/verify_oss_public.sh
+
+sync-docs:
+	$(PY)/python scripts/sync_doc_versions.py
+	$(PY)/python scripts/gen_mcp_core_tools_md.py
+
 clean:
 	rm -rf .pytest_cache .mypy_cache .ruff_cache
 	find . -type d -name __pycache__ -not -path "./.venv/*" -exec rm -rf {} +

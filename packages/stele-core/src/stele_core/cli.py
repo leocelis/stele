@@ -21,7 +21,51 @@ def _open(path: str, *, store_id: str | None, now: str | None, create: bool = Tr
 
 def cmd_init(args: argparse.Namespace) -> int:
     stele = _open(args.store, store_id=args.store_id, now=args.now)
-    _print({"ok": True, "store": str(Path(args.store).resolve()), "store_id": stele.store.store_id})
+    out: dict[str, object] = {
+        "ok": True,
+        "store": str(Path(args.store).resolve()),
+        "store_id": stele.store.store_id,
+    }
+    if getattr(args, "demo", False):
+        if not args.now:
+            print("init --demo requires --now ISO-8601", file=sys.stderr)
+            return 2
+        added = stele.add(
+            {
+                "layer": "failure_lesson",
+                "title": "Run doctor before deploy",
+                "body": "Demo seed — promote with external oracle to become searchable.",
+                "scope": "project:demo",
+                "temporal": {"valid_from": args.now, "last_verified": args.now},
+                "provenance": {
+                    "agent": "demo-agent",
+                    "task": "init-demo",
+                    "environment": "local",
+                    "subject_id": "demo-subj",
+                    "source": "session:init-demo",
+                    "written_at": args.now,
+                },
+            },
+            ts=args.now,
+        )
+        stele.promote(
+            added["id"],
+            [
+                {
+                    "type": "test_result",
+                    "issuer": "ci",
+                    "ref": "examples/quickstart_core.py",
+                    "observed_at": args.now,
+                    "verdict": "supports",
+                    "command": "python examples/quickstart_core.py",
+                    "exit_status": 0,
+                }
+            ],
+            actor="ci",
+            ts=args.now,
+        )
+        out["demo"] = {"entry_id": added["id"], "promoted": True}
+    _print(out)
     return 0
 
 
@@ -103,6 +147,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     s = sub.add_parser("init", help="Create an empty store")
     add_store(s)
+    s.add_argument(
+        "--demo",
+        action="store_true",
+        help="Seed one promoted demo lesson (requires --now)",
+    )
     s.set_defaults(func=cmd_init)
 
     s = sub.add_parser("schema", help="Emit entry JSON Schema 2020-12")
