@@ -25,15 +25,6 @@ Add to **`~/.cursor/mcp.json`** (merge into existing `mcpServers` — never wipe
 }
 ```
 
-<<<<<<< HEAD
-=======
-If `stele.leocelis.com` does not resolve yet, use the App Platform ingress temporarily:
-
-```json
-"url": "https://stele-mcp-2vlrd.ondigitalocean.app/sse"
-```
-
->>>>>>> origin/main
 Reload MCP (Cursor Settings → Features → Model Context Protocol → toggle off/on).
 
 > Hosted Stele uses durable MySQL SoT. Bearer auth is fail-closed. Never put live keys in the Stele git tree.

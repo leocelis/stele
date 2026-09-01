@@ -7,10 +7,6 @@ alwaysApply: false
 # Stele — hosted MCP (experiential memory)
 
 **Endpoint:** `https://stele.leocelis.com/sse` (Bearer required)  
-<<<<<<< HEAD
-=======
-**Fallback:** `https://stele-mcp-2vlrd.ondigitalocean.app/sse`  
->>>>>>> origin/main
 **Config:** `~/.cursor/mcp.json` → `mcpServers.stele` with `Authorization: Bearer …`
 
 ## When to use
@@ -23,11 +19,7 @@ Use Stele tools when the task needs **durable, governed memory** of what worked 
 
 ## Hard rules
 
-<<<<<<< HEAD
 - Prefer the **hosted** MCP server named `stele` when it is configured — do not invent a parallel local store unless the operator asks for stdio.
-=======
-- Prefer the **hosted** MCP server named `stele` when it is configured — do not invent a parallel local store unless Leo asks for stdio.
->>>>>>> origin/main
 - Hosted calls need a valid Bearer key in MCP config. HTTP 401 → stop; do not bypass auth.
 - Never commit API keys, DSNs, or PEMs into the Stele repo.
 - Quarantined entries are invisible to search until promoted with external evidence.

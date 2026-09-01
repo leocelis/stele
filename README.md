@@ -109,10 +109,6 @@ same process, same auth, same store:
 Production:
 
 - **URL:** `https://stele.leocelis.com/sse` · core: `https://stele.leocelis.com/core/sse` (Bearer required)
-<<<<<<< HEAD
-=======
-- **Fallback:** `https://stele-mcp-2vlrd.ondigitalocean.app/sse` · core: `.../core/sse`
->>>>>>> origin/main
 - Client setup: [`docs/integrations/CURSOR.md`](docs/integrations/CURSOR.md) · [`CLAUDE_CODE.md`](docs/integrations/CLAUDE_CODE.md) · [`CLAUDE_DESKTOP.md`](docs/integrations/CLAUDE_DESKTOP.md)
 - Agent rule: [`docs/cursor-rules/stele-hosted-mcp.mdc`](docs/cursor-rules/stele-hosted-mcp.mdc)
 

@@ -29,19 +29,6 @@ claude mcp add --transport http stele https://stele.leocelis.com/core/sse \
   --scope user
 ```
 
-<<<<<<< HEAD
-=======
-DNS fallback:
-
-```bash
-claude mcp add --transport http stele https://stele-mcp-2vlrd.ondigitalocean.app/sse \
-  --header "Authorization: Bearer YOUR_KEY_HERE" \
-  --scope user
-```
-
-(core-only: `.../core/sse`)
-
->>>>>>> origin/main
 Verify:
 
 ```bash

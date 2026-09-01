@@ -3,11 +3,6 @@
 Phases, in order. The [system intent](stele_system_intent.yaml) is the contract;
 its joint-satisfaction test gates every implementation phase.
 
-<<<<<<< HEAD
-=======
-**Handoff (2026-08-28):** [`docs/handoff/2026-08-28-v18-15-peft-proxy-catalog.md`](docs/handoff/2026-08-28-v18-15-peft-proxy-catalog.md)
-
->>>>>>> origin/main
 ## Current tip (2026-08-28)
 
 | | |

@@ -185,21 +185,13 @@ def main() -> int:
             [
                 {
                     "type": "human_signoff",
-<<<<<<< HEAD
                     "issuer": "external-oracle",
-=======
-                    "issuer": "ivd-oracle",
->>>>>>> origin/main
                     "ref": "judgment-1",
                     "observed_at": TS,
                     "verdict": "supports",
                 }
             ],
-<<<<<<< HEAD
             actor="external-oracle",
-=======
-            actor="ivd-oracle",
->>>>>>> origin/main
             ts=TS,
         )
         check(
