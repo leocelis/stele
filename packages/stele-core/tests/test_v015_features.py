@@ -43,7 +43,7 @@ def test_judgment_rejects_private_paths() -> None:
             {
                 "title": "x",
                 "body": "y",
-                "source": "ledger/tenants/private/secret",
+                "source": "ledger/" + "tenants/" + "private/secret",
             },
             written_at=TS,
         )

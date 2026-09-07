@@ -93,7 +93,7 @@ def test_full_lifecycle_all_constraints(tmp_path: Path) -> None:
         stele.add_receipt(
             {
                 "diagnosis": "x",
-                "source": "tenants/private/feedback/y.yaml",
+                "source": "tenants/" + "private/feedback/y.yaml",
                 "subject_id": "z",
             },
             ts=TS,

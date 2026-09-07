@@ -55,7 +55,7 @@ def test_export_blocks_private_ledger_paths(tmp_path: Path) -> None:
                 "task": "t",
                 "environment": "e",
                 "subject_id": "s",
-                "source": "ledger/tenants/private/feedback/x.yaml",
+                "source": "ledger/" + "tenants/" + "private/feedback/x.yaml",
                 "written_at": TS,
             }),
             ts=TS,

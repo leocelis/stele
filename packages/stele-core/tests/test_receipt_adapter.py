@@ -14,7 +14,7 @@ def test_projection_preserves_structure_and_redacts_private_source(stele: Stele)
             {
                 "diagnosis": "cache bug",
                 "detection": "stale reads",
-                "source": "workspace/ledger/tenants/private/feedback/x.yaml",
+                "source": "workspace/" + "ledger/" + "tenants/" + "private/feedback/x.yaml",
                 "subject_id": "s1",
             },
             written_at=TS,

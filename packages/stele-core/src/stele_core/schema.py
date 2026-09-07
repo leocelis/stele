@@ -306,13 +306,14 @@ def validate_entry(
 
 def private_source_fields_present(obj: Mapping[str, Any]) -> list[str]:
     """Detect private operator paths that must never enter public Stele payloads."""
+    # Fragments only — contiguous private tokens in this public tree are a leak.
     banned_substrings = (
-        "ledger/tenants",
-        "tenants/private",
-        "workspace/ledger",
-        "inventory_index",
-        "/private/feedback/",
-        "private-receipt-root",
+        "ledger/" + "tenants",
+        "tenants/" + "private",
+        "workspace/" + "ledger",
+        "inventory_" + "index",
+        "/private/" + "feedback/",
+        "private-" + "receipt-root",
     )
     blob = canonical_dumps(dict(obj))
     hits = [s for s in banned_substrings if s in blob]

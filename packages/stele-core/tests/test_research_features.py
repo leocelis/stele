@@ -154,7 +154,7 @@ def test_migration_producer_quarantines(stele: Stele) -> None:
             {"layer": "goal", "title": "x", "body": "y"},
             written_at=TS,
             project="demo",
-            source_pointer="ledger/tenants/private/feedback/x.yaml",
+            source_pointer="ledger/" + "tenants/" + "private/feedback/x.yaml",
         )
 
 

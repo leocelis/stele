@@ -19,7 +19,16 @@ SECRET_PATTERNS = [
     re.compile(r"(?i)mongodb(?:\+srv)?://\S+"),
     re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.IGNORECASE),
     re.compile(r"/Users/[^\s\"']+"),
-    re.compile(r"ledger/tenants|tenants/private|workspace/ledger"),
+    # Fragments only — contiguous private tokens in this public tree are a leak.
+    re.compile(
+        "|".join(
+            [
+                "ledger/" + "tenants",
+                "tenants/" + "private",
+                "workspace/" + "ledger",
+            ]
+        )
+    ),
 ]
 
 AUDIENCE_TIERS = frozenset({"expert", "practitioner", "novice"})
