@@ -1,7 +1,7 @@
 [project]
 name = "stele-mcp"
-version = "18.16.1"
-description = "MCP stdio server for Stele — named tools over the governed experiential-memory ledger."
+version = "18.16.2"
+description = "MCP server for Stele, governed agent memory. Agents log what worked and what failed; a lesson stays out of search until another named actor promotes it with evidence."
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"

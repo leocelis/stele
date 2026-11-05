@@ -1,0 +1,27 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.leocelis/stele",
+  "description": "Governed agent memory: lessons stay out of search until another actor promotes them with evidence.",
+  "repository": {
+    "url": "https://github.com/leocelis/stele",
+    "source": "github"
+  },
+  "version": "18.16.2",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "stele-mcp",
+      "version": "18.16.2",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "STELE_STORE",
+          "description": "Path to the ledger store. Default ./.stele-store",
+          "isRequired": false
+        }
+      ]
+    }
+  ]
+}

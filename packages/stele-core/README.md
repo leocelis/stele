@@ -3,7 +3,7 @@
 Governed experiential-memory ledger for AI agents.
 
 Agents `ADD` distilled lessons into **quarantine**. Promotion requires
-**external-oracle evidence**. Retrieval serves **promoted** entries only
+**evidence and a second named actor**. Retrieval serves **promoted** entries only
 (hybrid keyword + optional semantic + temporal), budgeted as slices.
 Exports are redacted **packs** — the live store is never the sharing surface.
 
@@ -13,7 +13,7 @@ for semantic search; the default path never networks and never calls an LLM.
 ## Install
 
 ```bash
-pip install -e packages/stele-core
+pip install stele-core
 ```
 
 ## Quick start

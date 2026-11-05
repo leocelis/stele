@@ -10,6 +10,6 @@ Do **not** use Stele when:
 4. **You want zero setup and a managed cloud with self-serve keys** — deploy Stele yourself (see `deploy/README.md`) or use a hosted memory SaaS until then.
 5. **You only need ephemeral session context** — use the host’s conversation buffer; Stele is for cross-session, cross-agent experience.
 
-Use Stele when agents repeat the same failures, you need erasure proofs, or you want memory that cannot self-promote without evidence.
+Use Stele when agents repeat the same failures, you need erasure proofs, or you want memory that stays out of search until another named actor promotes it with evidence.
 
 See `docs/COMPARISON.md` for product-level tradeoffs.

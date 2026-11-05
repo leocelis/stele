@@ -1,6 +1,6 @@
 # Stele in Claude Code (via MCP)
 
-Same MCP tools as Cursor. Prefer the hosted **core** endpoint + Bearer key.
+Same MCP tools as Cursor. Prefer local stdio; the hosted endpoint needs a Bearer key and has no self-serve keys.
 
 **Default vs full.** `stele-mcp` (stdio) and `/core/sse` (hosted) expose the 35-tool
 governed ledger. `stele-mcp-full` and `/sse` add ~2000 PEFT/agent-pattern research tools.
@@ -9,7 +9,7 @@ governed ledger. `stele-mcp-full` and `/sse` add ~2000 PEFT/agent-pattern resear
 
 ## 1. Register in Claude Code
 
-### Option A — Hosted (recommended)
+### Option A — Hosted (needs a Bearer key, no self-serve keys)
 
 ```bash
 claude mcp add --transport http stele https://stele.leocelis.com/core/sse \
@@ -44,11 +44,11 @@ claude mcp get stele
 }
 ```
 
-### Option C — local stdio
+### Option C — local stdio (recommended)
 
 ```bash
 pip install stele-core stele-mcp
-claude mcp add stele -- stele-mcp --scope user
+claude mcp add --scope user -e STELE_STORE=/absolute/path/to/.stele-store stele -- stele-mcp
 ```
 
 (Requires `STELE_STORE` in the environment.)

@@ -8,7 +8,7 @@ Unauthenticated.
 {
   "status": "healthy",
   "server": "stele",
-  "version": "18.16.1",
+  "version": "18.16.2",
   "store_mode": "mysql",
   "tool_counts": { "full": 2003, "core": 35 },
   "recommended_surface": "core",

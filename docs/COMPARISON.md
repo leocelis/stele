@@ -7,7 +7,7 @@ Honest positioning for adopters. Stele is **not** trying to win every benchmark.
 | Primary goal | Governed experiential lessons | Extract + retrieve facts | Temporal KG + enterprise | Session / framework memory |
 | Auto-extract every message | No (distilled ADD) | Yes | Yes (episodes) | Often |
 | Promotion / oracle gate | Required (C7) | No | Partial | No |
-| Writer can self-promote | No (tested) | N/A | Varies | Yes |
+| Writer can self-promote | Not under its own name (tested). Names are caller-supplied, so keep promotion in CI or review | N/A | Varies | Yes |
 | Erasure / DELETE proofs | Yes (`forget_compliance`) | Varies | Varies | Usually none |
 | Eval story | Task-outcome harnesses | Recall / LoCoMo marketing | Enterprise benchmarks | Host-dependent |
 | Install | `pip install stele-core stele-mcp` | `pip install mem0ai` | Cloud + SDK | Built into stack |

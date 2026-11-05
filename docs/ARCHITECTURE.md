@@ -1,6 +1,6 @@
 # Stele Architecture
 
-**Version:** 18.16.1 · **Date:** 2026-09-01
+**Version:** 18.16.2 · **Date:** 2026-09-01
 
 Stele is a **governed experiential-memory protocol**: agents write distilled lessons, an external oracle promotes them, and any consumer retrieves a budgeted, still-valid slice — with zero LLM/network on the core write path.
 
@@ -45,7 +45,7 @@ Stele is a **governed experiential-memory protocol**: agents write distilled les
 
 - **C5:** no LLM / no network on core write path.
 - **C1:** stele-core is stdlib-only (no third-party product or DB imports).
-- **C7:** writer cannot self-promote; self-issued evidence rejected.
+- **C7:** writer name cannot promote its own entry; evidence issued under the writer name is rejected, except human sign-off.
 - **C8:** private operator inventories never bulk-imported — selected redacted projection only.
 
 ## Docs map

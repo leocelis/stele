@@ -4,13 +4,29 @@ All notable changes to Stele are documented here.
 
 ## [Unreleased]
 
+## [18.16.2] — 2026-11-05
+
+### Changed
+- Docs and package text now match the code: agents log through `add` (no
+  automatic capture), and a lesson stays out of search until another named
+  actor promotes it with evidence. Names are caller-supplied.
+- Local stdio is the recommended setup. The hosted endpoint needs a Bearer key
+  and has no self-serve keys.
+- Package READMEs: working PyPI install lines, 35 default tools stated.
+- `server.json` added for the MCP registry.
+
+### Fixed
+- `claude mcp add` example: options now come before `--`.
+
+## [18.16.1] — 2026-08-29
+
 ### Added
 - **Core-only tool surface.** `stele_mcp.server.create_core_app()` exposes just
   the 35 governed-ledger tools (TECH_SPEC §7.1-7.9) — none of the ~2000
   PEFT/agent-pattern research-reproduction tools on the full `mcp` instance.
   Reuses the same registered functions (no re-implementation, can't drift).
-  - Stdio: `STELE_TOOL_SET=core stele-mcp`, or the new `stele-mcp-core`
-    console script.
+  - Stdio: `stele-mcp` serves the core surface by default, `stele-mcp-core`
+    is an alias, and `stele-mcp-full` serves everything.
   - Hosted: `/core/sse` and `/core/mcp` alongside the existing `/sse` / `/mcp`
     (same `deploy/wsgi.py` process, same auth, same store).
   - `/health` now reports `tool_counts: {full, core}`.
@@ -20,8 +36,6 @@ All notable changes to Stele are documented here.
   - Why: `packages/stele-mcp/src/stele_mcp/server.py`'s own module docstring
     said "eight named tools" while shipping 2003 — every hosted client was
     getting the full research-reproduction surface with no way to opt out.
-
-## [18.16.1] — 2026-08-29
 
 ### Fixed
 - Hosted `stele_doctor` / `verify_store`: integrity checks are backend-agnostic (no

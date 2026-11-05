@@ -5,7 +5,21 @@ Edit `claude_desktop_config.json`:
 - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
 - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
 
-### Hosted (recommended — core ledger)
+### Local stdio (recommended)
+
+```json
+{
+  "mcpServers": {
+    "stele": {
+      "command": "uvx",
+      "args": ["stele-mcp"],
+      "env": { "STELE_STORE": "/absolute/path/to/.stele-store" }
+    }
+  }
+}
+```
+
+### Hosted (needs a Bearer key, no self-serve keys)
 
 ```json
 {

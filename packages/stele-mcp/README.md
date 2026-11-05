@@ -2,7 +2,15 @@
 
 MCP stdio server for [`stele-core`](../stele-core).
 
+## Install
+
+```bash
+pip install stele-mcp
+```
+
 ## Tools
+
+`stele-mcp` runs 35 tools by default. The main ones:
 
 | Tool | Role |
 |---|---|
@@ -23,3 +31,5 @@ MCP stdio server for [`stele-core`](../stele-core).
 export STELE_STORE=./.stele-store
 stele-mcp
 ```
+
+<!-- mcp-name: io.github.leocelis/stele -->

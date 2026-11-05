@@ -8,7 +8,7 @@ and local stdio.
 
 ## 1. Register in Cursor
 
-### Option A — Hosted endpoint (recommended)
+### Option A — Hosted endpoint (needs a Bearer key, no self-serve keys)
 
 Zero local Python. You need a Bearer key from the operator (`STELE_API_KEYS`).
 
@@ -31,7 +31,7 @@ Reload MCP (Cursor Settings → Features → Model Context Protocol → toggle o
 
 > Hosted Stele uses durable MySQL SoT. Bearer auth is fail-closed. Never put live keys in the Stele git tree.
 
-### Option B — local stdio
+### Option B — local stdio (recommended)
 
 ```bash
 pip install stele-core stele-mcp

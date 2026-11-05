@@ -1,7 +1,7 @@
 [project]
 name = "stele-core"
-version = "18.16.1"
-description = "Governed experiential-memory ledger for AI agents — quarantine, oracle promotion, hybrid retrieval, pack export. Zero runtime dependencies."
+version = "18.16.2"
+description = "Stele: governed agent memory. Agents log what worked and what failed; a lesson stays out of search until another named actor promotes it with evidence."
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"

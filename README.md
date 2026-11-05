@@ -1,24 +1,26 @@
 <p align="center">
   <strong>Stele</strong><br>
-  <em>The governed experiential-memory ledger for AI agents — log what worked and what failed, promote only oracle-verified lessons, and let any agent build solid context from real experience.</em>
+  <em>The governed experiential-memory ledger for AI agents: log what worked and what failed, promote a lesson only through another named actor with evidence, and let any agent build solid context from real experience.</em>
 </p>
 
 ---
 
 ## What is Stele?
 
-A **stele** is a stone raised to record what happened — deeds, laws, warnings — for those who come after. Stele is the same idea for AI agents: a **centralized ledger of task experience**. Agents automatically log what worked and what failed on each task; a governance gate promotes only lessons backed by external evidence; and any agent — today's or a future one — retrieves the distilled experience through one protocol before its next task.
+A **stele** is a stone raised to record what happened — deeds, laws, warnings — for those who come after. Stele is the same idea for AI agents: a **centralized ledger of task experience**. Agents log what worked and what failed on each task; a governance gate keeps each lesson out of search until another named actor promotes it with evidence; and any agent — today's or a future one — retrieves the distilled experience through one protocol before its next task.
 
-**Status: v18.16.1.** Design locked in [`stele_system_intent.yaml`](stele_system_intent.yaml). Packages: `stele-core` (zero runtime deps; optional `[mysql]`) + `stele-mcp` (stdio + hosted HTTP) + `stele` CLI.
+**Status: v18.16.2.** Design locked in [`stele_system_intent.yaml`](stele_system_intent.yaml). Packages: `stele-core` (zero runtime deps; optional `[mysql]`) + `stele-mcp` (stdio + hosted HTTP) + `stele` CLI.
+
+In short: agent memory where a lesson stays out of search until another named actor promotes it with evidence. Not related to the hosted Stele at stele-ai.dev or other projects named Stele.
 
 ## Why Stele (research-backed)
 
 | Problem | Evidence | Stele answer |
 |---|---|---|
 | Recall wins ≠ better actions | MemoryArena (arXiv:2602.16313) | Task-outcome harnesses, not recall@k marketing |
-| Self-reflection poisons stores | Survey (arXiv:2603.07670) | Quarantine + external oracle only |
+| Self-reflection can entrench errors | Survey (arXiv:2603.07670) | Quarantine + external oracle only |
 | Every framework is a silo | memorywire (arXiv:2606.01138) | JSON Schema + projection helpers |
-| Stale lessons mislead | LongMemEval (arXiv:2410.10813) | Bi-temporal supersede + stale_policy |
+| Facts change over time | LongMemEval (arXiv:2410.10813) | Bi-temporal supersede + stale_policy |
 
 Full research: [`docs/research/`](docs/research/) · patterns: [`docs/patterns/`](docs/patterns/).
 
@@ -96,6 +98,20 @@ export STELE_STORE=./.stele-store
 stele-mcp
 ```
 
+```json
+{
+  "mcpServers": {
+    "stele": {
+      "command": "uvx",
+      "args": ["stele-mcp"],
+      "env": { "STELE_STORE": "/absolute/path/to/.stele-store" }
+    }
+  }
+}
+```
+
+Pass `ts` on every write; the store never reads the clock.
+
 Full research library (~2000 PEFT/agent-pattern tools): `stele-mcp-full`.
 
 ## MCP (hosted HTTP)
@@ -110,7 +126,7 @@ same process, same auth, same store:
 
 Production:
 
-- **URL:** `https://stele.leocelis.com/sse` · core: `https://stele.leocelis.com/core/sse` (Bearer required)
+- **URL:** `https://stele.leocelis.com/sse` · core: `https://stele.leocelis.com/core/sse` (Bearer required, no self-serve keys; to host your own see [`deploy/README.md`](deploy/README.md))
 - Client setup: [`docs/integrations/CURSOR.md`](docs/integrations/CURSOR.md) · [`CLAUDE_CODE.md`](docs/integrations/CLAUDE_CODE.md) · [`CLAUDE_DESKTOP.md`](docs/integrations/CLAUDE_DESKTOP.md)
 - Agent rule: [`docs/cursor-rules/stele-hosted-mcp.mdc`](docs/cursor-rules/stele-hosted-mcp.mdc)
 
