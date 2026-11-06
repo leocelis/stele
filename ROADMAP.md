@@ -7,7 +7,7 @@ its joint-satisfaction test gates every implementation phase.
 
 | | |
 |---|---|
-| **Shipped** | **v18.16.3** — Promotion needs evidence that supports the lesson. MCP tools unchanged. |
+| **Shipped** | **v18.16.4** — `crystallize-skill` fixed, CI runs its tests again. Since v18.16.3, promotion needs evidence that supports the lesson. MCP tools unchanged. |
 | **Next** | Phase 192 / v18.16 — two unused PEFT proxies. **Not started.** Prefixes not locked. |
 | **Pending** | Phase 192 + Post-v18.15 list below. Phases 0–191 are done. |
 

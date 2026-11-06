@@ -1,6 +1,6 @@
 [project]
 name = "stele-core"
-version = "18.16.3"
+version = "18.16.4"
 description = "Stele: governed agent memory. Agents log what worked and what failed; a lesson stays out of search until another named actor promotes it with evidence."
 readme = "README.md"
 requires-python = ">=3.11"

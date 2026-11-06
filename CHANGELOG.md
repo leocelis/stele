@@ -4,6 +4,20 @@ All notable changes to Stele are documented here.
 
 ## [Unreleased]
 
+## [18.16.4] — 2026-11-06
+
+### Fixed
+- `stele crystallize-skill` crashed on every call because two handlers shared
+  one name. Each crystallize command now runs its own handler.
+- `himem_hmeml_shaped_report` lost its note check to a repeated key. The check
+  is now `note_check`; `note` stays the descriptive text.
+
+### Changed
+- `foresight_filter`, `classify_memory_tier` and `hierarchical_retrieve` raise
+  `SchemaError` when no clock is set.
+- All ruff and mypy errors cleared, and both tools pinned in
+  `requirements-dev.txt`, so CI runs its test steps again.
+
 ## [18.16.3] — 2026-11-06
 
 ### Changed

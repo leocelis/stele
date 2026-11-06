@@ -6,12 +6,12 @@
     "url": "https://github.com/leocelis/stele",
     "source": "github"
   },
-  "version": "18.16.3",
+  "version": "18.16.4",
   "packages": [
     {
       "registryType": "pypi",
       "identifier": "stele-mcp",
-      "version": "18.16.3",
+      "version": "18.16.4",
       "transport": {
         "type": "stdio"
       },

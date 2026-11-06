@@ -1,6 +1,6 @@
 # Stele Architecture
 
-**Version:** 18.16.3 · **Date:** 2026-09-01
+**Version:** 18.16.4 · **Date:** 2026-09-01
 
 Stele is a **governed experiential-memory protocol**: agents write distilled lessons, another named actor promotes them with supporting evidence, and any consumer retrieves a budgeted, still-valid slice — with zero LLM/network on the core write path.
 
