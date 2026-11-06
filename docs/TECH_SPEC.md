@@ -176,6 +176,8 @@ Consumer context: `project:<p>` + optional `consumer_domain=domain:<d>`. Serves:
 }
 ```
 
+PROMOTE, RESOLVE and UNREVOKE need at least one `supports` record and no `refutes` record, and a `test_result` marked `supports` must have `exit_status` 0. The gate reads the record; it does not run the test or open `ref`. REVERIFY accepts any verdict, so later refuting evidence can land on a promoted entry and REFLECT can mark the pair contested.
+
 `test_result` also: `command`, `exit_status`. **OracleAdapter** protocol: external process emits records; core validates only.
 
 ### 5.3 REFLECT (UC-6)

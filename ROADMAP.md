@@ -3,11 +3,11 @@
 Phases, in order. The [system intent](stele_system_intent.yaml) is the contract;
 its joint-satisfaction test gates every implementation phase.
 
-## Current tip (2026-08-28)
+## Current tip (2026-11-06)
 
 | | |
 |---|---|
-| **Shipped** | **v18.16.1** — Hosted MCP doctor works on MySQL SoT (backend-agnostic verify). MCP tools unchanged. |
+| **Shipped** | **v18.16.3** — Promotion needs evidence that supports the lesson. MCP tools unchanged. |
 | **Next** | Phase 192 / v18.16 — two unused PEFT proxies. **Not started.** Prefixes not locked. |
 | **Pending** | Phase 192 + Post-v18.15 list below. Phases 0–191 are done. |
 

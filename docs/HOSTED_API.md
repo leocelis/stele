@@ -8,7 +8,7 @@ Unauthenticated.
 {
   "status": "healthy",
   "server": "stele",
-  "version": "18.16.2",
+  "version": "18.16.3",
   "store_mode": "mysql",
   "tool_counts": { "full": 2003, "core": 35 },
   "recommended_surface": "core",
@@ -18,7 +18,7 @@ Unauthenticated.
 
 ## MCP transports
 
-- **Recommended:** `/core/sse` + `Authorization: Bearer <key>`
+- **Core tools:** `/core/sse` + `Authorization: Bearer <key>` (local stdio is the recommended setup; there are no self-serve keys)
 - Streamable HTTP: `/core/mcp`
 - Full research library: `/sse`, `/mcp`
 

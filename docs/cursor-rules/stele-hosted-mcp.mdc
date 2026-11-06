@@ -6,7 +6,7 @@ alwaysApply: false
 
 # Stele — hosted MCP (experiential memory)
 
-**Endpoint:** `https://stele.leocelis.com/sse` (Bearer required)  
+**Endpoint:** `https://stele.leocelis.com/core/sse` (35 tools, Bearer required)  
 **Config:** `~/.cursor/mcp.json` → `mcpServers.stele` with `Authorization: Bearer …`
 
 ## When to use
@@ -14,7 +14,7 @@ alwaysApply: false
 Use Stele tools when the task needs **durable, governed memory** of what worked / failed:
 
 - Before repeating a fix that may already be a promoted lesson → `stele_search`
-- After an externally verified lesson → `stele_add` (quarantine) then `stele_promote` with **external** oracle evidence (writer ≠ judge)
+- After an externally verified lesson → `stele_add` (quarantine) then `stele_promote` by another named actor, with evidence that supports the lesson (writer ≠ judge)
 - Hygiene / doctor / forget-compliance when operating on the ledger
 
 ## Hard rules

@@ -9,7 +9,7 @@
 
 A **stele** is a stone raised to record what happened — deeds, laws, warnings — for those who come after. Stele is the same idea for AI agents: a **centralized ledger of task experience**. Agents log what worked and what failed on each task; a governance gate keeps each lesson out of search until another named actor promotes it with evidence; and any agent — today's or a future one — retrieves the distilled experience through one protocol before its next task.
 
-**Status: v18.16.2.** Design locked in [`stele_system_intent.yaml`](stele_system_intent.yaml). Packages: `stele-core` (zero runtime deps; optional `[mysql]`) + `stele-mcp` (stdio + hosted HTTP) + `stele` CLI.
+**Status: v18.16.3.** Design locked in [`stele_system_intent.yaml`](stele_system_intent.yaml). Packages: `stele-core` (zero runtime deps; optional `[mysql]`) + `stele-mcp` (stdio + hosted HTTP) + `stele` CLI.
 
 In short: agent memory where a lesson stays out of search until another named actor promotes it with evidence. Not related to the hosted Stele at stele-ai.dev or other projects named Stele.
 
@@ -18,7 +18,7 @@ In short: agent memory where a lesson stays out of search until another named ac
 | Problem | Evidence | Stele answer |
 |---|---|---|
 | Recall wins ≠ better actions | MemoryArena (arXiv:2602.16313) | Task-outcome harnesses, not recall@k marketing |
-| Self-reflection can entrench errors | Survey (arXiv:2603.07670) | Quarantine + external oracle only |
+| Self-reflection can entrench errors | Survey (arXiv:2603.07670) | Quarantine until another named actor promotes it with supporting evidence |
 | Every framework is a silo | memorywire (arXiv:2606.01138) | JSON Schema + projection helpers |
 | Facts change over time | LongMemEval (arXiv:2410.10813) | Bi-temporal supersede + stale_policy |
 

@@ -1,6 +1,6 @@
 # Stele — Product Requirements Document
 
-**Version:** 18.16.2 · **Date:** 2026-09-01 · **Status:** Active — **v18.16 shipped** (`stele-core` + `stele-mcp`)
+**Version:** 18.16.3 · **Date:** 2026-09-01 · **Status:** Active — **v18.16 shipped** (`stele-core` + `stele-mcp`)
 **License:** MIT · Copyright (c) 2026 Stele contributors
 
 **Derived from:** `stele_system_intent.yaml` v18.15.0 · `docs/patterns/patterns_session_ledger_memory.yaml` v1.3 · `docs/research/**` · shipped packages
@@ -95,7 +95,7 @@ Governance — not storage — is the hard part (FF-12). Storage is solved in fi
 
 > **Stele's planes:** **K** Contract (schema) · **T** Tool surface (six ops + governed helpers) · **G** Governance (quarantine → promote → REFLECT) · **R** Retrieval · **X** Export/hydrate · **L** Living ledger (outcomes, pin, stale, reverify) · **O** Ops (stats, timeline, attach, verify). (intent §architecture + v1 extensions)
 
-### UC-1 — Auto-log a task outcome without poisoning the store
+### UC-1 — Log a task outcome without poisoning the store
 - **Scenario:** An agent finishes a task and logs "pinning the cache key to a calendar bucket fixed the stale reads."
 - **Pain today (P3, P4):** Either the lesson lands unverified in long-term memory (poison) or it lands nowhere (P1).
 - **Stele solution:** **T** `ADD` accepts only structured, distilled entries (C5, C6) into **G** quarantine — durable immediately, retrievable never, until promoted (C7). A distill gate rejects transcript/tool-dump shaped bodies (FF-2). Capture cost is the agent's, not the human's (mitigates P12; FF-6).
@@ -126,7 +126,7 @@ Governance — not storage — is the hard part (FF-12). Storage is solved in fi
 - **Requirement:** `delete(subject_id | entry_id)` cascades; a post-delete index rebuild contains zero traces (joint test asserts this).
 
 ### UC-6 — Consolidate a growing ledger
-- **Scenario:** After months of auto-logging, the ledger holds duplicates, near-duplicates, and expired entries.
+- **Scenario:** After months of logging, the ledger holds duplicates, near-duplicates, and expired entries.
 - **Pain today (P5, P12):** Unmaintained memory decays into noise; per-entry human review kills adoption.
 - **Stele solution:** **G** batched `REFLECT` pass — dedupe, merge, supersede, expire, surface conflicts — provenance-preserving (C7; OP-3; Memory-R1). Agreeing near-duplicates merge with provenance links; contradictory near-duplicates become **contested** (never auto-resolved).
 - **Requirement:** `reflect() → ReflectReport{merged[], expired[], conflicts[], dangling_links[]}`; runs batched, never blocks writes.

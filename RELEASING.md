@@ -1,6 +1,6 @@
 # Releasing Stele
 
-1. Bump `version` in `packages/stele-core/pyproject.toml` and `packages/stele-mcp/pyproject.toml` (keep equal).
+1. Bump `version` in `packages/stele-core/pyproject.toml` and `packages/stele-mcp/pyproject.toml` (keep equal), plus the two `stele-core==` pins in the latter.
 2. `python scripts/sync_doc_versions.py`
 3. Slice user-facing notes into `CHANGELOG.md` (core + MCP core only).
 4. `make check && make verify-oss`

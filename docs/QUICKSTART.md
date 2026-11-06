@@ -42,6 +42,8 @@ Full research library (~2000 tools): `stele-mcp-full`.
 
 ## Hosted (core)
 
+Local stdio above is the recommended setup. The hosted endpoint needs a Bearer key, and there are no self-serve keys.
+
 ```json
 {
   "mcpServers": {

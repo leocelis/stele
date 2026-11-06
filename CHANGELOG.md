@@ -4,6 +4,21 @@ All notable changes to Stele are documented here.
 
 ## [Unreleased]
 
+## [18.16.3] — 2026-11-06
+
+### Changed
+- **Breaking for callers that promote on negative evidence:** `promote`,
+  `resolve_contested` and `unrevoke` now need at least one record with verdict
+  `supports` and none with `refutes`, and a `test_result` marked `supports` must
+  have exit status 0. Before, a lesson whose only evidence refuted it was
+  promoted and searchable. Record later refuting evidence with `reverify`.
+- `unrevoke` applies the same self-issued evidence check as `promote`.
+- `stele-mcp` now pins `stele-core` to its own version.
+
+### Fixed
+- `scripts/verify_oss_public.sh` printed PASS without checking when `rg` was
+  not installed. It now uses `git grep` and fails if a scan cannot run.
+
 ## [18.16.2] — 2026-11-05
 
 ### Changed

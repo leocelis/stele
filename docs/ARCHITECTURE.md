@@ -1,8 +1,8 @@
 # Stele Architecture
 
-**Version:** 18.16.2 · **Date:** 2026-09-01
+**Version:** 18.16.3 · **Date:** 2026-09-01
 
-Stele is a **governed experiential-memory protocol**: agents write distilled lessons, an external oracle promotes them, and any consumer retrieves a budgeted, still-valid slice — with zero LLM/network on the core write path.
+Stele is a **governed experiential-memory protocol**: agents write distilled lessons, another named actor promotes them with supporting evidence, and any consumer retrieves a budgeted, still-valid slice — with zero LLM/network on the core write path.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -35,7 +35,7 @@ Stele is a **governed experiential-memory protocol**: agents write distilled les
 |---|---|
 | **K Contract** | Entry schema, bi-temporal fields, scope rungs, JSON Schema export |
 | **T Tools** | Six ops + promote/link + living ledger + ops + MCP/CLI |
-| **G Governance** | Quarantine → external-oracle promote; contested surface; REFLECT |
+| **G Governance** | Quarantine → promote by another named actor with supporting evidence; contested surface; REFLECT |
 | **R Retrieval** | Hybrid search, filters, budget, compress, link follow |
 | **X Export** | Redacted packs, hydrate, verify_pack, snapshot |
 | **L Living** | Outcomes, pin, stale_report, reverify |

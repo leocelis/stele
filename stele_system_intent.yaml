@@ -14,7 +14,7 @@
 
 meta:
   name: stele
-  version: "18.16.2"
+  version: "18.16.3"
   date: "2026-08-29"
   status: IMPLEMENTED — v4.7 (Phases 0–43; WTP / hosted sync / full external gyms / keyed watermarks out of scope)
   license: MIT
@@ -269,13 +269,18 @@ constraints:
       Writes land in quarantine. Promotion to the retrievable ledger requires
       external-oracle evidence (test result, environment feedback, independent
       judge, or human sign-off) attached to the entry. A self-graded claim
-      ("the agent says it worked") can NEVER promote. REFLECT runs as a
+      ("the agent says it worked") can NEVER promote. At least one record must
+      have verdict=supports, none may have verdict=refutes, and a test_result
+      with verdict=supports must have exit_status 0. Names, verdicts and refs
+      are caller-supplied: the gate reads the record, it does not run the test
+      or open the ref. REVERIFY records later refuting evidence on a promoted
+      entry, which is how REFLECT finds a contested pair. REFLECT runs as a
       batched consolidation pass (dedupe, merge, supersede, expire) over
       promoted entries.
     rationale: "Write-policy fork: hybrid quarantine = best governance (storage research Part 2; pattern OP-4). Self-graded reflections are the confirmation-bias anti-pattern (OP-2; MAR on Reflexion). Append-only is not a ledger (OP-3; Memory-R1: maintenance policy matters). Governance, not storage, is the hard part (FF-12)"
     assumption_status: KNOWN
     test:
-      path: "packages/stele-core/tests/test_governance.py::test_self_graded_never_promotes"
+      path: "packages/stele-core/tests/test_governance.py::test_self_graded_never_promotes, packages/stele-core/tests/test_promotion_requires_support.py"
       oracle: "Golden fixture: entry with oracle evidence promotes; identical entry with self-grade only stays quarantined forever; REFLECT merges duplicates without losing provenance"
       test_provenance: execution_derived
       execution_oracle:
@@ -372,7 +377,7 @@ failure_mode_coverage:
 risks:
   - id: R1
     risk: "No short-term payoff → abandonment (killed gIBIS/QuestMap; pattern OP-10/FF-6)"
-    mitigation: "Agent pays capture cost automatically; human promotion review is batched (REFLECT cadence), never per-entry"
+    mitigation: "Agent logs each lesson through ADD at the end of a task; human promotion review is batched (REFLECT cadence), never per-entry"
   - id: R2
     risk: "Multi-agent ledger merge is an open research frontier (Hu et al. survey; OP-10)"
     mitigation: "Mandatory per-entry provenance (C6) makes conflicts visible and resolvable at REFLECT; no silent overwrite by construction"
