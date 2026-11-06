@@ -64,6 +64,21 @@ def _promote_pair(stele: Stele) -> tuple[str, str]:
             {
                 "type": "env_feedback",
                 "issuer": "ci-b",
+                "ref": "prod-log-before",
+                "observed_at": TS,
+                "verdict": "supports",
+            }
+        ],
+        actor="ci-b",
+        ts=TS,
+    )
+    # Refuting evidence reaches a promoted lesson through REVERIFY (UC-13).
+    stele.reverify(
+        [b],
+        [
+            {
+                "type": "env_feedback",
+                "issuer": "ci-b",
                 "ref": "prod-log",
                 "observed_at": TS,
                 "verdict": "refutes",

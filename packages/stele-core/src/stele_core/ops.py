@@ -2687,6 +2687,7 @@ from stele_core.export import (
 from stele_core.governance import (
     apply_promote,
     apply_resolve_contested,
+    require_supporting_evidence,
     validate_promotion_evidence,
 )
 from stele_core.graph import blast_radius as graph_blast_radius
@@ -3510,13 +3511,14 @@ class Stele:
         ts = require_ts(ts or self._now)
         if not evidence:
             raise SchemaError("unrevoke requires external evidence")
-        validated_ev = [validate_evidence(x) for x in evidence]
         with self.store:
             entry = self.store.read_entry(entry_id)
             if entry is None:
                 raise SchemaError(f"unknown entry: {entry_id}")
             if entry.get("state") != "revoked":
                 raise SchemaError("unrevoke only applies to revoked entries")
+            validated_ev = validate_promotion_evidence(entry, evidence, store=self.store)
+            require_supporting_evidence(validated_ev, action="unrevoke")
             entry["state"] = "promoted"
             entry["temporal"]["last_verified"] = ts
             entry["temporal"].pop("revoked_at", None)

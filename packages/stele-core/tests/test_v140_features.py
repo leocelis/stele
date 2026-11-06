@@ -120,6 +120,21 @@ def test_conflict_surface_preserves_pairs(tmp_path: Path) -> None:
             {
                 "type": "env_feedback",
                 "issuer": "ci-b",
+                "ref": "log-before",
+                "observed_at": TS,
+                "verdict": "supports",
+            }
+        ],
+        actor="ci-b",
+        ts=TS,
+    )
+    # Refuting evidence reaches a promoted lesson through REVERIFY (UC-13).
+    stele.reverify(
+        [b],
+        [
+            {
+                "type": "env_feedback",
+                "issuer": "ci-b",
                 "ref": "log",
                 "observed_at": TS,
                 "verdict": "refutes",

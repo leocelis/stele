@@ -9,6 +9,30 @@ from stele_core.schema import SchemaError, validate_evidence
 from stele_core.store import SteleStore
 
 
+def require_supporting_evidence(
+    validated: Sequence[Mapping[str, Any]], *, action: str
+) -> None:
+    """Search only admits a lesson whose evidence says it holds.
+
+    REVERIFY does not call this: it is how later refuting evidence lands on a
+    promoted entry, which REFLECT then turns into a contested pair (UC-13).
+    """
+    if not any(v.get("verdict") == "supports" for v in validated):
+        raise SchemaError(f"{action} requires at least one evidence record with verdict=supports")
+    if any(v.get("verdict") == "refutes" for v in validated):
+        raise SchemaError(f"{action} cannot proceed on evidence with verdict=refutes")
+    for v in validated:
+        if (
+            v.get("verdict") == "supports"
+            and v["type"] == "test_result"
+            and v.get("exit_status") != 0
+        ):
+            raise SchemaError(
+                f"{action} rejected: a test_result with exit_status "
+                f"{v.get('exit_status')} cannot have verdict=supports"
+            )
+
+
 def validate_promotion_evidence(
     entry: Mapping[str, Any],
     evidence: Sequence[Mapping[str, Any]],
@@ -73,6 +97,7 @@ def apply_promote(
         store=store,
         require_test_result_for_code_fix=require_test_result_for_code_fix,
     )
+    require_supporting_evidence(validated, action="promotion")
     entry["evidence"] = validated
     entry["state"] = "promoted"
     entry["temporal"]["last_verified"] = ts
@@ -118,9 +143,7 @@ def apply_resolve_contested(
         )
 
     validated = validate_promotion_evidence(winner, evidence, store=store)
-    # Prefer supporting evidence for the winner
-    if not any(v.get("verdict") == "supports" for v in validated):
-        raise SchemaError("resolve requires at least one evidence record with verdict=supports")
+    require_supporting_evidence(validated, action="resolve")
 
     winner = dict(winner)
     winner["evidence"] = list(winner.get("evidence") or []) + validated
