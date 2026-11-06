@@ -9,6 +9,7 @@ Lexical proxies only; not LoCoMo paper scores.
 from __future__ import annotations
 
 import hashlib
+import itertools
 import re
 from collections import defaultdict
 from collections.abc import Mapping, Sequence
@@ -18,7 +19,7 @@ from stele_core.schema import SchemaError, canonical_dumps
 
 WEAVE_LAYERS = frozenset({"graph", "experience", "passage"})
 
-_TOKEN = re.compile(r"[a-z0-9_]{2,}", re.I)
+_TOKEN = re.compile(r"[a-z0-9_]{2,}", re.IGNORECASE)
 
 _LAYER_TO_WEAVE: dict[str, str] = {
     "decision": "graph",
@@ -283,7 +284,7 @@ def multi_hop_depth_score(
         str(e.get("id")): e for e in entries if isinstance(e, Mapping) and e.get("id")
     }
     linked = True
-    for a, b in zip(ids, ids[1:]):
+    for a, b in itertools.pairwise(ids):
         ea = by_id.get(a) or {}
         refs = {
             str(lnk.get("ref"))

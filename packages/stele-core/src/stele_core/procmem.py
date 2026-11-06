@@ -8,7 +8,6 @@ PPO Gate verification, score-based maintain. Proxies only.
 from __future__ import annotations
 
 import hashlib
-from collections.abc import Sequence
 from typing import Any
 
 from stele_core.schema import SchemaError, canonical_dumps

@@ -188,7 +188,7 @@ def action_capability_inventory(
     for c in capabilities:
         if not isinstance(c, Mapping):
             continue
-        payload = c.get("payload") if isinstance(c.get("payload"), Mapping) else c
+        payload = raw_payload if isinstance(raw_payload := c.get("payload"), Mapping) else c
         rows.append(
             {
                 "handle": c.get("handle"),

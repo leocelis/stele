@@ -6,7 +6,6 @@ import json
 from pathlib import Path
 
 import pytest
-
 from helpers import TS, base_entry, oracle_evidence
 from stele_core import (
     LessonTask,
@@ -18,18 +17,7 @@ from stele_core import (
 
 
 def test_rejects_raw_transcript_on_add(stele: Stele) -> None:
-    transcript = "\n".join(
-        [
-            "User: how do I fix cache?",
-            "Assistant: try this",
-            "User: still broken",
-            "Assistant: try that",
-            "User: ok",
-            "Assistant: done",
-            "User: thanks",
-            "Assistant: np",
-        ]
-    )
+    transcript = "User: how do I fix cache?\nAssistant: try this\nUser: still broken\nAssistant: try that\nUser: ok\nAssistant: done\nUser: thanks\nAssistant: np"
     with pytest.raises(SchemaError, match="transcript"):
         stele.add(base_entry(body=transcript), ts=TS)
 

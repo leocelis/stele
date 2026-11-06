@@ -7,8 +7,8 @@ import socket
 import sys
 from pathlib import Path
 
-from stele_core import Stele
 from helpers import TS, base_entry, oracle_evidence
+from stele_core import Stele
 
 CORE_SRC = Path(__file__).resolve().parents[1] / "src" / "stele_core"
 
@@ -52,10 +52,12 @@ def test_core_static_import_scan() -> None:
                     continue
                 if root in FORBIDDEN_MODULES:
                     hits.append(f"{path.name}: forbidden {root}")
-                elif root not in stdlib and root not in {"__future__"}:
+                elif (
+                    root not in stdlib and root not in {"__future__"}
                     # relative imports have module None / leading dots — skip empty
-                    if root:
-                        hits.append(f"{path.name}: non-stdlib import {root}")
+                    and root
+                ):
+                    hits.append(f"{path.name}: non-stdlib import {root}")
     assert hits == [], hits
 
 

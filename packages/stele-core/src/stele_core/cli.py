@@ -2920,7 +2920,7 @@ def build_parser() -> argparse.ArgumentParser:
     add_store(s)
     s.add_argument("plan_id")
     s.add_argument("reuse_count", type=int)
-    s.set_defaults(func=cmd_crystallize)
+    s.set_defaults(func=cmd_crystallize_plan)
 
     s = sub.add_parser("dual-retrieve", help="Metis dual retrieve")
     add_store(s)
@@ -15614,7 +15614,7 @@ def cmd_text_experience(args: argparse.Namespace) -> int:
     return 0
 
 
-def cmd_crystallize(args: argparse.Namespace) -> int:
+def cmd_crystallize_plan(args: argparse.Namespace) -> int:
     stele = _open(args.store, store_id=None, now=args.now, create=False)
     _print(
         stele.crystallize_plan_to_tool(

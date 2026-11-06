@@ -86,7 +86,8 @@ def _load_tx(root: Path, txid: str) -> dict[str, Any]:
     path = _tx_dir(root) / f"{txid}.json"
     if not path.is_file():
         raise SchemaError(f"unknown transaction: {txid}")
-    return canonical_loads(path.read_text(encoding="utf-8"))
+    tx: dict[str, Any] = canonical_loads(path.read_text(encoding="utf-8"))
+    return tx
 
 
 def _save_tx(root: Path, row: dict[str, Any]) -> None:

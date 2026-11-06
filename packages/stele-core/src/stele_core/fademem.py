@@ -8,7 +8,7 @@ merge plan (token overlap), not LLM conflict resolution.
 from __future__ import annotations
 
 import math
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Iterable, Mapping
 from typing import Any
 
 from stele_core.index.lexical import tokenize

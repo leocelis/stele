@@ -6,7 +6,7 @@ complexity — not the paper's RL policy (C5).
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Mapping
 from typing import Any
 
 from stele_core.index.lexical import tokenize

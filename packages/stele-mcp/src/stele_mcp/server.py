@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
+from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 from stele_core import Stele
@@ -32,7 +33,7 @@ def store_mode() -> str:
     return "mysql" if os.environ.get("STELE_STORE_DSN") else "file"
 
 
-def _transport_security():
+def _transport_security() -> Any:
     """DNS-rebinding settings for hosted HTTP (stdio ignores this).
 
     In production, either allow an explicit host list via STELE_ALLOWED_HOSTS,
@@ -44,10 +45,7 @@ def _transport_security():
     try:
         from mcp.server.transport_security import TransportSecuritySettings
     except ImportError:  # pragma: no cover
-        try:
-            from mcp.server.sse import TransportSecuritySettings
-        except ImportError:
-            return None
+        return None
 
     raw = os.environ.get("STELE_ALLOWED_HOSTS", "")
     hosts = [h.strip() for h in raw.split(",") if h.strip()]

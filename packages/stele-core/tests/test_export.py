@@ -6,10 +6,9 @@ import json
 from pathlib import Path
 
 import pytest
-
+from helpers import TS, base_entry, oracle_evidence
 from stele_core import SchemaError, Stele
 from stele_core.export import scan_secrets
-from helpers import TS, base_entry, oracle_evidence
 
 
 def test_pack_is_redacted_versioned_scoped(tmp_path: Path) -> None:

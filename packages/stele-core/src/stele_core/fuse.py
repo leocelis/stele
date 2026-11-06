@@ -264,7 +264,8 @@ def get_projection_pin(root: Path, conflict_key: str) -> dict[str, Any] | None:
     path = _proj_dir(root) / f"{_safe_key(str(conflict_key).strip())}.json"
     if not path.is_file():
         return None
-    return canonical_loads(path.read_text(encoding="utf-8"))
+    pin: dict[str, Any] = canonical_loads(path.read_text(encoding="utf-8"))
+    return pin
 
 
 def clear_projection_pin(root: Path, conflict_key: str) -> dict[str, Any]:

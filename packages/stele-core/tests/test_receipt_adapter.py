@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 import pytest
-
-from stele_core import SchemaError, Stele, project_receipt
 from helpers import TS, oracle_evidence
+from stele_core import SchemaError, Stele, project_receipt
 
 
 def test_projection_preserves_structure_and_redacts_private_source(stele: Stele) -> None:

@@ -15,7 +15,7 @@ from typing import Any
 
 from stele_core.schema import SchemaError, canonical_dumps
 
-_TOKEN = re.compile(r"[a-z0-9_]{2,}", re.I)
+_TOKEN = re.compile(r"[a-z0-9_]{2,}", re.IGNORECASE)
 
 
 def _tokens(text: str) -> set[str]:
@@ -28,7 +28,7 @@ def integrate_episodic_narrative(entry: Mapping[str, Any]) -> dict[str, Any]:
         raise SchemaError("entry mapping is required")
     title = str(entry.get("title") or "").strip()
     body = str(entry.get("body") or "").strip()
-    temporal = entry.get("temporal") if isinstance(entry.get("temporal"), Mapping) else {}
+    temporal = raw_temporal if isinstance(raw_temporal := entry.get("temporal"), Mapping) else {}
     t = temporal.get("valid_from") or entry.get("created_at")
     narrative = title
     if body:

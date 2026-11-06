@@ -45,7 +45,7 @@ def control_suggest(
     promoted = [e for e in entries if e.get("state") == "promoted"]
     store_n = len(promoted)
     hit_n = len(hits)
-    gap = evidence_gap(q or " ", hits) if q else {
+    gap: dict[str, Any] = evidence_gap(q or " ", hits) if q else {
         "gaps": [{"kind": "empty_hits", "value": "*"}] if not hits else [],
         "coverage": 1.0 if hits else 0.0,
         "closed": bool(hits),

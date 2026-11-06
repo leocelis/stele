@@ -15,7 +15,7 @@ from typing import Any
 
 from stele_core.schema import SchemaError, canonical_dumps
 
-_TOKEN = re.compile(r"[a-z0-9_]{2,}", re.I)
+_TOKEN = re.compile(r"[a-z0-9_]{2,}", re.IGNORECASE)
 
 
 def _tokens(text: str) -> set[str]:
@@ -30,7 +30,7 @@ def form_memcell(entry: Mapping[str, Any]) -> dict[str, Any]:
         raise SchemaError("entry mapping is required")
     title = str(entry.get("title") or "").strip()
     body = str(entry.get("body") or "").strip()
-    temporal = entry.get("temporal") if isinstance(entry.get("temporal"), Mapping) else {}
+    temporal = raw_temporal if isinstance(raw_temporal := entry.get("temporal"), Mapping) else {}
     t0 = temporal.get("valid_from") or entry.get("created_at")
     episode = title or (body.split(".")[0].strip() if body else "episode")
     # Atomic facts: short lines / conflict key
@@ -167,9 +167,7 @@ def foresight_filter(
                 "t_start": t_start,
                 "t_end": t_end,
             }
-            if t_end and str(t_end) < now_s:
-                expired.append(row)
-            elif t_start and t_start > now_s:
+            if t_end and str(t_end) < now_s or t_start and t_start > now_s:
                 expired.append(row)
             else:
                 active.append(row)

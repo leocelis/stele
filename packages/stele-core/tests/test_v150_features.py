@@ -5,7 +5,6 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-
 from stele_core import SchemaError, Stele, maple_shaped_report
 
 TS = "2026-08-20T22:00:00Z"

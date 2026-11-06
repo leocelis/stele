@@ -15,7 +15,7 @@ from typing import Any
 from stele_core.schema import SchemaError
 
 NETWORKS = frozenset({"world", "experience", "opinion", "observation"})
-_TOKEN = re.compile(r"[a-z0-9_]{2,}", re.I)
+_TOKEN = re.compile(r"[a-z0-9_]{2,}", re.IGNORECASE)
 
 _OPINION_MARKERS = (
     "i think",
@@ -148,7 +148,7 @@ def recall_multi_strategy(
         overlap = len(qtok & etok)
         if overlap:
             _touch(eid, "lexical", float(overlap), e)
-        temporal = e.get("temporal") if isinstance(e.get("temporal"), Mapping) else {}
+        temporal = raw_temporal if isinstance(raw_temporal := e.get("temporal"), Mapping) else {}
         vf = str(temporal.get("valid_from") or "")
         if any(t in vf for t in qtok if t.isdigit() and len(t) == 4):
             _touch(eid, "temporal", 1.0, e)

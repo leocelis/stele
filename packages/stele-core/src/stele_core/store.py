@@ -8,7 +8,7 @@ import time
 import uuid
 from collections.abc import Iterable, Iterator
 from pathlib import Path
-from typing import Any
+from typing import Any, Self
 
 from stele_core.schema import SchemaError, canonical_dumps, canonical_loads, validate_entry
 
@@ -69,7 +69,8 @@ class SteleStore:
 
     @property
     def store_id(self) -> str:
-        return canonical_loads(self.manifest_path.read_text(encoding="utf-8"))["store_id"]
+        manifest: dict[str, Any] = canonical_loads(self.manifest_path.read_text(encoding="utf-8"))
+        return str(manifest["store_id"])
 
     # ----- locking ---------------------------------------------------------
 
@@ -88,12 +89,12 @@ class SteleStore:
 
     def release(self) -> None:
         try:
-            self.lock_path.unlink(missing_ok=True)  # type: ignore[call-arg]
+            self.lock_path.unlink(missing_ok=True)
         except TypeError:
             if self.lock_path.exists():
                 self.lock_path.unlink()
 
-    def __enter__(self) -> SteleStore:
+    def __enter__(self) -> Self:
         self.acquire()
         return self
 
@@ -189,7 +190,8 @@ class SteleStore:
         path = self._find_path(entry_id)
         if path is None:
             return None
-        return canonical_loads(path.read_text(encoding="utf-8"))
+        entry: dict[str, Any] = canonical_loads(path.read_text(encoding="utf-8"))
+        return entry
 
     def delete_entry_file(self, entry_id: str, *, actor: str, ts: str, reason: str) -> bool:
         path = self._find_path(entry_id)

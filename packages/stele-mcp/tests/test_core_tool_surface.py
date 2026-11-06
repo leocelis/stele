@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-
 from stele_mcp.server import _CORE_TOOL_NAMES, create_app, create_core_app
 
 

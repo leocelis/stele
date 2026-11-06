@@ -21,9 +21,11 @@ import os
 import secrets
 import threading
 import time
+from typing import Any
 
 from starlette.requests import Request
 from starlette.responses import JSONResponse
+from starlette.types import ASGIApp, Receive, Scope, Send
 
 current_key_id: contextvars.ContextVar[str] = contextvars.ContextVar(
     "stele_current_key_id", default="local"
@@ -45,7 +47,7 @@ _MAX_TRACKED_RATE_LIMIT_KEYS = 1000
 
 
 class _TokenBucket:
-    __slots__ = ("tokens", "last_refill")
+    __slots__ = ("last_refill", "tokens")
 
     def __init__(self, capacity: float, now: float) -> None:
         self.tokens = capacity
@@ -98,10 +100,10 @@ _rate_limiter = RateLimiter()
 class SteleAuthMiddleware:
     """ASGI middleware: Bearer tokens for all non-exempt HTTP paths."""
 
-    def __init__(self, app) -> None:
+    def __init__(self, app: ASGIApp) -> None:
         self.app = app
 
-    async def __call__(self, scope, receive, send) -> None:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http":
             await self.app(scope, receive, send)
             return
@@ -145,7 +147,7 @@ class SteleAuthMiddleware:
             current_key_id.reset(token)
 
 
-def _extract_and_validate(scope) -> tuple[dict | None, str | None, str]:
+def _extract_and_validate(scope: Scope) -> tuple[dict[str, Any] | None, str, str]:
     path = scope.get("path", "")
 
     if not VALID_API_KEYS and not AUTH_DISABLED:
@@ -156,24 +158,24 @@ def _extract_and_validate(scope) -> tuple[dict | None, str | None, str]:
                 "Refusing all requests. Set STELE_API_KEYS, or "
                 "STELE_AUTH_DISABLED=true for local dev only."
             )
-        }, None, ""
+        }, "", ""
 
     headers: dict[bytes, bytes] = dict(scope.get("headers", []))
     raw_auth: str = headers.get(b"authorization", b"").decode("utf-8", errors="replace")
 
     if not raw_auth:
         _log.warning("AUTH  missing_header  path=%s", path)
-        return {"error": "Missing Authorization header"}, None, ""
+        return {"error": "Missing Authorization header"}, "", ""
 
     if not raw_auth.startswith("Bearer "):
         _log.warning("AUTH  bad_format  path=%s", path)
-        return {"error": "Invalid Authorization header. Expected: Bearer <token>"}, None, ""
+        return {"error": "Invalid Authorization header. Expected: Bearer <token>"}, "", ""
 
     api_key = raw_auth[7:].strip()
 
     if not api_key:
         _log.warning("AUTH  empty_key  path=%s", path)
-        return {"error": "Empty API key"}, None, ""
+        return {"error": "Empty API key"}, "", ""
 
     if AUTH_DISABLED and not VALID_API_KEYS:
         _log.warning(
@@ -183,7 +185,7 @@ def _extract_and_validate(scope) -> tuple[dict | None, str | None, str]:
 
     if not _key_matches(api_key):
         _log.warning("AUTH  invalid_key  key_prefix=%s  path=%s", api_key[:8], path)
-        return {"error": "Invalid API key"}, None, ""
+        return {"error": "Invalid API key"}, "", ""
 
     return None, _key_id(api_key), hashlib.sha256(api_key.encode()).hexdigest()
 

@@ -5,7 +5,6 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-
 from helpers import TS, base_entry, oracle_evidence
 from stele_core import SchemaError, Stele
 

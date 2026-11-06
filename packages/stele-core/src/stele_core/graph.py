@@ -17,7 +17,7 @@ def _title_sim(a: str, b: str) -> float:
     return len(ta & tb) / len(ta | tb)
 
 
-def _entry_links(entries: Mapping[str, dict[str, Any]]) -> dict[str, set[str]]:
+def _entry_links(entries: Mapping[str, Mapping[str, Any]]) -> dict[str, set[str]]:
     """Undirected entry↔entry adjacency from LINK kind=entry."""
     adj: dict[str, set[str]] = {eid: set() for eid in entries}
     for eid, e in entries.items():
@@ -201,7 +201,7 @@ def _source_trust(source: str, trusted: Sequence[str] | None) -> float:
 
 
 def path_trust(
-    entries: Iterable[dict[str, Any]],
+    entries: Iterable[Mapping[str, Any]],
     entry_id: str,
     *,
     trusted_sources: Sequence[str] | None = None,

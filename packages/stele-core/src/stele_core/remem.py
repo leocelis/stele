@@ -14,7 +14,7 @@ from typing import Any
 
 from stele_core.schema import SchemaError, canonical_dumps
 
-_TOKEN = re.compile(r"[a-z0-9_]{2,}", re.I)
+_TOKEN = re.compile(r"[a-z0-9_]{2,}", re.IGNORECASE)
 _ISOish = re.compile(r"\b(20\d{2}-\d{2}-\d{2})\b")
 
 SITUATIONAL_DIMS = frozenset(
@@ -36,7 +36,7 @@ def extract_episodic_gist(entry: Mapping[str, Any]) -> dict[str, Any]:
         raise SchemaError("entry mapping is required")
     title = str(entry.get("title") or "").strip()
     body = str(entry.get("body") or "").strip()
-    temporal = entry.get("temporal") if isinstance(entry.get("temporal"), Mapping) else {}
+    temporal = raw_temporal if isinstance(raw_temporal := entry.get("temporal"), Mapping) else {}
     t = temporal.get("valid_from") or entry.get("created_at")
     # First sentence / title as gist proxy
     sentence = body.split(".")[0].strip() if body else title
@@ -60,7 +60,7 @@ def extract_temporal_facts(entry: Mapping[str, Any]) -> dict[str, Any]:
         raise SchemaError("entry mapping is required")
     text = _blob(entry)
     toks = list(_TOKEN.findall(text))
-    temporal = entry.get("temporal") if isinstance(entry.get("temporal"), Mapping) else {}
+    temporal = raw_temporal if isinstance(raw_temporal := entry.get("temporal"), Mapping) else {}
     t = temporal.get("valid_from") or entry.get("created_at")
     dates = _ISOish.findall(text)
     facts: list[dict[str, Any]] = []
@@ -72,7 +72,7 @@ def extract_temporal_facts(entry: Mapping[str, Any]) -> dict[str, Any]:
         if v in text.lower():
             pred = v.rstrip("s") if v.endswith("s") and v != "fix" else v
             break
-    obj = title_obj = str(entry.get("title") or "event").strip() or "event"
+    title_obj = str(entry.get("title") or "event").strip() or "event"
     facts.append(
         {
             "s": subj,
@@ -107,7 +107,7 @@ def situational_bind(entry: Mapping[str, Any]) -> dict[str, Any]:
     if not isinstance(entry, Mapping):
         raise SchemaError("entry mapping is required")
     text = _blob(entry).lower()
-    temporal = entry.get("temporal") if isinstance(entry.get("temporal"), Mapping) else {}
+    temporal = raw_temporal if isinstance(raw_temporal := entry.get("temporal"), Mapping) else {}
     dims: dict[str, Any] = {
         "time": temporal.get("valid_from") or entry.get("created_at"),
         "location": None,
@@ -266,7 +266,7 @@ def ordinal_event_query(
     for e in entries:
         if not isinstance(e, Mapping):
             continue
-        temporal = e.get("temporal") if isinstance(e.get("temporal"), Mapping) else {}
+        temporal = raw_temporal if isinstance(raw_temporal := e.get("temporal"), Mapping) else {}
         t = str(temporal.get("valid_from") or e.get("created_at") or "")
         if not t:
             continue

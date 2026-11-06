@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import re
 from collections.abc import Iterable, Sequence
@@ -128,9 +129,11 @@ def export_pack(
         candidates = [e for e in candidates if e["id"] in want]
 
     for entry in candidates:
-        if entry["scope"] not in scopes and entry["scope"] != "universal":
-            if "universal" not in scopes:
-                continue
+        if (
+            entry["scope"] not in scopes and entry["scope"] != "universal"
+            and "universal" not in scopes
+        ):
+            continue
         if entry["layer"] not in allowed_layers:
             continue
         subject = entry["provenance"].get("subject_id")
@@ -277,10 +280,9 @@ def verify_pack(pack_dir: Path) -> dict[str, Any]:
     if (pack_dir / "provenance").is_dir():
         # Appendix is allowed; flag only if it looks like a chat dump at top level.
         for path in (pack_dir / "provenance").glob("*.json"):
-            try:
+            raw = None
+            with contextlib.suppress(Exception):
                 raw = canonical_loads(path.read_text(encoding="utf-8"))
-            except Exception:
-                continue
             if isinstance(raw, dict) and ("messages" in raw or "tool_calls" in raw):
                 warnings.append(f"provenance/{path.name}: looks trajectory-heavy")
 

@@ -114,9 +114,7 @@ def _valid_at_point(entry: dict[str, Any], as_of: str) -> bool:
     revoked_at = t.get("revoked_at")
     if revoked_at and parse_ts(revoked_at) <= parse_ts(as_of):
         return False
-    if entry.get("state") == "quarantined":
-        return False
-    return True
+    return entry.get("state") != "quarantined"
 
 
 class Retriever:
@@ -233,10 +231,7 @@ class Retriever:
                     continue
                 # Point-in-time may surface expired/superseded/revoked beliefs; always flag.
                 hist = (
-                    True
-                    if state in {"expired", "superseded", "revoked", "archived"}
-                    or historical_mode
-                    else False
+                    bool(state in {"expired", "superseded", "revoked", "archived"} or historical_mode)
                 )
             else:
                 if state == "quarantined":
@@ -392,7 +387,7 @@ class Retriever:
                 if as_of is not None:
                     if not _valid_at_point(entry, as_of):
                         continue
-                    hist = True if state in {"expired", "superseded"} or historical_mode else False
+                    hist = bool(state in {"expired", "superseded"} or historical_mode)
                 else:
                     if state == "quarantined":
                         continue

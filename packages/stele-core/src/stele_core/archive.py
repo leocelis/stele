@@ -118,7 +118,7 @@ def archive_plan(
     candidates.sort(
         key=lambda r: (
             float(r.get("fade_strength") or 0),
-            float(r.get("mw") if r.get("mw") is not None else 1),
+            float(mw if (mw := r.get("mw")) is not None else 1),
             str(r.get("id")),
         )
     )

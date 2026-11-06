@@ -314,7 +314,7 @@ def copyability_gate(
     """Flag whether any hit clears the copyability threshold."""
     if threshold < 0 or threshold > 1:
         raise SchemaError("threshold must be in [0, 1]")
-    scored = []
+    scored: list[dict[str, Any]] = []
     for e in entries:
         s = copyability_score(query, e)
         scored.append({"id": e.get("id"), "score": s, "title": e.get("title")})

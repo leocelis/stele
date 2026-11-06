@@ -204,10 +204,12 @@ def compositional_coalition_scan(
             )
             if not critical and len(union) < min_slots:
                 continue
-            if not critical and "exfil" not in union and "destination" not in union:
+            if (
+                not critical and "exfil" not in union and "destination" not in union
                 # weak coalition — skip unless very full
-                if len(union) < min_slots + 1:
-                    continue
+                and len(union) < min_slots + 1
+            ):
+                continue
             seen.add(ids)
             coalitions.append(
                 {

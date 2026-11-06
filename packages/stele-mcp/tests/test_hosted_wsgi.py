@@ -8,7 +8,6 @@ import re
 import sys
 from pathlib import Path
 
-import pytest
 from starlette.testclient import TestClient
 
 REPO = Path(__file__).resolve().parents[3]
@@ -30,7 +29,7 @@ def test_health_unauthenticated(tmp_path, monkeypatch) -> None:
     monkeypatch.setenv("STELE_AUTH_DISABLED", "true")
     monkeypatch.setenv("STELE_API_KEYS", "")
 
-    import stele_mcp.auth as auth
+    from stele_mcp import auth
 
     auth.AUTH_DISABLED = True
     auth.VALID_API_KEYS = set()
@@ -54,7 +53,7 @@ def test_protected_path_requires_auth_when_enabled(tmp_path, monkeypatch) -> Non
     monkeypatch.delenv("STELE_STORE_DSN", raising=False)
     monkeypatch.delenv("STELE_AUTH_DISABLED", raising=False)
 
-    import stele_mcp.auth as auth
+    from stele_mcp import auth
 
     auth.AUTH_DISABLED = False
     auth.VALID_API_KEYS = {"stl_unit_test_key"}
@@ -80,7 +79,7 @@ def test_core_mcp_route_serves_only_governed_ledger_tools(tmp_path, monkeypatch)
     monkeypatch.setenv("STELE_AUTH_DISABLED", "true")
     monkeypatch.setenv("STELE_API_KEYS", "")
 
-    import stele_mcp.auth as auth
+    from stele_mcp import auth
 
     auth.AUTH_DISABLED = True
     auth.VALID_API_KEYS = set()

@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from stele_core import Stele
 from helpers import TS, base_entry, oracle_evidence
+from stele_core import Stele
 
 
 def test_quarantine_never_served_and_filters_applied(stele: Stele) -> None:

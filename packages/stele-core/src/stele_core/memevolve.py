@@ -53,7 +53,7 @@ def architecture_profile(
     profile = dict(_DEFAULT_PROFILE)
     if overrides:
         for key in ("encode", "store", "retrieve", "manage"):
-            if key in overrides and overrides[key]:
+            if overrides.get(key):
                 profile[key] = str(overrides[key]).strip()
     invalid = []
     if profile["encode"] not in ENCODE_OPTIONS:

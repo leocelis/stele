@@ -23,9 +23,7 @@ def is_valid_at(entry: dict[str, Any], as_of: str) -> bool:
     revoked_at = t.get("revoked_at")
     if revoked_at and parse_ts(revoked_at) <= parse_ts(as_of):
         return False
-    if entry.get("state") == "quarantined":
-        return False
-    return True
+    return entry.get("state") != "quarantined"
 
 
 def is_stale(entry: dict[str, Any], as_of: str, horizon: str | None) -> bool:

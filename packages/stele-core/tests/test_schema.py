@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 import pytest
-
-from stele_core.schema import SchemaError, canonical_dumps, validate_entry
 from helpers import base_entry
+from stele_core.schema import SchemaError, canonical_dumps, validate_entry
 
 
 def test_incomplete_entries_rejected() -> None:

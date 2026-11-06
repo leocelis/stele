@@ -88,9 +88,10 @@ def derive_entry_id(entry: Mapping[str, Any]) -> str:
 
 
 def _require_str(obj: Mapping[str, Any], key: str) -> str:
-    if key not in obj or not isinstance(obj[key], str) or not obj[key].strip():
+    value = obj.get(key)
+    if not isinstance(value, str) or not value.strip():
         raise SchemaError(f"missing or empty string field: {key}")
-    return obj[key]
+    return value
 
 
 def _require_iso(value: str, field: str) -> str:
@@ -196,9 +197,11 @@ def validate_entry(
     if not isinstance(provenance, Mapping):
         raise SchemaError("provenance object is required")
     for key in ("agent", "task", "environment", "subject_id", "source", "written_at"):
-        if key not in provenance or not isinstance(provenance[key], str) or not provenance[key]:
-            if require_complete:
-                raise SchemaError(f"provenance.{key} is required")
+        if (
+            (key not in provenance or not isinstance(provenance[key], str) or not provenance[key])
+            and require_complete
+        ):
+            raise SchemaError(f"provenance.{key} is required")
     provenance_out: dict[str, Any] = {
         "agent": str(provenance["agent"]),
         "task": str(provenance["task"]),

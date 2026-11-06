@@ -31,7 +31,7 @@ def dual_project(entry: Mapping[str, Any]) -> dict[str, Any]:
     raw_sents = [s.strip() for s in _SENT_SPLIT.split(body) if s.strip()]
     if not raw_sents and body:
         raw_sents = [body]
-    facts = []
+    facts: list[dict[str, Any]] = []
     for i, s in enumerate(raw_sents[:12]):
         facts.append(
             {
@@ -203,7 +203,7 @@ def session_delta_deliver(
     sess = sessions.get(sid)
     if sess is None:
         raise SchemaError(f"unknown session_id: {sid}")
-    delivered = set(str(x) for x in (sess.get("delivered_critical") or []))
+    delivered = {str(x) for x in (sess.get("delivered_critical") or [])}
     inject: list[dict[str, Any]] = []
     skipped: list[str] = []
     newly: list[str] = []

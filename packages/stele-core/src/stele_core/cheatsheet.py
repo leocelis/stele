@@ -14,7 +14,7 @@ from typing import Any
 
 from stele_core.schema import SchemaError, canonical_dumps
 
-_TOKEN = re.compile(r"[a-z0-9_]{2,}", re.I)
+_TOKEN = re.compile(r"[a-z0-9_]{2,}", re.IGNORECASE)
 SNIPPET_KINDS = frozenset({"strategy", "code", "insight", "formula"})
 CURATOR_ACTIONS = frozenset({"ADD", "REFINE", "PRUNE", "KEEP"})
 

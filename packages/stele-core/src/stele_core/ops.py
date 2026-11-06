@@ -2,2679 +2,1424 @@
 
 from __future__ import annotations
 
+import contextlib
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
-from stele_core.adapters import project_receipt
-from stele_core.distill import assert_distilled_entry
-from stele_core.activation import (
-    connection_density as act_connection_density,
-    retention_score,
-    spread_activate as act_spread_activate,
+from stele_core.abba import (
+    abb_expr as abb_abb_expr,
 )
-from stele_core.derived_index import rebuild_sqlite_index, search_sqlite_index
-from stele_core.execution import (
-    authority_gate as exec_authority_gate,
-    claim_closure as exec_claim_closure,
-    list_executions as exec_list_executions,
-    record_execution as exec_record_execution,
-    verify_execution_chain as exec_verify_execution_chain,
-    verify_execution_claim as exec_verify_execution_claim,
+from stele_core.abba import (
+    abb_hadamard as abb_abb_hadamard,
 )
-from stele_core.repair import (
-    cascade_descendants as repair_cascade_descendants,
-    cascade_exposure as repair_cascade_exposure,
-    non_revival_probe as repair_non_revival_probe,
-    repair_plan as repair_repair_plan,
-    repair_select_mincut as repair_repair_select_mincut,
+from stele_core.abba import (
+    abb_left as abb_abb_left,
 )
-from stele_core.cupmem import (
-    adjudicate_update as cupmem_adjudicate_update,
-    authorize_retrieval as cupmem_authorize_retrieval,
-    unknown_current_slots as cupmem_unknown_current_slots,
+from stele_core.abba import (
+    abb_loop_plan as abb_abb_loop_plan,
 )
-from stele_core.cmgl import (
-    admit_gate as cmgl_admit_gate,
-    list_admit_receipts as cmgl_list_admit_receipts,
-    verify_admit_receipt as cmgl_verify_admit_receipt,
+from stele_core.abba import (
+    abb_right as abb_abb_right,
 )
-from stele_core.tiermem import (
-    escalate as tiermem_escalate,
-    get_raw_page as tiermem_get_raw_page,
-    put_raw_page as tiermem_put_raw_page,
-    sufficiency_gate as tiermem_sufficiency_gate,
-    summary_entry_template as tiermem_summary_entry_template,
-)
-from stele_core.msce import (
-    crystallize_skill as msce_crystallize_skill,
-    skill_catalog as msce_skill_catalog,
-    skill_eligibility as msce_skill_eligibility,
-    value_backfill as msce_value_backfill,
-)
-from stele_core.fademem import (
-    fade_scan as fade_fade_scan,
-    fade_strength as fade_fade_strength,
-    fusion_candidates as fade_fusion_candidates,
-    weibull_relevance as fade_weibull_relevance,
-)
-from stele_core.memr3 import (
-    evidence_gap as memr3_evidence_gap,
-    gap_tracker_update as memr3_gap_tracker_update,
-    reflective_retrieve_plan as memr3_reflective_retrieve_plan,
-)
-from stele_core.archive import (
-    archive_plan as arch_archive_plan,
-    list_archived as arch_list_archived,
-)
-from stele_core.sfams import (
-    cis_scan as sfams_cis_scan,
-    composite_importance as sfams_composite_importance,
-)
-from stele_core.memcon import control_suggest as memcon_control_suggest
-from stele_core.scm import (
-    sleep_cycle_plan as scm_sleep_cycle_plan,
-    sleep_trigger as scm_sleep_trigger,
-    value_tag as scm_value_tag,
-    wm_clear as scm_wm_clear,
-    wm_list as scm_wm_list,
-    wm_push as scm_wm_push,
-)
-from stele_core.gam import (
-    consolidate_candidates as gam_consolidate_candidates,
-    episodic_buffer as gam_episodic_buffer,
-    semantic_boundary as gam_semantic_boundary,
-)
-from stele_core.acm import (
-    anticipate_prefetch as acm_anticipate_prefetch,
-    verify_compaction as acm_verify_compaction,
-)
-from stele_core.lightmem import (
-    assign_stage as light_assign_stage,
-    sensory_filter as light_sensory_filter,
-    stage_budget_plan as light_stage_budget_plan,
-    stage_inventory as light_stage_inventory,
-    topic_segments as light_topic_segments,
-)
-from stele_core.hipporag import (
-    multi_hop_retrieve as hippo_multi_hop_retrieve,
-    ppr_scores as hippo_ppr_scores,
-)
-from stele_core.mapgate import (
-    action_risk_gate as map_action_risk_gate,
-    write_gate as map_write_gate,
-)
-from stele_core.prograph import (
-    extract_residuals as pg_extract_residuals,
-    profile_expand as pg_profile_expand,
-    register_entities as pg_register_entities,
-    residual_augment as pg_residual_augment,
-)
-from stele_core.emg import (
-    insight_inject as emg_insight_inject,
-    match_correction as emg_match_correction,
-)
-from stele_core.agentir import (
-    cascade_route as air_cascade_route,
-    multi_channel_fuse as air_multi_channel_fuse,
-)
-from stele_core.govmem import (
-    dual_project as gm_dual_project,
-    entity_context as gm_entity_context,
-    entity_leak_probe as gm_entity_leak_probe,
-    governance_route as gm_governance_route,
-    session_delta_deliver as gm_session_delta_deliver,
-    session_delta_open as gm_session_delta_open,
-    session_delta_status as gm_session_delta_status,
-)
-from stele_core.hymem import (
-    classify_slot as hy_classify_slot,
-    isolate_pack as hy_isolate_pack,
-)
-from stele_core.freshness import (
-    assemble_current as fr_assemble_current,
-    extract_version_markers as fr_extract_version_markers,
-    freshness_resolve as fr_freshness_resolve,
-    hop_freshness as fr_hop_freshness,
-)
-from stele_core.patchtxn import (
-    patch_test as pt_patch_test,
-    recover_active_map as pt_recover_active_map,
-    temporal_resolve as pt_temporal_resolve,
-)
-from stele_core.fleetprop import (
-    fleet_scope_gate as fp_fleet_scope_gate,
-    propagate_plan as fp_propagate_plan,
-    stale_propagation_scan as fp_stale_propagation_scan,
-)
-from stele_core.budgetmem import (
-    budget_module_plan as bm_budget_module_plan,
-    budget_tier_route as bm_budget_tier_route,
-    query_complexity as bm_query_complexity,
-    tier_params as bm_tier_params,
-)
-from stele_core.skillrank import (
-    skill_prereq_expand as sr_skill_prereq_expand,
-    skill_rank as sr_skill_rank,
-)
-from stele_core.erskill import (
-    BUILTIN_SKILLS,
-    compose_retrieval_skill as er_compose_retrieval_skill,
-    list_primitives as er_list_primitives,
-    list_retrieval_skills as er_list_retrieval_skills,
-    route_retrieval_skill as er_route_retrieval_skill,
-)
-from stele_core.consistencygate import (
-    consistency_admit as cg_consistency_admit,
-    support_score as cg_support_score,
-)
-from stele_core.memgate import (
-    retrieval_admit as mg_retrieval_admit,
-    task_conditioned_pack as mg_task_conditioned_pack,
-)
-from stele_core.mnemonic import (
-    post_delete_verify as mn_post_delete_verify,
-    rollback_plan as mn_rollback_plan,
-    sovereignty_checklist as mn_sovereignty_checklist,
-)
-from stele_core.sodamem import (
-    cited_pack as soda_cited_pack,
-    density_fuse as soda_density_fuse,
-    evidence_plan as soda_evidence_plan,
-)
-from stele_core.memrefine import (
-    compress_candidates as mr_compress_candidates,
-    refine_plan as mr_refine_plan,
-)
-from stele_core.ariadne import (
-    bridge_discover as ar_bridge_discover,
-    fuse_cluster as ar_fuse_cluster,
-    merge_link_add as ar_merge_link_add,
-)
-from stele_core.tgms import (
-    claim_verify as tgms_claim_verify,
-    operator_cost_estimate as tgms_operator_cost_estimate,
-    plan_static_verify as tgms_plan_static_verify,
-    result_digest as tgms_result_digest,
-    summary_quarantine_scan as tgms_summary_quarantine_scan,
-)
-from stele_core.memdata import (
-    localized_maintenance_plan as md_localized_maintenance_plan,
-    maintenance_cost_compare as md_maintenance_cost_compare,
-)
-from stele_core.tmanm import (
-    act_authority_gate as tma_act_authority_gate,
-    launder_scan as tma_launder_scan,
-    origin_bind as tma_origin_bind,
-    propagate_origin as tma_propagate_origin,
-)
-from stele_core.amsentry import (
-    retrieval_screen as am_retrieval_screen,
-    save_policy as am_save_policy,
-)
-from stele_core.memforest import (
-    build_memtree as mf_build_memtree,
-    coarse_to_fine as mf_coarse_to_fine,
-    dirty_path_plan as mf_dirty_path_plan,
-)
-from stele_core.xmemory import (
-    build_themes_from_entries as xm_build_themes_from_entries,
-    split_merge_plan as xm_split_merge_plan,
-    theme_attach as xm_theme_attach,
-    top_down_pack as xm_top_down_pack,
-)
-from stele_core.memsec import (
-    execute_chain_probe as ms_execute_chain_probe,
-    lifecycle_report as ms_lifecycle_report,
-    persistence_probe as ms_persistence_probe,
-    selective_repair_plan as ms_selective_repair_plan,
-)
-from stele_core.sleepgate import (
-    conflict_tag as sg_conflict_tag,
-    consolidate_survivors as sg_consolidate_survivors,
-    forget_gate_plan as sg_forget_gate_plan,
-    pi_depth_scan as sg_pi_depth_scan,
-)
-from stele_core.amemguard import consensus_admit as ag_consensus_admit
-from stele_core.deprepair import (
-    build_mem_action_graph as dr_build_mem_action_graph,
-    dependency_trace as dr_dependency_trace,
-    preserve_independent as dr_preserve_independent,
-    selective_replay_plan as dr_selective_replay_plan,
-)
-from stele_core.mpbench import (
-    channel_admit_batch as mp_channel_admit_batch,
-    classify_write_channel as mp_classify_write_channel,
-    source_isolation_gate as mp_source_isolation_gate,
-    write_channel_inventory as mp_write_channel_inventory,
-)
-from stele_core.mempoison import (
-    collusion_risk_gate as mpz_collusion_risk_gate,
-    compositional_coalition_scan as mpz_compositional_coalition_scan,
-    dormant_trigger_scan as mpz_dormant_trigger_scan,
-    mempoison_ladder_report as mpz_mempoison_ladder_report,
-    salami_pair_probe as mpz_salami_pair_probe,
-    slot_coverage as mpz_slot_coverage,
-    threat_tier_classify as mpz_threat_tier_classify,
-)
-from stele_core.knowledgelayer import (
-    classify_persistence_layer as kl_classify_persistence_layer,
-    intelligence_reject_gate as kl_intelligence_reject_gate,
-    knowledge_protect_scan as kl_knowledge_protect_scan,
-    layer_inventory as kl_layer_inventory,
-    persistence_policy as kl_persistence_policy,
-)
-from stele_core.credguard import (
-    credential_reject_gate as cg_credential_reject_gate,
-    credential_scan_entry as cg_credential_scan_entry,
-    credential_store_scan as cg_credential_store_scan,
-)
-from stele_core.oblivion_gate import (
-    reasoning_reserve_plan as og_reasoning_reserve_plan,
-    uncertainty_retrieve_gate as og_uncertainty_retrieve_gate,
-    uncertainty_score as og_uncertainty_score,
-)
-from stele_core.pam import (
-    build_merkle_dag as pam_build_merkle_dag,
-    check_capability as pam_check_capability,
-    classify_memory_component as pam_classify_memory_component,
-    issue_capability_token as pam_issue_capability_token,
-    rehydrate_safe_plan as pam_rehydrate_safe_plan,
-    selective_disclose as pam_selective_disclose,
-    verify_merkle_root as pam_verify_merkle_root,
-)
-from stele_core.capseal import (
-    action_capability_inventory as cs_action_capability_inventory,
-    capability_export_probe as cs_capability_export_probe,
-    check_action_capability as cs_check_action_capability,
-    issue_action_capability as cs_issue_action_capability,
-)
-from stele_core.agentdog import (
-    classify_failure_mode as ad_classify_failure_mode,
-    classify_real_world_harm as ad_classify_real_world_harm,
-    classify_risk_source as ad_classify_risk_source,
-    diagnose_trajectory as ad_diagnose_trajectory,
-    diagnose_trajectory_step as ad_diagnose_trajectory_step,
-    safe_but_unreasonable_scan as ad_safe_but_unreasonable_scan,
-    taxonomy_inventory as ad_taxonomy_inventory,
-)
-from stele_core.memweaver import (
-    build_hybrid_weave as mw_build_hybrid_weave,
-    dual_channel_retrieve as mw_dual_channel_retrieve,
-    experience_abstract_plan as mw_experience_abstract_plan,
-    multi_hop_depth_score as mw_multi_hop_depth_score,
-    temporal_session_conflict_scan as mw_temporal_session_conflict_scan,
-    weave_layer_assign as mw_weave_layer_assign,
-)
-from stele_core.memevolve import (
-    architecture_profile as me_architecture_profile,
-    diagnose_architecture as me_diagnose_architecture,
-    list_design_space as me_list_design_space,
-    propose_architecture_variants as me_propose_architecture_variants,
-    rank_architecture_fitness as me_rank_architecture_fitness,
-    select_architecture_parents as me_select_architecture_parents,
-)
-from stele_core.mindmemos import (
-    contamination_scan as mm_contamination_scan,
-    dreaming_consolidate_plan as mm_dreaming_consolidate_plan,
-    ept_classify as mm_ept_classify,
-    feedback_revise_plan as mm_feedback_revise_plan,
-    functional_role_assign as mm_functional_role_assign,
-    skill_evolve_plan as mm_skill_evolve_plan,
-    type_route_retrieve as mm_type_route_retrieve,
-)
-from stele_core.pamu import (
-    extract_preference_signal as pu_extract_preference_signal,
-    format_preference_prompt as pu_format_preference_prompt,
-    fuse_preference as pu_fuse_preference,
-    preference_change_detect as pu_preference_change_detect,
-    preference_update_plan as pu_preference_update_plan,
-)
-from stele_core.beam import (
-    abstention_gate as bm_abstention_gate,
-    beam_category_inventory as bm_beam_category_inventory,
-    beam_eval_pack as bm_beam_eval_pack,
-    classify_beam_query as bm_classify_beam_query,
-    contradiction_resolve_plan as bm_contradiction_resolve_plan,
-    event_order_check as bm_event_order_check,
-    knowledge_update_check as bm_knowledge_update_check,
-    localize_hallucination_stage as bm_localize_hallucination_stage,
-)
-from stele_core.remem import (
-    agentic_retrieve_plan as rm_agentic_retrieve_plan,
-    build_hybrid_episodic_graph as rm_build_hybrid_episodic_graph,
-    extract_episodic_gist as rm_extract_episodic_gist,
-    extract_temporal_facts as rm_extract_temporal_facts,
-    ordinal_event_query as rm_ordinal_event_query,
-    situational_bind as rm_situational_bind,
-)
-from stele_core.evermemos import (
-    consolidate_memscenes as ev_consolidate_memscenes,
-    foresight_filter as ev_foresight_filter,
-    form_memcell as ev_form_memcell,
-    necessity_sufficiency_check as ev_necessity_sufficiency_check,
-    profile_evolve_plan as ev_profile_evolve_plan,
-    reconstructive_recollect as ev_reconstructive_recollect,
-)
-from stele_core.memoryos import (
-    classify_memory_tier as mo_classify_memory_tier,
-    heat_score as mo_heat_score,
-    hierarchical_retrieve as mo_hierarchical_retrieve,
-    mtm_evict_plan as mo_mtm_evict_plan,
-    promote_to_lpm_plan as mo_promote_to_lpm_plan,
-    segment_pages as mo_segment_pages,
-    stm_to_mtm_plan as mo_stm_to_mtm_plan,
-)
-from stele_core.nemori import (
-    anticipatory_schema as nm_anticipatory_schema,
-    deserves_memory_gate as nm_deserves_memory_gate,
-    distill_batch_plan as nm_distill_batch_plan,
-    integrate_episodic_narrative as nm_integrate_episodic_narrative,
-    prediction_error_distill as nm_prediction_error_distill,
-)
-from stele_core.hindsight import (
-    classify_network as hs_classify_network,
-    network_inventory as hs_network_inventory,
-    opinion_reinforce as hs_opinion_reinforce,
-    recall_multi_strategy as hs_recall_multi_strategy,
-    reflect_plan as hs_reflect_plan,
-    retain_plan as hs_retain_plan,
-)
-from stele_core.reasoningbank import (
-    consolidate_strategy_plan as rb_consolidate_strategy_plan,
-    distill_strategy_item as rb_distill_strategy_item,
-    failure_lesson_gate as rb_failure_lesson_gate,
-    matts_contrastive_plan as rb_matts_contrastive_plan,
-    retrieve_strategies as rb_retrieve_strategies,
-)
-from stele_core.memskill import (
-    designer_evolve_plan as ms_designer_evolve_plan,
-    execute_skill_plan as ms_execute_skill_plan,
-    init_skill_bank as ms_init_skill_bank,
-    record_hard_case as ms_record_hard_case,
-    select_skills as ms_select_skills,
-    span_partition as ms_span_partition,
-)
-from stele_core.memoryr1 import (
-    classify_memory_op as mr_classify_memory_op,
-    conflict_update_plan as mr_conflict_update_plan,
-    delete_stale_plan as mr_delete_stale_plan,
-    memory_op_plan as mr_memory_op_plan,
-    noop_gate as mr_noop_gate,
-)
-from stele_core.gmemory import (
-    bidirectional_retrieve as gm_bidirectional_retrieve,
-    build_query_graph as gm_build_query_graph,
-    classify_graph_tier as gm_classify_graph_tier,
-    downward_interaction_traverse as gm_downward_interaction_traverse,
-    hierarchy_update_plan as gm_hierarchy_update_plan,
-    upward_insight_traverse as gm_upward_insight_traverse,
-)
-from stele_core.memma import (
-    answerability_check as mm_answerability_check,
-    meta_thinker_guidance as mm_meta_thinker_guidance,
-    repair_from_probes as mm_repair_from_probes,
-    synthesize_probe_qa as mm_synthesize_probe_qa,
-    verify_probes as mm_verify_probes,
-)
-from stele_core.awm import (
-    induce_workflow as awm_induce_workflow,
-    online_induce_gate as awm_online_induce_gate,
-    retrieve_workflows as awm_retrieve_workflows,
-    workflow_memory_add_plan as awm_workflow_memory_add_plan,
-    workflow_step_budget as awm_workflow_step_budget,
-)
-from stele_core.rrm import (
-    anomaly_trigger as rrm_anomaly_trigger,
-    distill_retrieval_experience as rrm_distill_retrieval_experience,
-    experience_lifecycle_score as rrm_experience_lifecycle_score,
-    isolate_factual_from_procedural as rrm_isolate_factual_from_procedural,
-    prune_experience_plan as rrm_prune_experience_plan,
-    query_level_guidance as rrm_query_level_guidance,
-)
-from stele_core.reme import (
-    adaptive_rewrite_plan as reme_adaptive_rewrite_plan,
-    multi_faceted_distill as reme_multi_faceted_distill,
-    scenario_retrieve as reme_scenario_retrieve,
-    selective_add_plan as reme_selective_add_plan,
-    utility_after_reuse as reme_utility_after_reuse,
-    utility_prune_plan as reme_utility_prune_plan,
-)
-from stele_core.cheatsheet import (
-    compact_memory_gate as dc_compact_memory_gate,
-    curator_decide as dc_curator_decide,
-    dc_rs_order_check as dc_dc_rs_order_check,
-    extract_cheatsheet_snippet as dc_extract_cheatsheet_snippet,
-    retrieve_cheatsheet as dc_retrieve_cheatsheet,
-)
-from stele_core.expel import (
-    experience_pool_add as expel_experience_pool_add,
-    insight_importance_gate as expel_insight_importance_gate,
-    insight_op as expel_insight_op,
-    retrieve_insights as expel_retrieve_insights,
-    retrieve_similar_successes as expel_retrieve_similar_successes,
-)
-from stele_core.reflective_mm import (
-    prospective_reflect as rmm_d_prospective_reflect,
-    rerank_memories as rmm_d_rerank_memories,
-    retrieval_refine_plan as rmm_d_retrieval_refine_plan,
-    retrospective_cite_feedback as rmm_d_retrospective_cite_feedback,
-    retrieve_topic_memories as rmm_d_retrieve_topic_memories,
-    topic_memory_bank as rmm_d_topic_memory_bank,
-)
-from stele_core.trace2skill import (
-    collect_trajectory_label as t2s_collect_trajectory_label,
-    hierarchical_merge_patches as t2s_hierarchical_merge_patches,
-    parallel_patch_pool as t2s_parallel_patch_pool,
-    prefer_parallel_over_sequential as t2s_prefer_parallel_over_sequential,
-    propose_trajectory_patch as t2s_propose_trajectory_patch,
-    skill_mode_gate as t2s_skill_mode_gate,
-)
-from stele_core.evomemory import (
-    evolution_similarity_hint as evo_evolution_similarity_hint,
-    evomem_refine_plan as evo_evomem_refine_plan,
-    exprag_retrieve as evo_exprag_retrieve,
-    search_predict_evolve_check as evo_search_predict_evolve_check,
-    streaming_task_append as evo_streaming_task_append,
-)
-from stele_core.memalpha import (
-    classify_memory_slot as ma_classify_memory_slot,
-    compression_ratio as ma_compression_ratio,
-    length_generalization_gate as ma_length_generalization_gate,
-    memalpha_reward_bundle as ma_memalpha_reward_bundle,
-    memory_write_op as ma_memory_write_op,
-    process_chunk_plan as ma_process_chunk_plan,
-)
-from stele_core.agenther import (
-    classify_failure as ah_classify_failure,
-    extract_replay_outcome as ah_extract_replay_outcome,
-    hindsight_relabel_plan as ah_hindsight_relabel_plan,
-    multi_judge_accept as ah_multi_judge_accept,
-    package_training_pair as ah_package_training_pair,
-)
-from stele_core.preflect import (
-    distill_planning_error as pf_distill_planning_error,
-    preflect_before_execute_gate as pf_preflect_before_execute_gate,
-    prospective_critique_plan as pf_prospective_critique_plan,
-    replan_on_deviation as pf_replan_on_deviation,
-    revise_plan_proposal as pf_revise_plan_proposal,
-)
-from stele_core.skillflow import (
-    orchestration_action_select as sf_orchestration_action_select,
-    phase_evolve_gate as sf_phase_evolve_gate,
-    skill_curation_decide as sf_skill_curation_decide,
-    skill_marginal_flow as sf_skill_marginal_flow,
-    step_importance as sf_step_importance,
-    ttb_residual as sf_ttb_residual,
-)
-from stele_core.procmem import (
-    define_skill_triplet as pm_define_skill_triplet,
-    ppo_gate_verify as pm_ppo_gate_verify,
-    semantic_gradient_candidate as pm_semantic_gradient_candidate,
-    skill_score_maintain as pm_skill_score_maintain,
-    skill_select_gate as pm_skill_select_gate,
-    skill_terminate_check as pm_skill_terminate_check,
-)
-from stele_core.memrl import (
-    ieu_record as mr_ieu_record,
-    semantic_vs_utility_warn as mr_semantic_vs_utility_warn,
-    two_phase_retrieve as mr_two_phase_retrieve,
-    utility_q_update as mr_utility_q_update,
-    value_aware_select as mr_value_aware_select,
-)
-from stele_core.evolver import (
-    distill_principle as ev_distill_principle,
-    lifecycle_phase_gate as ev_lifecycle_phase_gate,
-    principle_dedupe_plan as ev_principle_dedupe_plan,
-    principle_metric_score as ev_principle_metric_score,
-    prune_low_score_principles as ev_prune_low_score_principles,
-    search_experience_action as ev_search_experience_action,
-)
-from stele_core.agentevolver import (
-    attribute_step_credit as ae_attribute_step_credit,
-    curiosity_explore_plan as ae_curiosity_explore_plan,
-    experience_when_content as ae_experience_when_content,
-    mixed_rollout_split as ae_mixed_rollout_split,
-    self_question_task as ae_self_question_task,
-)
-from stele_core.skillweaver import (
-    distill_skill_api as sw_distill_skill_api,
-    hone_skill_api as sw_hone_skill_api,
-    practice_skill_run as sw_practice_skill_run,
-    propose_skill as sw_propose_skill,
-    skill_library_register as sw_skill_library_register,
-    transfer_skill_gate as sw_transfer_skill_gate,
-)
-from stele_core.skillroute import (
-    compose_skill_dag as sr_compose_skill_dag,
-    decompose_task_steps as sr_decompose_task_steps,
-    granularity_match_check as sr_granularity_match_check,
-    retrieve_skills_for_steps as sr_retrieve_skills_for_steps,
-    sad_feedback_loop as sr_sad_feedback_loop,
+from stele_core.abba import (
+    abb_score as abb_abb_score,
 )
 from stele_core.abszero import (
     abszero_joint_objective as az_abszero_joint_objective,
+)
+from stele_core.abszero import (
     executor_verify_gate as az_executor_verify_gate,
+)
+from stele_core.abszero import (
     learnability_reward as az_learnability_reward,
+)
+from stele_core.abszero import (
     propose_reasoning_task as az_propose_reasoning_task,
+)
+from stele_core.abszero import (
     solve_reward as az_solve_reward,
+)
+from stele_core.abszero import (
     validate_task_structure as az_validate_task_structure,
 )
-from stele_core.rzero import (
-    challenger_propose as rz_challenger_propose,
-    coevolve_round_plan as rz_coevolve_round_plan,
-    curriculum_band_filter as rz_curriculum_band_filter,
-    majority_vote_label as rz_majority_vote_label,
-    solver_binary_reward as rz_solver_binary_reward,
-    uncertainty_reward as rz_uncertainty_reward,
+from stele_core.acm import (
+    anticipate_prefetch as acm_anticipate_prefetch,
 )
-from stele_core.echomem import (
-    budget_binding_check as em_budget_binding_check,
-    history_collapse_gate as em_history_collapse_gate,
-    provenance_credit_mask as em_provenance_credit_mask,
-    reconstruct_policy_context as em_reconstruct_policy_context,
-    select_turn_memories as em_select_turn_memories,
-    write_turn_memory as em_write_turn_memory,
+from stele_core.acm import (
+    verify_compaction as acm_verify_compaction,
 )
-from stele_core.agent0 import (
-    curriculum_propose_task as a0_curriculum_propose_task,
-    curriculum_reward as a0_curriculum_reward,
-    executor_frontier_filter as a0_executor_frontier_filter,
-    symbiotic_round_plan as a0_symbiotic_round_plan,
-    tool_aware_pressure as a0_tool_aware_pressure,
-    tool_use_reward as a0_tool_use_reward,
+from stele_core.activation import (
+    connection_density as act_connection_density,
 )
-from stele_core.mae import (
-    mae_judge_score as mae_judge_score_fn,
-    mae_propose_question as mae_propose_question_fn,
-    mae_proposer_reward as mae_proposer_reward_fn,
-    mae_quality_filter as mae_quality_filter_fn,
-    mae_solve_attempt as mae_solve_attempt_fn,
-    mae_triad_round_plan as mae_triad_round_plan_fn,
+from stele_core.activation import (
+    retention_score,
 )
-from stele_core.sagema import (
-    sage_challenge_task as sage_challenge_task_fn,
-    sage_closed_loop_round as sage_closed_loop_round_fn,
-    sage_critic_filter as sage_critic_filter_fn,
-    sage_drift_gate as sage_drift_gate_fn,
-    sage_plan_steps as sage_plan_steps_fn,
-    sage_solve_with_plan as sage_solve_with_plan_fn,
-)
-from stele_core.memgen import (
-    faculty_classify as mg_faculty_classify,
-    interweave_cycle_plan as mg_interweave_cycle_plan,
-    memory_trigger_decide as mg_memory_trigger_decide,
-    sparse_invoke_penalty as mg_sparse_invoke_penalty,
-    weave_latent_memory as mg_weave_latent_memory,
-    weaver_only_update_gate as mg_weaver_only_update_gate,
-)
-from stele_core.metis import (
-    crystallize_plan_to_tool as mt_crystallize_plan_to_tool,
-    dual_retrieve as mt_dual_retrieve,
-    metis_loop_plan as mt_metis_loop_plan,
-    promote_kind_gate as mt_promote_kind_gate,
-    representation_tradeoff as mt_representation_tradeoff,
-    text_experience_store as mt_text_experience_store,
-)
-from stele_core.samule import (
-    failure_centric_gate as sa_failure_centric_gate,
-    foresight_reflect as sa_foresight_reflect,
-    inter_task_transfer as sa_inter_task_transfer,
-    intra_task_taxonomy as sa_intra_task_taxonomy,
-    merge_reflections as sa_merge_reflections,
-    single_trajectory_reflect as sa_single_trajectory_reflect,
-)
-from stele_core.liveevo import (
-    compile_task_guideline as le_compile_task_guideline,
-    experience_bank_record as le_experience_bank_record,
-    forget_stale_experience as le_forget_stale_experience,
-    liveevo_online_round as le_liveevo_online_round,
-    meta_guideline_record as le_meta_guideline_record,
-    update_experience_weight as le_update_experience_weight,
-)
-from stele_core.socratic import (
-    socratic_closed_loop as so_socratic_closed_loop,
-    socratic_generator_distill as so_socratic_generator_distill,
-    socratic_seed_bootstrap as so_socratic_seed_bootstrap,
-    socratic_solver_preference as so_socratic_solver_preference,
-    socratic_teacher_craft as so_socratic_teacher_craft,
-    socratic_weakness_target as so_socratic_weakness_target,
-)
-from stele_core.spiral import (
-    spiral_baseline_ema as sp_spiral_baseline_ema,
-    spiral_multi_game_plan as sp_spiral_multi_game_plan,
-    spiral_opponent_strength as sp_spiral_opponent_strength,
-    spiral_rae_advantage as sp_spiral_rae_advantage,
-    spiral_self_play_match as sp_spiral_self_play_match,
-    spiral_transfer_pattern as sp_spiral_transfer_pattern,
-)
-from stele_core.smith import (
-    smith_create_tool as sm_smith_create_tool,
-    smith_curriculum_difficulty as sm_smith_curriculum_difficulty,
-    smith_loop_plan as sm_smith_loop_plan,
-    smith_retrieve_episode as sm_smith_retrieve_episode,
-    smith_store_memory as sm_smith_store_memory,
-    smith_tool_reuse_gate as sm_smith_tool_reuse_gate,
-)
-from stele_core.hmem import (
-    hmem_consolidate_nodes as hm_hmem_consolidate_nodes,
-    hmem_decompose_query as hm_hmem_decompose_query,
-    hmem_evolution_gate as hm_hmem_evolution_gate,
-    hmem_hybrid_retrieve as hm_hmem_hybrid_retrieve,
-    hmem_leaf_event as hm_hmem_leaf_event,
-    hmem_link_entities as hm_hmem_link_entities,
-)
-from stele_core.himem import (
-    himem_extract_note as hi_himem_extract_note,
-    himem_link_episode_note as hi_himem_link_episode_note,
-    himem_loop_plan as hi_himem_loop_plan,
-    himem_reconsolidate as hi_himem_reconsolidate,
-    himem_retrieve_strategy as hi_himem_retrieve_strategy,
-    himem_segment_episode as hi_himem_segment_episode,
-)
-from stele_core.hmeml import (
-    hmeml_descend as hl_hmeml_descend,
-    hmeml_efficiency_score as hl_hmeml_efficiency_score,
-    hmeml_loop_plan as hl_hmeml_loop_plan,
-    hmeml_parent_link as hl_hmeml_parent_link,
-    hmeml_route_query as hl_hmeml_route_query,
-    hmeml_store_level as hl_hmeml_store_level,
-)
-from stele_core.hyperskill import (
-    hyperskill_add_hyperedge as hs_hyperskill_add_hyperedge,
-    hyperskill_add_skill as hs_hyperskill_add_skill,
-    hyperskill_add_subtask as hs_hyperskill_add_subtask,
-    hyperskill_dual_path_retrieve as hs_hyperskill_dual_path_retrieve,
-    hyperskill_loop_plan as hs_hyperskill_loop_plan,
-    hyperskill_maintain_plan as hs_hyperskill_maintain_plan,
-    hyperskill_rank_skills as hs_hyperskill_rank_skills,
-)
-from stele_core.dcpm import (
-    dcpm_cross_domain_collision as dc_dcpm_cross_domain_collision,
-    dcpm_day_write as dc_dcpm_day_write,
-    dcpm_hierarchy_level as dc_dcpm_hierarchy_level,
-    dcpm_loop_plan as dc_dcpm_loop_plan,
-    dcpm_night_induce as dc_dcpm_night_induce,
-    dcpm_supersedes_chain as dc_dcpm_supersedes_chain,
-)
-from stele_core.memos import (
-    memos_compose as mo_memos_compose,
-    memos_create_cube as mo_memos_create_cube,
-    memos_fuse_gate as mo_memos_fuse_gate,
-    memos_lifecycle as mo_memos_lifecycle,
-    memos_loop_plan as mo_memos_loop_plan,
-    memos_migrate as mo_memos_migrate,
-    memos_schedule as mo_memos_schedule,
-)
-from stele_core.skillcraft import (
-    skillcraft_execute_skill as sc_skillcraft_execute_skill,
-    skillcraft_get_skill as sc_skillcraft_get_skill,
-    skillcraft_list_skills as sc_skillcraft_list_skills,
-    skillcraft_loop_plan as sc_skillcraft_loop_plan,
-    skillcraft_save_skill as sc_skillcraft_save_skill,
-    skillcraft_token_efficiency as sc_skillcraft_token_efficiency,
-    skillcraft_verify_skill as sc_skillcraft_verify_skill,
-)
-from stele_core.cma import (
-    cma_associative_route as cm_cma_associative_route,
-    cma_consolidate as cm_cma_consolidate,
-    cma_loop_plan as cm_cma_loop_plan,
-    cma_persist as cm_cma_persist,
-    cma_probe_gate as cm_cma_probe_gate,
-    cma_selective_retain as cm_cma_selective_retain,
-    cma_temporal_chain as cm_cma_temporal_chain,
-)
-from stele_core.agentfold import (
-    agentfold_context_budget as af_agentfold_context_budget,
-    agentfold_deep_consolidate as af_agentfold_deep_consolidate,
-    agentfold_fold_command as af_agentfold_fold_command,
-    agentfold_granular_condense as af_agentfold_granular_condense,
-    agentfold_loop_plan as af_agentfold_loop_plan,
-    agentfold_workspace_split as af_agentfold_workspace_split,
-)
-from stele_core.memengine import (
-    memengine_bind_model as me_memengine_bind_model,
-    memengine_compose_operation as me_memengine_compose_operation,
-    memengine_config_set as me_memengine_config_set,
-    memengine_loop_plan as me_memengine_loop_plan,
-    memengine_pluggable as me_memengine_pluggable,
-    memengine_reflect_plan as me_memengine_reflect_plan,
-    memengine_register_function as me_memengine_register_function,
-)
-from stele_core.simplemem import (
-    simplemem_compress as sm_simplemem_compress,
-    simplemem_intent_scope as sm_simplemem_intent_scope,
-    simplemem_loop_plan as sm_simplemem_loop_plan,
-    simplemem_multiview_index as sm_simplemem_multiview_index,
-    simplemem_synthesize as sm_simplemem_synthesize,
-    simplemem_token_ratio as sm_simplemem_token_ratio,
-)
-from stele_core.omem import (
-    omem_extract_persona as om_omem_extract_persona,
-    omem_hierarchy_retrieve as om_omem_hierarchy_retrieve,
-    omem_loop_plan as om_omem_loop_plan,
-    omem_profile_gate as om_omem_profile_gate,
-    omem_scale_memory_time as om_omem_scale_memory_time,
-    omem_update_event as om_omem_update_event,
-)
-from stele_core.mandol import (
-    mandol_agglomerate as md_mandol_agglomerate,
-    mandol_basic_unit as md_mandol_basic_unit,
-    mandol_hybrid_retrieve as md_mandol_hybrid_retrieve,
-    mandol_loop_plan as md_mandol_loop_plan,
-    mandol_query_route as md_mandol_query_route,
-    mandol_semantic_map_put as md_mandol_semantic_map_put,
-    mandol_token_budget as md_mandol_token_budget,
-)
-from stele_core.memanto import (
-    memanto_conflict_resolve as ma_memanto_conflict_resolve,
-    memanto_latency_gate as ma_memanto_latency_gate,
-    memanto_loop_plan as ma_memanto_loop_plan,
-    memanto_retrieve as ma_memanto_retrieve,
-    memanto_store_typed as ma_memanto_store_typed,
-    memanto_version as ma_memanto_version,
-)
-from stele_core.zep import (
-    zep_add_episode as zp_zep_add_episode,
-    zep_bitemporal as zp_zep_bitemporal,
-    zep_cross_session as zp_zep_cross_session,
-    zep_link_entities as zp_zep_link_entities,
-    zep_loop_plan as zp_zep_loop_plan,
-    zep_synthesize as zp_zep_synthesize,
-)
-from stele_core.memgpt import (
-    memgpt_archival_search as mg_memgpt_archival_search,
-    memgpt_loop_plan as mg_memgpt_loop_plan,
-    memgpt_main_capacity as mg_memgpt_main_capacity,
-    memgpt_page_in as mg_memgpt_page_in,
-    memgpt_page_out as mg_memgpt_page_out,
-    memgpt_recall_search as mg_memgpt_recall_search,
-)
-from stele_core.ripplemem import (
-    ripple_expand as rp_ripple_expand,
-    ripple_link_entity as rp_ripple_link_entity,
-    ripple_loop_plan as rp_ripple_loop_plan,
-    ripple_recollect_gate as rp_ripple_recollect_gate,
-    ripple_seed_retrieve as rp_ripple_seed_retrieve,
-    ripple_store_episode as rp_ripple_store_episode,
-)
-from stele_core.fluxmem import (
-    flux_connect_form as fx_flux_connect_form,
-    flux_consolidate as fx_flux_consolidate,
-    flux_feedback_refine as fx_flux_feedback_refine,
-    flux_loop_plan as fx_flux_loop_plan,
-    flux_maturity_gate as fx_flux_maturity_gate,
-    flux_prune_interference as fx_flux_prune_interference,
-    flux_repair_link as fx_flux_repair_link,
-)
-from stele_core.qumem import (
-    qumem_decompose as qm_qumem_decompose,
-    qumem_infer_user_state as qm_qumem_infer_user_state,
-    qumem_loop_plan as qm_qumem_loop_plan,
-    qumem_plan_queries as qm_qumem_plan_queries,
-    qumem_segment_episode as qm_qumem_segment_episode,
-    qumem_temporal_valid as qm_qumem_temporal_valid,
-)
-from stele_core.vikingmem import (
-    viking_extract_event as vk_viking_extract_event,
-    viking_loop_plan as vk_viking_loop_plan,
-    viking_rerank as vk_viking_rerank,
-    viking_time_weighted_recall as vk_viking_time_weighted_recall,
-    viking_timeline_compress as vk_viking_timeline_compress,
-    viking_update_entity as vk_viking_update_entity,
-)
-from stele_core.recmem import (
-    recmem_buffer_subconscious as rm_recmem_buffer_subconscious,
-    recmem_consolidate_episodic as rm_recmem_consolidate_episodic,
-    recmem_loop_plan as rm_recmem_loop_plan,
-    recmem_merge_retrieve as rm_recmem_merge_retrieve,
-    recmem_recurrence_gate as rm_recmem_recurrence_gate,
-    recmem_semantic_refine as rm_recmem_semantic_refine,
-)
-from stele_core.memorybank import (
-    mbank_forget_curve as mb_mbank_forget_curve,
-    mbank_loop_plan as mb_mbank_loop_plan,
-    mbank_personality_synth as mb_mbank_personality_synth,
-    mbank_reinforce as mb_mbank_reinforce,
-    mbank_store_memory as mb_mbank_store_memory,
-    mbank_summon as mb_mbank_summon,
-)
-from stele_core.rfmem import (
-    rfmem_alpha_mix as rf_rfmem_alpha_mix,
-    rfmem_familiarity_score as rf_rfmem_familiarity_score,
-    rfmem_loop_plan as rf_rfmem_loop_plan,
-    rfmem_path_route as rf_rfmem_path_route,
-    rfmem_recollect_expand as rf_rfmem_recollect_expand,
-    rfmem_top_k_familiar as rf_rfmem_top_k_familiar,
-)
-from stele_core.agemem import (
-    agemem_discard_plan as ag_agemem_discard_plan,
-    agemem_loop_plan as ag_agemem_loop_plan,
-    agemem_ltm_store as ag_agemem_ltm_store,
-    agemem_retrieve as ag_agemem_retrieve,
-    agemem_stm_manage as ag_agemem_stm_manage,
-    agemem_summarize as ag_agemem_summarize,
-)
-from stele_core.memgas import (
-    memgas_associate as mg_memgas_associate,
-    memgas_entropy_route as mg_memgas_entropy_route,
-    memgas_filter_plan as mg_memgas_filter_plan,
-    memgas_loop_plan as mg_memgas_loop_plan,
-    memgas_select_granularity as mg_memgas_select_granularity,
-    memgas_unit as mg_memgas_unit,
-)
-from stele_core.memwalker import (
-    memwalker_build_node as mw_memwalker_build_node,
-    memwalker_gather as mw_memwalker_gather,
-    memwalker_loop_plan as mw_memwalker_loop_plan,
-    memwalker_navigate as mw_memwalker_navigate,
-    memwalker_path_gate as mw_memwalker_path_gate,
-    memwalker_segment as mw_memwalker_segment,
-)
-from stele_core.memgraphrag import (
-    mgr_detect_conflict as mgr_mgr_detect_conflict,
-    mgr_loop_plan as mgr_mgr_loop_plan,
-    mgr_multilayer_retrieve as mgr_mgr_multilayer_retrieve,
-    mgr_propagate as mgr_mgr_propagate,
-    mgr_resolve_plan as mgr_mgr_resolve_plan,
-    mgr_store_layer as mgr_mgr_store_layer,
-)
-from stele_core.raptor import (
-    raptor_cluster as rp_raptor_cluster,
-    raptor_collapsed_retrieve as rp_raptor_collapsed_retrieve,
-    raptor_embed_chunk as rp_raptor_embed_chunk,
-    raptor_loop_plan as rp_raptor_loop_plan,
-    raptor_summarize_node as rp_raptor_summarize_node,
-    raptor_tree_traverse as rp_raptor_tree_traverse,
-)
-from stele_core.lightrag import (
-    lightrag_dual_retrieve as lr_lightrag_dual_retrieve,
-    lightrag_graph_vector_fuse as lr_lightrag_graph_vector_fuse,
-    lightrag_incremental_update as lr_lightrag_incremental_update,
-    lightrag_index_entity as lr_lightrag_index_entity,
-    lightrag_index_relation as lr_lightrag_index_relation,
-    lightrag_loop_plan as lr_lightrag_loop_plan,
-)
-from stele_core.memorag import (
-    memorag_clue as mr_memorag_clue,
-    memorag_dual_system as mr_memorag_dual_system,
-    memorag_generate_plan as mr_memorag_generate_plan,
-    memorag_loop_plan as mr_memorag_loop_plan,
-    memorag_memorize as mr_memorag_memorize,
-    memorag_retrieve_by_clue as mr_memorag_retrieve_by_clue,
-)
-from stele_core.pageindex import (
-    pageindex_add_section as pi_pageindex_add_section,
-    pageindex_build_toc as pi_pageindex_build_toc,
-    pageindex_loop_plan as pi_pageindex_loop_plan,
-    pageindex_reason_nav as pi_pageindex_reason_nav,
-    pageindex_select_section as pi_pageindex_select_section,
-    pageindex_trace_path as pi_pageindex_trace_path,
-)
-from stele_core.selfrag import (
-    selfrag_loop_plan as sr_selfrag_loop_plan,
-    selfrag_need_retrieve as sr_selfrag_need_retrieve,
-    selfrag_relevance_critique as sr_selfrag_relevance_critique,
-    selfrag_select_best as sr_selfrag_select_best,
-    selfrag_support_critique as sr_selfrag_support_critique,
-    selfrag_utility_critique as sr_selfrag_utility_critique,
-)
-from stele_core.memobrain import (
-    memobrain_dep_edge as mb_memobrain_dep_edge,
-    memobrain_flush_budget as mb_memobrain_flush_budget,
-    memobrain_fold_subtraj as mb_memobrain_fold_subtraj,
-    memobrain_loop_plan as mb_memobrain_loop_plan,
-    memobrain_prune_invalid as mb_memobrain_prune_invalid,
-    memobrain_salience_keep as mb_memobrain_salience_keep,
-)
-from stele_core.crag import (
-    crag_action_select as cg_crag_action_select,
-    crag_ambiguous_blend as cg_crag_ambiguous_blend,
-    crag_correct_refine as cg_crag_correct_refine,
-    crag_evaluate_retrieval as cg_crag_evaluate_retrieval,
-    crag_loop_plan as cg_crag_loop_plan,
-    crag_web_fallback_plan as cg_crag_web_fallback_plan,
-)
-from stele_core.hyde import (
-    hyde_encode_proxy as hy_hyde_encode_proxy,
-    hyde_filter_hallucination as hy_hyde_filter_hallucination,
-    hyde_ground_corpus as hy_hyde_ground_corpus,
-    hyde_hypothetical_doc as hy_hyde_hypothetical_doc,
-    hyde_loop_plan as hy_hyde_loop_plan,
-    hyde_retrieve_by_hyp as hy_hyde_retrieve_by_hyp,
-)
-from stele_core.adaptiverag import (
-    adaptiverag_classify_complexity as ar_adaptiverag_classify_complexity,
-    adaptiverag_loop_plan as ar_adaptiverag_loop_plan,
-    adaptiverag_multi_step as ar_adaptiverag_multi_step,
-    adaptiverag_no_retrieve as ar_adaptiverag_no_retrieve,
-    adaptiverag_select_strategy as ar_adaptiverag_select_strategy,
-    adaptiverag_single_step as ar_adaptiverag_single_step,
-)
-from stele_core.flare import (
-    flare_active_step as fl_flare_active_step,
-    flare_anticipate_sentence as fl_flare_anticipate_sentence,
-    flare_loop_plan as fl_flare_loop_plan,
-    flare_low_confidence as fl_flare_low_confidence,
-    flare_regenerate_sentence as fl_flare_regenerate_sentence,
-    flare_retrieve_for_regen as fl_flare_retrieve_for_regen,
-)
-from stele_core.graphreader import (
-    graphreader_build_node as gr_graphreader_build_node,
-    graphreader_loop_plan as gr_graphreader_loop_plan,
-    graphreader_note_insight as gr_graphreader_note_insight,
-    graphreader_read_neighbors as gr_graphreader_read_neighbors,
-    graphreader_read_node as gr_graphreader_read_node,
-    graphreader_reflect_plan as gr_graphreader_reflect_plan,
-)
-from stele_core.gretriever import (
-    gretriever_highlight as gv_gretriever_highlight,
-    gretriever_loop_plan as gv_gretriever_loop_plan,
-    gretriever_node_prize as gv_gretriever_node_prize,
-    gretriever_pcst_select as gv_gretriever_pcst_select,
-    gretriever_soft_prompt_plan as gv_gretriever_soft_prompt_plan,
-    gretriever_subgraph as gv_gretriever_subgraph,
-)
-from stele_core.rqrag import (
-    rqrag_decompose as rq_rqrag_decompose,
-    rqrag_disambiguate as rq_rqrag_disambiguate,
-    rqrag_loop_plan as rq_rqrag_loop_plan,
-    rqrag_refine_mode as rq_rqrag_refine_mode,
-    rqrag_retrieve_refined as rq_rqrag_retrieve_refined,
-    rqrag_rewrite as rq_rqrag_rewrite,
-)
-from stele_core.ircot import (
-    ircot_answer_ready as ir_ircot_answer_ready,
-    ircot_cot_step as ir_ircot_cot_step,
-    ircot_hallucination_check as ir_ircot_hallucination_check,
-    ircot_interleave as ir_ircot_interleave,
-    ircot_loop_plan as ir_ircot_loop_plan,
-    ircot_retrieve_guided as ir_ircot_retrieve_guided,
-)
-from stele_core.replug import (
-    replug_blackbox_forward as rp_replug_blackbox_forward,
-    replug_ensemble_probs as rp_replug_ensemble_probs,
-    replug_loop_plan as rp_replug_loop_plan,
-    replug_prepend_doc as rp_replug_prepend_doc,
-    replug_retrieve_docs as rp_replug_retrieve_docs,
-    replug_supervise_retriever as rp_replug_supervise_retriever,
-)
-from stele_core.iterretgen import (
-    iterretgen_adapt_retriever as it_iterretgen_adapt_retriever,
-    iterretgen_generate as it_iterretgen_generate,
-    iterretgen_iterate as it_iterretgen_iterate,
-    iterretgen_loop_plan as it_iterretgen_loop_plan,
-    iterretgen_retrieve_next as it_iterretgen_retrieve_next,
-    iterretgen_use_as_query as it_iterretgen_use_as_query,
-)
-from stele_core.planrag import (
-    planrag_analysis_query as pr_planrag_analysis_query,
-    planrag_decide as pr_planrag_decide,
-    planrag_loop_plan as pr_planrag_loop_plan,
-    planrag_make_plan as pr_planrag_make_plan,
-    planrag_replan as pr_planrag_replan,
-    planrag_retrieve_data as pr_planrag_retrieve_data,
-)
-from stele_core.rrr import (
-    rrr_loop_plan as rr_rrr_loop_plan,
-    rrr_read as rr_rrr_read,
-    rrr_reader_feedback as rr_rrr_reader_feedback,
-    rrr_retrieve as rr_rrr_retrieve,
-    rrr_rewrite_query as rr_rrr_rewrite_query,
-    rrr_train_rewriter_plan as rr_rrr_train_rewriter_plan,
-)
-from stele_core.dsp import (
-    dsp_bootstrap_demo as ds_dsp_bootstrap_demo,
-    dsp_compose_program as ds_dsp_compose_program,
-    dsp_loop_plan as ds_dsp_loop_plan,
-    dsp_multihop_hop as ds_dsp_multihop_hop,
-    dsp_predict as ds_dsp_predict,
-    dsp_search as ds_dsp_search,
-)
-from stele_core.genread import (
-    genread_answer as gn_genread_answer,
-    genread_compare_retrieve as gn_genread_compare_retrieve,
-    genread_generate_context as gn_genread_generate_context,
-    genread_ground_optional as gn_genread_ground_optional,
-    genread_hybrid as gn_genread_hybrid,
-    genread_loop_plan as gn_genread_loop_plan,
-)
-from stele_core.selfask import (
-    selfask_compose_answer as sa_selfask_compose_answer,
-    selfask_demo_prompt as sa_selfask_demo_prompt,
-    selfask_followup as sa_selfask_followup,
-    selfask_loop_plan as sa_selfask_loop_plan,
-    selfask_search_intercept as sa_selfask_search_intercept,
-    selfask_stop as sa_selfask_stop,
-)
-from stele_core.react import (
-    react_action as rc_react_action,
-    react_finish as rc_react_finish,
-    react_loop_plan as rc_react_loop_plan,
-    react_observe as rc_react_observe,
-    react_thought as rc_react_thought,
-    react_trajectory as rc_react_trajectory,
-)
-from stele_core.thinkongraph import (
-    tog_answer_from_paths as tog_tog_answer_from_paths,
-    tog_beam_prune as tog_tog_beam_prune,
-    tog_explore_neighbors as tog_tog_explore_neighbors,
-    tog_init_entity as tog_tog_init_entity,
-    tog_loop_plan as tog_tog_loop_plan,
-    tog_path_score as tog_tog_path_score,
-)
-from stele_core.toolformer import (
-    tf_api_candidate as tf_tf_api_candidate,
-    tf_demo_apis as tf_tf_demo_apis,
-    tf_execute_proxy as tf_tf_execute_proxy,
-    tf_filter_call as tf_tf_filter_call,
-    tf_incorporate_result as tf_tf_incorporate_result,
-    tf_loop_plan as tf_tf_loop_plan,
-)
-from stele_core.reflexion import (
-    rx_evaluate as rx_rx_evaluate,
-    rx_loop_plan as rx_rx_loop_plan,
-    rx_memory_store as rx_rx_memory_store,
-    rx_next_trial as rx_rx_next_trial,
-    rx_trial_run as rx_rx_trial_run,
-    rx_verbal_reflect as rx_rx_verbal_reflect,
-)
-from stele_core.selfcons import (
-    sc_collect_answers as sc_sc_collect_answers,
-    sc_loop_plan as sc_sc_loop_plan,
-    sc_majority_vote as sc_sc_majority_vote,
-    sc_marginalize as sc_sc_marginalize,
-    sc_sample_path as sc_sc_sample_path,
-    sc_temperature as sc_sc_temperature,
-)
-from stele_core.treeofthoughts import (
-    tot_backtrack as tot_tot_backtrack,
-    tot_evaluate as tot_tot_evaluate,
-    tot_expand as tot_tot_expand,
-    tot_loop_plan as tot_tot_loop_plan,
-    tot_propose as tot_tot_propose,
-    tot_select_best as tot_tot_select_best,
-)
-from stele_core.leasttomost import (
-    ltm_carry_forward as ltm_ltm_carry_forward,
-    ltm_compose_final as ltm_ltm_compose_final,
-    ltm_decompose as ltm_ltm_decompose,
-    ltm_easy_to_hard as ltm_ltm_easy_to_hard,
-    ltm_loop_plan as ltm_ltm_loop_plan,
-    ltm_solve_sub as ltm_ltm_solve_sub,
-)
-from stele_core.graphofthoughts import (
-    got_add_thought as got_got_add_thought,
-    got_aggregate as got_got_aggregate,
-    got_feedback as got_got_feedback,
-    got_link as got_got_link,
-    got_loop_plan as got_got_loop_plan,
-    got_score_graph as got_got_score_graph,
-)
-from stele_core.programofthoughts import (
-    pot_disentangle as pot_pot_disentangle,
-    pot_emit_program as pot_pot_emit_program,
-    pot_loop_plan as pot_pot_loop_plan,
-    pot_read_result as pot_pot_read_result,
-    pot_sandbox_run as pot_pot_sandbox_run,
-    pot_self_consistency as pot_pot_self_consistency,
-)
-from stele_core.algorithmofthoughts import (
-    aot_explore_subtree as aot_aot_explore_subtree,
-    aot_load_algorithm as aot_aot_load_algorithm,
-    aot_loop_plan as aot_aot_loop_plan,
-    aot_query_budget as aot_aot_query_budget,
-    aot_surpass_algo as aot_aot_surpass_algo,
-    aot_tunnel_vision as aot_aot_tunnel_vision,
-)
-from stele_core.reasoningviaplanning import (
-    rap_balance as rap_rap_balance,
-    rap_expand as rap_rap_expand,
-    rap_loop_plan as rap_rap_loop_plan,
-    rap_reward as rap_rap_reward,
-    rap_select_path as rap_rap_select_path,
-    rap_world_state as rap_rap_world_state,
-)
-from stele_core.skeletonofthought import (
-    sot_emit_skeleton as sot_sot_emit_skeleton,
-    sot_extract_points as sot_sot_extract_points,
-    sot_latency_gain as sot_sot_latency_gain,
-    sot_loop_plan as sot_sot_loop_plan,
-    sot_parallel_expand as sot_sot_parallel_expand,
-    sot_router as sot_sot_router,
-)
-from stele_core.bufferofthoughts import (
-    bot_buffer_update as bot_bot_buffer_update,
-    bot_cost_ratio as bot_bot_cost_ratio,
-    bot_distill_template as bot_bot_distill_template,
-    bot_instantiate as bot_bot_instantiate,
-    bot_loop_plan as bot_bot_loop_plan,
-    bot_retrieve_template as bot_bot_retrieve_template,
-)
-from stele_core.selfdiscover import (
-    sd_adapt as sd_sd_adapt,
-    sd_apply_instance as sd_sd_apply_instance,
-    sd_compute_ratio as sd_sd_compute_ratio,
-    sd_implement as sd_sd_implement,
-    sd_loop_plan as sd_sd_loop_plan,
-    sd_select_modules as sd_sd_select_modules,
-)
-from stele_core.metaprompting import (
-    mp_assign_expert as mp_mp_assign_expert,
-    mp_break_task as mp_mp_break_task,
-    mp_loop_plan as mp_mp_loop_plan,
-    mp_oversee as mp_mp_oversee,
-    mp_task_agnostic as mp_mp_task_agnostic,
-    mp_verify as mp_mp_verify,
-)
-from stele_core.quietstar import (
-    qs_hard_token_aid as qs_qs_hard_token_aid,
-    qs_loop_plan as qs_qs_loop_plan,
-    qs_mix_head as qs_qs_mix_head,
-    qs_parallel_sample as qs_qs_parallel_sample,
-    qs_thought_bounds as qs_qs_thought_bounds,
-    qs_zero_shot_flag as qs_qs_zero_shot_flag,
-)
-from stele_core.decomposedprompting import (
-    dep_decompose as dep_dep_decompose,
-    dep_delegate as dep_dep_delegate,
-    dep_library_size as dep_dep_library_size,
-    dep_loop_plan as dep_dep_loop_plan,
-    dep_recurse as dep_dep_recurse,
-    dep_swap_symbolic as dep_dep_swap_symbolic,
-)
-from stele_core.selftaughtreasoner import (
-    star_bootstrap_round as star_star_bootstrap_round,
-    star_filter_correct as star_star_filter_correct,
-    star_finetune_proxy as star_star_finetune_proxy,
-    star_generate as star_star_generate,
-    star_loop_plan as star_star_loop_plan,
-    star_rationalize as star_star_rationalize,
-)
-from stele_core.cumulativereasoning import (
-    cr_accumulate as cr_cr_accumulate,
-    cr_loop_plan as cr_cr_loop_plan,
-    cr_propose as cr_cr_propose,
-    cr_report as cr_cr_report,
-    cr_roles as cr_cr_roles,
-    cr_verify as cr_cr_verify,
-)
-from stele_core.planandsolve import (
-    ps_calc_guard as ps_ps_calc_guard,
-    ps_devise_plan as ps_ps_devise_plan,
-    ps_execute as ps_ps_execute,
-    ps_loop_plan as ps_ps_loop_plan,
-    ps_missing_step_fix as ps_ps_missing_step_fix,
-    ps_plus_extract as ps_ps_plus_extract,
-)
-from stele_core.progressivehint import (
-    php_base_answer as php_php_base_answer,
-    php_combine_sc as php_php_combine_sc,
-    php_emit_hint as php_php_emit_hint,
-    php_loop_plan as php_php_loop_plan,
-    php_reask as php_php_reask,
-    php_stable_stop as php_php_stable_stop,
-)
-from stele_core.agentcoder import (
-    ac_loop_plan as ac_ac_loop_plan,
-    ac_pass_gate as ac_ac_pass_gate,
-    ac_programmer as ac_ac_programmer,
-    ac_refine as ac_ac_refine,
-    ac_test_designer as ac_ac_test_designer,
-    ac_test_executor as ac_ac_test_executor,
-)
-from stele_core.programaided import (
-    pal_decompose_only as pal_pal_decompose_only,
-    pal_emit_program as pal_pal_emit_program,
-    pal_loop_plan as pal_pal_loop_plan,
-    pal_offload_solve as pal_pal_offload_solve,
-    pal_read_answer as pal_pal_read_answer,
-    pal_vs_cot as pal_pal_vs_cot,
-)
-from stele_core.faithfulcot import (
-    fcot_faithfulness as fcot_fcot_faithfulness,
-    fcot_interleave as fcot_fcot_interleave,
-    fcot_loop_plan as fcot_fcot_loop_plan,
-    fcot_solve as fcot_fcot_solve,
-    fcot_translate as fcot_fcot_translate,
-    fcot_vs_cot as fcot_fcot_vs_cot,
-)
-from stele_core.lats import (
-    lats_env_feedback as lats_lats_env_feedback,
-    lats_expand as lats_lats_expand,
-    lats_loop_plan as lats_lats_loop_plan,
-    lats_reflect as lats_lats_reflect,
-    lats_select as lats_lats_select,
-    lats_value as lats_lats_value,
-)
-from stele_core.voyager import (
-    voy_compose as voy_voy_compose,
-    voy_curriculum as voy_voy_curriculum,
-    voy_loop_plan as voy_voy_loop_plan,
-    voy_self_verify as voy_voy_self_verify,
-    voy_skill_retrieve as voy_voy_skill_retrieve,
-    voy_skill_store as voy_voy_skill_store,
-)
-from stele_core.rewoo import (
-    rewoo_decouple as rewoo_rewoo_decouple,
-    rewoo_loop_plan as rewoo_rewoo_loop_plan,
-    rewoo_plan as rewoo_rewoo_plan,
-    rewoo_solver as rewoo_rewoo_solver,
-    rewoo_token_save as rewoo_rewoo_token_save,
-    rewoo_worker as rewoo_rewoo_worker,
-)
-from stele_core.critic import (
-    critic_draft as critic_critic_draft,
-    critic_iterate as critic_critic_iterate,
-    critic_loop_plan as critic_critic_loop_plan,
-    critic_revise as critic_critic_revise,
-    critic_stop as critic_critic_stop,
-    critic_tool_check as critic_critic_tool_check,
-)
-from stele_core.deductive import (
-    dv_ground as dv_dv_ground,
-    dv_loop_plan as dv_dv_loop_plan,
-    dv_natural_program as dv_dv_natural_program,
-    dv_premise_scope as dv_dv_premise_scope,
-    dv_step_verify as dv_dv_step_verify,
-    dv_unanimity as dv_dv_unanimity,
-)
-from stele_core.hugginggpt import (
-    hgpt_execute as hgpt_hgpt_execute,
-    hgpt_loop_plan as hgpt_hgpt_loop_plan,
-    hgpt_modality as hgpt_hgpt_modality,
-    hgpt_plan as hgpt_hgpt_plan,
-    hgpt_select as hgpt_hgpt_select,
-    hgpt_summarize as hgpt_hgpt_summarize,
-)
-from stele_core.multiagentdebate import (
-    mad_converge as mad_mad_converge,
-    mad_critique as mad_mad_critique,
-    mad_debate as mad_mad_debate,
-    mad_factuality as mad_mad_factuality,
-    mad_loop_plan as mad_mad_loop_plan,
-    mad_propose as mad_mad_propose,
-)
-from stele_core.autocot import (
-    autocot_cluster as autocot_autocot_cluster,
-    autocot_diversity as autocot_autocot_diversity,
-    autocot_generate as autocot_autocot_generate,
-    autocot_heuristic as autocot_autocot_heuristic,
-    autocot_loop_plan as autocot_autocot_loop_plan,
-    autocot_sample as autocot_autocot_sample,
-)
-from stele_core.camel import (
-    camel_complete as camel_camel_complete,
-    camel_inception as camel_camel_inception,
-    camel_loop_plan as camel_camel_loop_plan,
-    camel_roles as camel_camel_roles,
-    camel_society as camel_camel_society,
-    camel_turn as camel_camel_turn,
-)
-from stele_core.chameleon import (
-    cham_compose as cham_cham_compose,
-    cham_constraint as cham_cham_constraint,
-    cham_execute as cham_cham_execute,
-    cham_inventory as cham_cham_inventory,
-    cham_loop_plan as cham_cham_loop_plan,
-    cham_plan as cham_cham_plan,
-)
-from stele_core.recursionofthought import (
-    rot_conquer as rot_rot_conquer,
-    rot_context_limit as rot_rot_context_limit,
-    rot_divide as rot_rot_divide,
-    rot_loop_plan as rot_rot_loop_plan,
-    rot_merge as rot_rot_merge,
-    rot_trigger as rot_rot_trigger,
+from stele_core.activation import (
+    spread_activate as act_spread_activate,
 )
 from stele_core.activeprompt import (
     ap_annotate as ap_ap_annotate,
+)
+from stele_core.activeprompt import (
     ap_loop_plan as ap_ap_loop_plan,
+)
+from stele_core.activeprompt import (
     ap_pool as ap_ap_pool,
+)
+from stele_core.activeprompt import (
     ap_sample as ap_ap_sample,
+)
+from stele_core.activeprompt import (
     ap_select as ap_ap_select,
+)
+from stele_core.activeprompt import (
     ap_uncertainty as ap_ap_uncertainty,
-)
-from stele_core.analogical import (
-    ana_adapt as ana_ana_adapt,
-    ana_knowledge as ana_ana_knowledge,
-    ana_loop_plan as ana_ana_loop_plan,
-    ana_no_label as ana_ana_no_label,
-    ana_recall as ana_ana_recall,
-    ana_solve as ana_ana_solve,
-)
-from stele_core.complexityprompt import (
-    cbp_loop_plan as cbp_cbp_loop_plan,
-    cbp_robust as cbp_cbp_robust,
-    cbp_sample_chains as cbp_cbp_sample_chains,
-    cbp_score as cbp_cbp_score,
-    cbp_select as cbp_cbp_select,
-    cbp_vote_complex as cbp_cbp_vote_complex,
-)
-from stele_core.stepback import (
-    sb_abstract as sb_sb_abstract,
-    sb_detail_trap as sb_sb_detail_trap,
-    sb_loop_plan as sb_sb_loop_plan,
-    sb_path as sb_sb_path,
-    sb_principle as sb_sb_principle,
-    sb_reason as sb_sb_reason,
-)
-from stele_core.multimodalcot import (
-    mmcot_fuse as mmcot_mmcot_fuse,
-    mmcot_hallucination as mmcot_mmcot_hallucination,
-    mmcot_infer as mmcot_mmcot_infer,
-    mmcot_loop_plan as mmcot_mmcot_loop_plan,
-    mmcot_rationale as mmcot_mmcot_rationale,
-    mmcot_separate as mmcot_mmcot_separate,
-)
-from stele_core.maieutic import (
-    mai_abduce as mai_mai_abduce,
-    mai_consistent as mai_mai_consistent,
-    mai_loop_plan as mai_mai_loop_plan,
-    mai_recurse as mai_mai_recurse,
-    mai_sat as mai_mai_sat,
-    mai_unreliable as mai_mai_unreliable,
-)
-from stele_core.selfrefine import (
-    sr_feedback as sr_sr_feedback,
-    sr_generate as sr_sr_generate,
-    sr_iterate as sr_sr_iterate,
-    sr_loop_plan as sr_sr_loop_plan,
-    sr_no_train as sr_sr_no_train,
-    sr_refine as sr_sr_refine,
-)
-from stele_core.metacognitive import (
-    mcp_confidence as mcp_mcp_confidence,
-    mcp_interpret as mcp_mcp_interpret,
-    mcp_justify as mcp_mcp_justify,
-    mcp_loop_plan as mcp_mcp_loop_plan,
-    mcp_recognize as mcp_mcp_recognize,
-    mcp_reevaluate as mcp_mcp_reevaluate,
-)
-from stele_core.threadofthought import (
-    thot_analyze as thot_thot_analyze,
-    thot_loop_plan as thot_thot_loop_plan,
-    thot_plug as thot_thot_plug,
-    thot_segment as thot_thot_segment,
-    thot_select as thot_thot_select,
-    thot_synthesize as thot_thot_synthesize,
-)
-from stele_core.thoughtpropagation import (
-    tprop_amend as tprop_tprop_amend,
-    tprop_compat as tprop_tprop_compat,
-    tprop_loop_plan as tprop_tprop_loop_plan,
-    tprop_propose as tprop_tprop_propose,
-    tprop_reuse as tprop_tprop_reuse,
-    tprop_solve as tprop_tprop_solve,
-)
-from stele_core.system2attention import (
-    s2a_attend as s2a_s2a_attend,
-    s2a_factuality as s2a_s2a_factuality,
-    s2a_loop_plan as s2a_s2a_loop_plan,
-    s2a_regenerate as s2a_s2a_regenerate,
-    s2a_respond as s2a_s2a_respond,
-    s2a_sycophancy as s2a_s2a_sycophancy,
-)
-from stele_core.contrastivecot import (
-    ccot_auto as ccot_ccot_auto,
-    ccot_contrast as ccot_ccot_contrast,
-    ccot_invalid as ccot_ccot_invalid,
-    ccot_loop_plan as ccot_ccot_loop_plan,
-    ccot_reason as ccot_ccot_reason,
-    ccot_valid as ccot_ccot_valid,
-)
-from stele_core.tabcot import (
-    tabcot_extract as tabcot_tabcot_extract,
-    tabcot_header as tabcot_tabcot_header,
-    tabcot_infer2d as tabcot_tabcot_infer2d,
-    tabcot_loop_plan as tabcot_tabcot_loop_plan,
-    tabcot_row as tabcot_tabcot_row,
-    tabcot_zeroshot as tabcot_tabcot_zeroshot,
-)
-from stele_core.everythingofthoughts import (
-    xot_flexible as xot_xot_flexible,
-    xot_loop_plan as xot_xot_loop_plan,
-    xot_map as xot_xot_map,
-    xot_mcts as xot_xot_mcts,
-    xot_penrose as xot_xot_penrose,
-    xot_revise as xot_xot_revise,
-)
-from stele_core.chainofverification import (
-    cove_answer as cove_cove_answer,
-    cove_draft as cove_cove_draft,
-    cove_final as cove_cove_final,
-    cove_hallucination as cove_cove_hallucination,
-    cove_loop_plan as cove_cove_loop_plan,
-    cove_plan as cove_cove_plan,
-)
-from stele_core.verifyandedit import (
-    ved_edit as ved_ved_edit,
-    ved_knowledge as ved_ved_knowledge,
-    ved_loop_plan as ved_ved_loop_plan,
-    ved_predict as ved_ved_predict,
-    ved_search as ved_ved_search,
-    ved_uncertain as ved_ved_uncertain,
-)
-from stele_core.selfverification import (
-    sve_forward as sve_sve_forward,
-    sve_loop_plan as sve_sve_loop_plan,
-    sve_mask as sve_sve_mask,
-    sve_repredict as sve_sve_repredict,
-    sve_score as sve_sve_score,
-    sve_select as sve_sve_select,
-)
-from stele_core.chainofdensity import (
-    cod_entities as cod_cod_entities,
-    cod_fuse as cod_cod_fuse,
-    cod_length as cod_cod_length,
-    cod_loop_plan as cod_cod_loop_plan,
-    cod_sparse as cod_cod_sparse,
-    cod_tradeoff as cod_cod_tradeoff,
-)
-from stele_core.hintbeforesolving import (
-    hsp_answer as hsp_hsp_answer,
-    hsp_compose as hsp_hsp_compose,
-    hsp_hint as hsp_hsp_hint,
-    hsp_loop_plan as hsp_hsp_loop_plan,
-    hsp_quality as hsp_hsp_quality,
-    hsp_solve as hsp_hsp_solve,
-)
-from stele_core.emotionprompt import (
-    emo_append as emo_emo_append,
-    emo_loop_plan as emo_emo_loop_plan,
-    emo_psych as emo_emo_psych,
-    emo_run as emo_emo_run,
-    emo_stimulus as emo_emo_stimulus,
-    emo_truth as emo_emo_truth,
-)
-from stele_core.automaticpromptengineer import (
-    ape_human as ape_ape_human,
-    ape_loop_plan as ape_ape_loop_plan,
-    ape_propose as ape_ape_propose,
-    ape_score as ape_ape_score,
-    ape_select as ape_ape_select,
-    ape_steer as ape_ape_steer,
-)
-from stele_core.promptbreeder import (
-    pbr_diversity as pbr_pbr_diversity,
-    pbr_fitness as pbr_pbr_fitness,
-    pbr_init as pbr_pbr_init,
-    pbr_loop_plan as pbr_pbr_loop_plan,
-    pbr_mutate as pbr_pbr_mutate,
-    pbr_selfref as pbr_pbr_selfref,
-)
-from stele_core.optimizationbyprompting import (
-    opro_append as opro_opro_append,
-    opro_best as opro_opro_best,
-    opro_loop_plan as opro_opro_loop_plan,
-    opro_meta as opro_opro_meta,
-    opro_propose as opro_opro_propose,
-    opro_score as opro_opro_score,
-)
-from stele_core.evoprompt import (
-    evp_cross as evp_evp_cross,
-    evp_ea as evp_evp_ea,
-    evp_init as evp_evp_init,
-    evp_loop_plan as evp_evp_loop_plan,
-    evp_mutate as evp_evp_mutate,
-    evp_select as evp_evp_select,
-)
-from stele_core.protegi import (
-    ptg_bandit as ptg_ptg_bandit,
-    ptg_beam as ptg_ptg_beam,
-    ptg_edit as ptg_ptg_edit,
-    ptg_gradient as ptg_ptg_gradient,
-    ptg_jailbreak as ptg_ptg_jailbreak,
-    ptg_loop_plan as ptg_ptg_loop_plan,
-)
-from stele_core.promptagent import (
-    pag_backprop as pag_pag_backprop,
-    pag_expand as pag_pag_expand,
-    pag_expert as pag_pag_expert,
-    pag_loop_plan as pag_pag_loop_plan,
-    pag_reflect as pag_pag_reflect,
-    pag_state as pag_pag_state,
-)
-from stele_core.momentumaidedprompt import (
-    mapo_beam as mapo_mapo_beam,
-    mapo_faster as mapo_mapo_faster,
-    mapo_loop_plan as mapo_mapo_loop_plan,
-    mapo_momentum as mapo_mapo_momentum,
-    mapo_posgrad as mapo_mapo_posgrad,
-    mapo_ucb as mapo_mapo_ucb,
-)
-from stele_core.grips import (
-    grips_accept as grips_grips_accept,
-    grips_api as grips_grips_api,
-    grips_edit as grips_grips_edit,
-    grips_loop_plan as grips_grips_loop_plan,
-    grips_score as grips_grips_score,
-    grips_seed as grips_grips_seed,
-)
-from stele_core.tempera import (
-    tmpa_act as tmpa_tmpa_act,
-    tmpa_adapt as tmpa_tmpa_adapt,
-    tmpa_efficiency as tmpa_tmpa_efficiency,
-    tmpa_loop_plan as tmpa_tmpa_loop_plan,
-    tmpa_reward as tmpa_tmpa_reward,
-    tmpa_state as tmpa_tmpa_state,
-)
-from stele_core.rlprompt import (
-    rlp_discrete as rlp_rlp_discrete,
-    rlp_init as rlp_rlp_init,
-    rlp_loop_plan as rlp_rlp_loop_plan,
-    rlp_reward as rlp_rlp_reward,
-    rlp_sample as rlp_rlp_sample,
-    rlp_update as rlp_rlp_update,
-)
-from stele_core.autoprompt import (
-    aup_loop_plan as aup_aup_loop_plan,
-    aup_probe as aup_aup_probe,
-    aup_score as aup_aup_score,
-    aup_search as aup_aup_search,
-    aup_template as aup_aup_template,
-    aup_trigger as aup_aup_trigger,
-)
-from stele_core.prefixtuning import (
-    pfx_freeze as pfx_pfx_freeze,
-    pfx_generate as pfx_pfx_generate,
-    pfx_loop_plan as pfx_pfx_loop_plan,
-    pfx_optimize as pfx_pfx_optimize,
-    pfx_prefix as pfx_pfx_prefix,
-    pfx_task as pfx_pfx_task,
-)
-from stele_core.ptuningv2 import (
-    ptv_deep as ptv_ptv_deep,
-    ptv_inject as ptv_ptv_inject,
-    ptv_loop_plan as ptv_ptv_loop_plan,
-    ptv_seqtag as ptv_ptv_seqtag,
-    ptv_tune as ptv_ptv_tune,
-    ptv_universal as ptv_ptv_universal,
-)
-from stele_core.prompttuning import (
-    ptl_input_only as ptl_ptl_input_only,
-    ptl_loop_plan as ptl_ptl_loop_plan,
-    ptl_optimize as ptl_ptl_optimize,
-    ptl_prepend as ptl_ptl_prepend,
-    ptl_scale as ptl_ptl_scale,
-    ptl_soft as ptl_ptl_soft,
-)
-from stele_core.softpromptmixtures import (
-    msp_ensemble as msp_msp_ensemble,
-    msp_loop_plan as msp_msp_loop_plan,
-    msp_mix as msp_msp_mix,
-    msp_probe as msp_msp_probe,
-    msp_soft as msp_msp_soft,
-    msp_underest as msp_msp_underest,
-)
-from stele_core.softprompttransfer import (
-    spot_embed as spot_spot_embed,
-    spot_init as spot_spot_init,
-    spot_loop_plan as spot_spot_loop_plan,
-    spot_retrieve as spot_spot_retrieve,
-    spot_source as spot_spot_source,
-    spot_vs_tune as spot_spot_vs_tune,
-)
-from stele_core.attemptprompt import (
-    atm_attend as atm_atm_attend,
-    atm_loop_plan as atm_atm_loop_plan,
-    atm_mix as atm_atm_mix,
-    atm_modular as atm_atm_modular,
-    atm_source as atm_atm_source,
-    atm_target as atm_atm_target,
-)
-from stele_core.multitaskprompttuning import (
-    mptp_efficient as mptp_mptp_efficient,
-    mptp_factor as mptp_mptp_factor,
-    mptp_loop_plan as mptp_mptp_loop_plan,
-    mptp_score as mptp_mptp_score,
-    mptp_shared as mptp_mptp_shared,
-    mptp_transfer as mptp_mptp_transfer,
-)
-from stele_core.lora import (
-    lora_freeze as lora_lora_freeze,
-    lora_latency as lora_lora_latency,
-    lora_loop_plan as lora_lora_loop_plan,
-    lora_merge as lora_lora_merge,
-    lora_rank as lora_lora_rank,
-    lora_train as lora_lora_train,
-)
-from stele_core.adapterfusion import (
-    adf_attend as adf_adf_attend,
-    adf_compose as adf_adf_compose,
-    adf_extract as adf_adf_extract,
-    adf_loop_plan as adf_adf_loop_plan,
-    adf_nondestruct as adf_adf_nondestruct,
-    adf_score as adf_adf_score,
-)
-from stele_core.compacter import (
-    cmp_compact as cmp_cmp_compact,
-    cmp_insert as cmp_cmp_insert,
-    cmp_kronecker as cmp_cmp_kronecker,
-    cmp_loop_plan as cmp_cmp_loop_plan,
-    cmp_score as cmp_cmp_score,
-    cmp_train as cmp_cmp_train,
-)
-from stele_core.ia3 import (
-    ia3_loop_plan as ia3_ia3_loop_plan,
-    ia3_mixed as ia3_ia3_mixed,
-    ia3_scale as ia3_ia3_scale,
-    ia3_score as ia3_ia3_score,
-    ia3_train as ia3_ia3_train,
-    ia3_vector as ia3_ia3_vector,
-)
-from stele_core.bitfit import (
-    bft_bias as bft_bft_bias,
-    bft_freeze as bft_bft_freeze,
-    bft_loop_plan as bft_bft_loop_plan,
-    bft_score as bft_bft_score,
-    bft_tiny as bft_bft_tiny,
-    bft_train as bft_bft_train,
-)
-from stele_core.dora import (
-    dora_decompose as dora_dora_decompose,
-    dora_direction as dora_dora_direction,
-    dora_loop_plan as dora_dora_loop_plan,
-    dora_magnitude as dora_dora_magnitude,
-    dora_score as dora_dora_score,
-    dora_vs_lora as dora_dora_vs_lora,
-)
-from stele_core.qlora import (
-    qlo_adapter as qlo_qlo_adapter,
-    qlo_loop_plan as qlo_qlo_loop_plan,
-    qlo_memory as qlo_qlo_memory,
-    qlo_nf4 as qlo_qlo_nf4,
-    qlo_quantize as qlo_qlo_quantize,
-    qlo_score as qlo_qlo_score,
 )
 from stele_core.adalora import (
     adl_adaptive as adl_adl_adaptive,
-    adl_init as adl_adl_init,
-    adl_loop_plan as adl_adl_loop_plan,
-    adl_prune as adl_adl_prune,
-    adl_score as adl_adl_score,
-    adl_svd as adl_adl_svd,
 )
-from stele_core.vera import (
-    vra_loop_plan as vra_vra_loop_plan,
-    vra_scale as vra_vra_scale,
-    vra_score as vra_vra_score,
-    vra_share as vra_vra_share,
-    vra_tiny as vra_vra_tiny,
-    vra_train as vra_vra_train,
+from stele_core.adalora import (
+    adl_init as adl_adl_init,
+)
+from stele_core.adalora import (
+    adl_loop_plan as adl_adl_loop_plan,
+)
+from stele_core.adalora import (
+    adl_prune as adl_adl_prune,
+)
+from stele_core.adalora import (
+    adl_score as adl_adl_score,
+)
+from stele_core.adalora import (
+    adl_svd as adl_adl_svd,
 )
 from stele_core.adapterdrop import (
     adp_drop as adp_adp_drop,
+)
+from stele_core.adapterdrop import (
     adp_efficient as adp_adp_efficient,
+)
+from stele_core.adapterdrop import (
     adp_infer as adp_adp_infer,
+)
+from stele_core.adapterdrop import (
     adp_insert as adp_adp_insert,
+)
+from stele_core.adapterdrop import (
     adp_loop_plan as adp_adp_loop_plan,
+)
+from stele_core.adapterdrop import (
     adp_score as adp_adp_score,
 )
-from stele_core.pissa import (
-    psa_fast as psa_psa_fast,
-    psa_loop_plan as psa_psa_loop_plan,
-    psa_principal as psa_psa_principal,
-    psa_residual as psa_psa_residual,
-    psa_score as psa_psa_score,
-    psa_svd as psa_psa_svd,
+from stele_core.adapterfusion import (
+    adf_attend as adf_adf_attend,
 )
-from stele_core.diffpruning import (
-    dpr_diff as dpr_dpr_diff,
-    dpr_loop_plan as dpr_dpr_loop_plan,
-    dpr_mask as dpr_dpr_mask,
-    dpr_prune as dpr_dpr_prune,
-    dpr_score as dpr_dpr_score,
-    dpr_sparse as dpr_dpr_sparse,
+from stele_core.adapterfusion import (
+    adf_compose as adf_adf_compose,
 )
-from stele_core.tiedlora import (
-    tlo_base as tlo_tlo_base,
-    tlo_efficient as tlo_tlo_efficient,
-    tlo_loop_plan as tlo_tlo_loop_plan,
-    tlo_score as tlo_tlo_score,
-    tlo_tie as tlo_tlo_tie,
-    tlo_train as tlo_tlo_train,
+from stele_core.adapterfusion import (
+    adf_extract as adf_adf_extract,
 )
-from stele_core.loraplus import (
-    lrp_loop_plan as lrp_lrp_loop_plan,
-    lrp_ratio as lrp_lrp_ratio,
-    lrp_score as lrp_lrp_score,
-    lrp_speed as lrp_lrp_speed,
-    lrp_split as lrp_lrp_split,
-    lrp_train as lrp_lrp_train,
+from stele_core.adapterfusion import (
+    adf_loop_plan as adf_adf_loop_plan,
 )
-from stele_core.lorafa import (
-    lfa_freeze_a as lfa_lfa_freeze_a,
-    lfa_loop_plan as lfa_lfa_loop_plan,
-    lfa_memory as lfa_lfa_memory,
-    lfa_merge as lfa_lfa_merge,
-    lfa_score as lfa_lfa_score,
-    lfa_train_b as lfa_lfa_train_b,
+from stele_core.adapterfusion import (
+    adf_nondestruct as adf_adf_nondestruct,
 )
-from stele_core.dylora import (
-    dyl_loop_plan as dyl_dyl_loop_plan,
-    dyl_range as dyl_dyl_range,
-    dyl_sample as dyl_dyl_sample,
-    dyl_score as dyl_dyl_score,
-    dyl_searchfree as dyl_dyl_searchfree,
-    dyl_select as dyl_dyl_select,
+from stele_core.adapterfusion import (
+    adf_score as adf_adf_score,
 )
-from stele_core.loraxs import (
-    lxs_loop_plan as lxs_lxs_loop_plan,
-    lxs_r as lxs_lxs_r,
-    lxs_score as lxs_lxs_score,
-    lxs_svd as lxs_lxs_svd,
-    lxs_tiny as lxs_lxs_tiny,
-    lxs_train as lxs_lxs_train,
+from stele_core.adapters import project_receipt
+from stele_core.adaptiverag import (
+    adaptiverag_classify_complexity as ar_adaptiverag_classify_complexity,
 )
-from stele_core.asymmetrylora import (
-    asy_bound as asy_asy_bound,
-    asy_freeze_a as asy_asy_freeze_a,
-    asy_loop_plan as asy_asy_loop_plan,
-    asy_role as asy_asy_role,
-    asy_score as asy_asy_score,
-    asy_train_b as asy_asy_train_b,
+from stele_core.adaptiverag import (
+    adaptiverag_loop_plan as ar_adaptiverag_loop_plan,
 )
-from stele_core.loraga import (
-    lga_fast as lga_lga_fast,
-    lga_grad as lga_lga_grad,
-    lga_loop_plan as lga_lga_loop_plan,
-    lga_scale as lga_lga_scale,
-    lga_score as lga_lga_score,
-    lga_svd as lga_lga_svd,
+from stele_core.adaptiverag import (
+    adaptiverag_multi_step as ar_adaptiverag_multi_step,
 )
-from stele_core.mora import (
-    mor_compress as mor_mor_compress,
-    mor_expand as mor_mor_expand,
-    mor_loop_plan as mor_mor_loop_plan,
-    mor_merge as mor_mor_merge,
-    mor_score as mor_mor_score,
-    mor_square as mor_mor_square,
+from stele_core.adaptiverag import (
+    adaptiverag_no_retrieve as ar_adaptiverag_no_retrieve,
 )
-from stele_core.rslora import (
-    rsl_loop_plan as rsl_rsl_loop_plan,
-    rsl_rank as rsl_rsl_rank,
-    rsl_scale as rsl_rsl_scale,
-    rsl_score as rsl_rsl_score,
-    rsl_stable as rsl_rsl_stable,
-    rsl_train as rsl_rsl_train,
+from stele_core.adaptiverag import (
+    adaptiverag_select_strategy as ar_adaptiverag_select_strategy,
 )
-from stele_core.lokr import (
-    lkr_factors as lkr_lkr_factors,
-    lkr_kron as lkr_lkr_kron,
-    lkr_loop_plan as lkr_lkr_loop_plan,
-    lkr_preserve as lkr_lkr_preserve,
-    lkr_score as lkr_lkr_score,
-    lkr_vectorize as lkr_lkr_vectorize,
-)
-from stele_core.loha import (
-    lha_express as lha_lha_express,
-    lha_hadamard as lha_lha_hadamard,
-    lha_loop_plan as lha_lha_loop_plan,
-    lha_pair as lha_lha_pair,
-    lha_score as lha_lha_score,
-    lha_train as lha_lha_train,
-)
-from stele_core.fourierft import (
-    fft_basis as fft_fft_basis,
-    fft_coeff as fft_fft_coeff,
-    fft_idft as fft_fft_idft,
-    fft_loop_plan as fft_fft_loop_plan,
-    fft_score as fft_fft_score,
-    fft_sparse as fft_fft_sparse,
-)
-from stele_core.houlsby import (
-    had_freeze as had_had_freeze,
-    had_insert as had_had_insert,
-    had_latency as had_had_latency,
-    had_loop_plan as had_had_loop_plan,
-    had_score as had_had_score,
-    had_train as had_had_train,
-)
-from stele_core.reft import (
-    rft_edit as rft_rft_edit,
-    rft_loop_plan as rft_rft_loop_plan,
-    rft_repr as rft_rft_repr,
-    rft_score as rft_rft_score,
-    rft_train as rft_rft_train,
-    rft_weightless as rft_rft_weightless,
-)
-from stele_core.oft import (
-    oft_butterfly as oft_oft_butterfly,
-    oft_energy as oft_oft_energy,
-    oft_loop_plan as oft_oft_loop_plan,
-    oft_ortho as oft_oft_ortho,
-    oft_score as oft_oft_score,
-    oft_train as oft_oft_train,
-)
-from stele_core.miss import (
-    mss_loop_plan as mss_mss_loop_plan,
-    mss_pareto as mss_mss_pareto,
-    mss_score as mss_mss_score,
-    mss_share as mss_mss_share,
-    mss_shard as mss_mss_shard,
-    mss_train as mss_mss_train,
-)
-from stele_core.droplora import (
-    drl_infer as drl_drl_infer,
-    drl_loop_plan as drl_drl_loop_plan,
-    drl_mask as drl_drl_mask,
-    drl_rank as drl_drl_rank,
-    drl_score as drl_drl_score,
-    drl_train as drl_drl_train,
-)
-from stele_core.galore import (
-    gal_full as gal_gal_full,
-    gal_grad as gal_gal_grad,
-    gal_loop_plan as gal_gal_loop_plan,
-    gal_project as gal_gal_project,
-    gal_score as gal_gal_score,
-    gal_step as gal_gal_step,
-)
-from stele_core.shira import (
-    shr_fusion as shr_shr_fusion,
-    shr_loop_plan as shr_shr_loop_plan,
-    shr_mask as shr_shr_mask,
-    shr_score as shr_shr_score,
-    shr_switch as shr_shr_switch,
-    shr_tune as shr_shr_tune,
-)
-from stele_core.waveft import (
-    wft_granular as wft_wft_granular,
-    wft_idwt as wft_wft_idwt,
-    wft_loop_plan as wft_wft_loop_plan,
-    wft_score as wft_wft_score,
-    wft_sparse as wft_wft_sparse,
-    wft_wave as wft_wft_wave,
-)
-from stele_core.lorapro import (
-    lpr_adjust as lpr_lpr_adjust,
-    lpr_bridge as lpr_lpr_bridge,
-    lpr_equiv as lpr_lpr_equiv,
-    lpr_loop_plan as lpr_lpr_loop_plan,
-    lpr_score as lpr_lpr_score,
-    lpr_train as lpr_lpr_train,
-)
-from stele_core.kronlora import (
-    krl_compress as krl_krl_compress,
-    krl_kron as krl_krl_kron,
-    krl_loop_plan as krl_krl_loop_plan,
-    krl_lora as krl_krl_lora,
-    krl_score as krl_krl_score,
-    krl_train as krl_krl_train,
-)
-from stele_core.milora import (
-    mil_freeze as mil_mil_freeze,
-    mil_loop_plan as mil_mil_loop_plan,
-    mil_minor as mil_mil_minor,
-    mil_preserve as mil_mil_preserve,
-    mil_score as mil_mil_score,
-    mil_svd as mil_mil_svd,
-)
-from stele_core.corda import (
-    cda_adapt as cda_cda_adapt,
-    cda_cov as cda_cda_cov,
-    cda_forget as cda_cda_forget,
-    cda_loop_plan as cda_cda_loop_plan,
-    cda_mode as cda_cda_mode,
-    cda_score as cda_cda_score,
-)
-from stele_core.loftq import (
-    lfq_gap as lfq_lfq_gap,
-    lfq_init as lfq_lfq_init,
-    lfq_loop_plan as lfq_lfq_loop_plan,
-    lfq_quant as lfq_lfq_quant,
-    lfq_score as lfq_lfq_score,
-    lfq_train as lfq_lfq_train,
-)
-from stele_core.loradash import (
-    lds_dash as lds_lds_dash,
-    lds_impact as lds_lds_impact,
-    lds_loop_plan as lds_lds_loop_plan,
-    lds_prelaunch as lds_lds_prelaunch,
-    lds_score as lds_lds_score,
-    lds_tsd as lds_lds_tsd,
-)
-from stele_core.deltalora import (
-    dlo_adapters as dlo_dlo_adapters,
-    dlo_delta as dlo_dlo_delta,
-    dlo_highrank as dlo_dlo_highrank,
-    dlo_loop_plan as dlo_dlo_loop_plan,
-    dlo_propagate as dlo_dlo_propagate,
-    dlo_score as dlo_dlo_score,
-)
-from stele_core.loraone import (
-    lon_align as lon_lon_align,
-    lon_grad as lon_lon_grad,
-    lon_immediate as lon_lon_immediate,
-    lon_loop_plan as lon_lon_loop_plan,
-    lon_score as lon_lon_score,
-    lon_train as lon_lon_train,
-)
-from stele_core.olora import (
-    olr_loop_plan as olr_olr_loop_plan,
-    olr_ortho as olr_olr_ortho,
-    olr_qr as olr_olr_qr,
-    olr_score as olr_olr_score,
-    olr_stable as olr_olr_stable,
-    olr_train as olr_olr_train,
-)
-from stele_core.lorasp import (
-    lsp_freeze as lsp_lsp_freeze,
-    lsp_loop_plan as lsp_lsp_loop_plan,
-    lsp_memory as lsp_lsp_memory,
-    lsp_score as lsp_lsp_score,
-    lsp_select as lsp_lsp_select,
-    lsp_train as lsp_lsp_train,
-)
-from stele_core.qpissa import (
-    qps_error as qps_qps_error,
-    qps_loop_plan as qps_qps_loop_plan,
-    qps_principal as qps_qps_principal,
-    qps_quant as qps_qps_quant,
-    qps_score as qps_qps_score,
-    qps_train as qps_qps_train,
-)
-from stele_core.moslora import (
-    msl_fuse as msl_msl_fuse,
-    msl_loop_plan as msl_msl_loop_plan,
-    msl_mixer as msl_msl_mixer,
-    msl_score as msl_msl_score,
-    msl_split as msl_msl_split,
-    msl_train as msl_msl_train,
-)
-from stele_core.loradrop import (
-    ldr_eval as ldr_ldr_eval,
-    ldr_keep as ldr_ldr_keep,
-    ldr_loop_plan as ldr_ldr_loop_plan,
-    ldr_prune as ldr_ldr_prune,
-    ldr_score as ldr_ldr_score,
-    ldr_share as ldr_ldr_share,
-)
-from stele_core.vblora import (
-    vbl_bank as vbl_vbl_bank,
-    vbl_compose as vbl_vbl_compose,
-    vbl_extreme as vbl_vbl_extreme,
-    vbl_loop_plan as vbl_vbl_loop_plan,
-    vbl_score as vbl_vbl_score,
-    vbl_topk as vbl_vbl_topk,
-)
-from stele_core.oplora import (
-    opl_constrain as opl_opl_constrain,
-    opl_forget as opl_opl_forget,
-    opl_loop_plan as opl_opl_loop_plan,
-    opl_proj as opl_opl_proj,
-    opl_score as opl_opl_score,
-    opl_train as opl_opl_train,
-)
-from stele_core.gelora import (
-    gel_budget as gel_gel_budget,
-    gel_idim as gel_gel_idim,
-    gel_loop_plan as gel_gel_loop_plan,
-    gel_rank as gel_gel_rank,
-    gel_score as gel_gel_score,
-    gel_train as gel_gel_train,
-)
-from stele_core.geolora import (
-    geo_budget as geo_geo_budget,
-    geo_dyn as geo_geo_dyn,
-    geo_loop_plan as geo_geo_loop_plan,
-    geo_ortho as geo_geo_ortho,
-    geo_score as geo_geo_score,
-    geo_train as geo_geo_train,
-)
-from stele_core.randlora import (
-    rlo_bases as rlo_rlo_bases,
-    rlo_fullrank as rlo_rlo_fullrank,
-    rlo_loop_plan as rlo_rlo_loop_plan,
-    rlo_scale as rlo_rlo_scale,
-    rlo_score as rlo_rlo_score,
-    rlo_train as rlo_rlo_train,
-)
-from stele_core.lorashear import (
-    lsh_footprint as lsh_lsh_footprint,
-    lsh_graph as lsh_lsh_graph,
-    lsh_loop_plan as lsh_lsh_loop_plan,
-    lsh_prune as lsh_lsh_prune,
-    lsh_recover as lsh_lsh_recover,
-    lsh_score as lsh_lsh_score,
-)
-from stele_core.oplora_alt import (
-    aop_alt as aop_aop_alt,
-    aop_loop_plan as aop_aop_loop_plan,
-    aop_score as aop_aop_score,
-    aop_sub as aop_aop_sub,
-    aop_svd as aop_aop_svd,
-    aop_train as aop_aop_train,
-)
-from stele_core.lorainit import (
-    lin_fast as lin_lin_fast,
-    lin_init as lin_lin_init,
-    lin_loop_plan as lin_lin_loop_plan,
-    lin_score as lin_lin_score,
-    lin_train as lin_lin_train,
-    lin_tsd as lin_lin_tsd,
-)
-from stele_core.loranull import (
-    lnu_act as lnu_lnu_act,
-    lnu_forget as lnu_lnu_forget,
-    lnu_loop_plan as lnu_lnu_loop_plan,
-    lnu_null as lnu_lnu_null,
-    lnu_score as lnu_lnu_score,
-    lnu_train as lnu_lnu_train,
-)
-from stele_core.hydralora import (
-    hyd_heads as hyd_hyd_heads,
-    hyd_loop_plan as hyd_hyd_loop_plan,
-    hyd_nodomain as hyd_hyd_nodomain,
-    hyd_route as hyd_hyd_route,
-    hyd_score as hyd_hyd_score,
-    hyd_share as hyd_hyd_share,
-)
-from stele_core.loralego import (
-    llg_cluster as llg_llg_cluster,
-    llg_loop_plan as llg_llg_loop_plan,
-    llg_merge as llg_llg_merge,
-    llg_modular as llg_llg_modular,
-    llg_msu as llg_llg_msu,
-    llg_score as llg_llg_score,
-)
-from stele_core.loramoe import (
-    lme_balance as lme_lme_balance,
-    lme_forget as lme_lme_forget,
-    lme_loop_plan as lme_lme_loop_plan,
-    lme_plugin as lme_lme_plugin,
-    lme_route as lme_lme_route,
-    lme_score as lme_lme_score,
-)
-from stele_core.moelora import (
-    mel_contrast as mel_mel_contrast,
-    mel_experts as mel_mel_experts,
-    mel_gate as mel_mel_gate,
-    mel_loop_plan as mel_mel_loop_plan,
-    mel_score as mel_mel_score,
-    mel_sparse as mel_mel_sparse,
-)
-from stele_core.lorahub import (
-    lhb_adapt as lhb_lhb_adapt,
-    lhb_compose as lhb_lhb_compose,
-    lhb_loop_plan as lhb_lhb_loop_plan,
-    lhb_nograd as lhb_lhb_nograd,
-    lhb_pool as lhb_lhb_pool,
-    lhb_score as lhb_lhb_score,
-)
-from stele_core.multilora import (
-    mlr_demo as mlr_mlr_demo,
-    mlr_init as mlr_mlr_init,
-    mlr_loop_plan as mlr_mlr_loop_plan,
-    mlr_scale as mlr_mlr_scale,
-    mlr_score as mlr_mlr_score,
-    mlr_train as mlr_mlr_train,
-)
-from stele_core.mtllora import (
-    mtl_interfere as mtl_mtl_interfere,
-    mtl_loop_plan as mtl_mtl_loop_plan,
-    mtl_score as mtl_mtl_score,
-    mtl_share as mtl_mtl_share,
-    mtl_spec as mtl_mtl_spec,
-    mtl_task as mtl_mtl_task,
-)
-from stele_core.malora import (
-    mal_down as mal_mal_down,
-    mal_eff as mal_mal_eff,
-    mal_loop_plan as mal_mal_loop_plan,
-    mal_mix as mal_mal_mix,
-    mal_score as mal_mal_score,
-    mal_up as mal_mal_up,
-)
-from stele_core.loramini import (
-    lmi_inner as lmi_lmi_inner,
-    lmi_loop_plan as lmi_lmi_loop_plan,
-    lmi_score as lmi_lmi_score,
-    lmi_split as lmi_lmi_split,
-    lmi_tiny as lmi_lmi_tiny,
-    lmi_train as lmi_lmi_train,
-)
-from stele_core.qdylora import (
-    qdy_loop_plan as qdy_qdy_loop_plan,
-    qdy_pick as qdy_qdy_pick,
-    qdy_quant as qdy_qdy_quant,
-    qdy_range as qdy_qdy_range,
-    qdy_score as qdy_qdy_score,
-    qdy_train as qdy_qdy_train,
-)
-from stele_core.loratsd import (
-    lts_combo as lts_lts_combo,
-    lts_dash as lts_lts_dash,
-    lts_init as lts_lts_init,
-    lts_loop_plan as lts_lts_loop_plan,
-    lts_score as lts_lts_score,
-    lts_tsd as lts_lts_tsd,
-)
-from stele_core.slora import (
-    slr_batch as slr_slr_batch,
-    slr_loop_plan as slr_slr_loop_plan,
-    slr_page as slr_slr_page,
-    slr_pool as slr_slr_pool,
-    slr_scale as slr_slr_scale,
-    slr_score as slr_slr_score,
-)
-from stele_core.compressthenserve import (
-    cts_basis as cts_cts_basis,
-    cts_cluster as cts_cts_cluster,
-    cts_collect as cts_cts_collect,
-    cts_loop_plan as cts_cts_loop_plan,
-    cts_scale as cts_cts_scale,
-    cts_score as cts_cts_score,
-)
-from stele_core.flora import (
-    flo_agg as flo_flo_agg,
-    flo_clients as flo_flo_clients,
-    flo_hetero as flo_flo_hetero,
-    flo_loop_plan as flo_flo_loop_plan,
-    flo_score as flo_flo_score,
-    flo_stack as flo_flo_stack,
-)
-from stele_core.punica import (
-    pun_backbone as pun_pun_backbone,
-    pun_loop_plan as pun_pun_loop_plan,
-    pun_multi as pun_pun_multi,
-    pun_sched as pun_pun_sched,
-    pun_score as pun_pun_score,
-    pun_sgmv as pun_pun_sgmv,
-)
-from stele_core.mlora import (
-    mla_batch as mla_mla_batch,
-    mla_eff as mla_mla_eff,
-    mla_loop_plan as mla_mla_loop_plan,
-    mla_pipe as mla_mla_pipe,
-    mla_score as mla_mla_score,
-    mla_train as mla_mla_train,
-)
-from stele_core.switchlora import (
-    swl_alloc as swl_swl_alloc,
-    swl_full as swl_swl_full,
-    swl_loop_plan as swl_swl_loop_plan,
-    swl_score as swl_swl_score,
-    swl_switch as swl_swl_switch,
-    swl_train as swl_swl_train,
-)
-from stele_core.chainoflora import (
-    col_extend as col_col_extend,
-    col_gap as col_col_gap,
-    col_knot as col_col_knot,
-    col_loop_plan as col_col_loop_plan,
-    col_score as col_col_score,
-    col_tune as col_col_tune,
-)
-from stele_core.delora import (
-    dlr_bound as dlr_dlr_bound,
-    dlr_loop_plan as dlr_dlr_loop_plan,
-    dlr_norm as dlr_dlr_norm,
-    dlr_robust as dlr_dlr_robust,
-    dlr_score as dlr_dlr_score,
-    dlr_train as dlr_dlr_train,
-)
-from stele_core.melora_ensemble import (
-    meo_diag as meo_meo_diag,
-    meo_loop_plan as meo_meo_loop_plan,
-    meo_mini as meo_meo_mini,
-    meo_rank as meo_meo_rank,
-    meo_score as meo_meo_score,
-    meo_train as meo_meo_train,
-)
-from stele_core.relora import (
-    rlr_high as rlr_rlr_high,
-    rlr_jagged as rlr_rlr_jagged,
-    rlr_loop_plan as rlr_rlr_loop_plan,
-    rlr_merge as rlr_rlr_merge,
-    rlr_score as rlr_rlr_score,
-    rlr_warm as rlr_rlr_warm,
-)
-from stele_core.ether import (
-    eth_loop_plan as eth_eth_loop_plan,
-    eth_plane as eth_eth_plane,
-    eth_plus as eth_eth_plus,
-    eth_reflect as eth_eth_reflect,
-    eth_score as eth_eth_score,
-    eth_train as eth_eth_train,
-)
-from stele_core.loracomposer import (
-    lco_concepts as lco_lco_concepts,
-    lco_free as lco_lco_free,
-    lco_inject as lco_lco_inject,
-    lco_isolate as lco_lco_isolate,
-    lco_loop_plan as lco_lco_loop_plan,
-    lco_score as lco_lco_score,
-)
-from stele_core.carelora import (
-    car_compress as car_car_compress,
-    car_loop_plan as car_car_loop_plan,
-    car_mem as car_car_mem,
-    car_recon as car_car_recon,
-    car_score as car_car_score,
-    car_train as car_car_train,
-)
-from stele_core.lorarar import (
-    lrr_fast as lrr_lrr_fast,
-    lrr_hyper as lrr_lrr_hyper,
-    lrr_loop_plan as lrr_lrr_loop_plan,
-    lrr_merge as lrr_lrr_merge,
-    lrr_pair as lrr_lrr_pair,
-    lrr_score as lrr_lrr_score,
-)
-from stele_core.svft import (
-    svf_geom as svf_svf_geom,
-    svf_loop_plan as svf_svf_loop_plan,
-    svf_score as svf_svf_score,
-    svf_sparse as svf_svf_sparse,
-    svf_svd as svf_svf_svd,
-    svf_train as svf_svf_train,
-)
-from stele_core.flylora import (
-    fly_implicit as fly_fly_implicit,
-    fly_loop_plan as fly_fly_loop_plan,
-    fly_proj as fly_fly_proj,
-    fly_score as fly_fly_score,
-    fly_topk as fly_fly_topk,
-    fly_train as fly_fly_train,
-)
-from stele_core.nola import (
-    nla_basis as nla_nla_basis,
-    nla_coeff as nla_nla_coeff,
-    nla_compact as nla_nla_compact,
-    nla_loop_plan as nla_nla_loop_plan,
-    nla_score as nla_nla_score,
-    nla_train as nla_nla_train,
-)
-from stele_core.mixlora import (
-    mxl_attn as mxl_mxl_attn,
-    mxl_balance as mxl_mxl_balance,
-    mxl_experts as mxl_mxl_experts,
-    mxl_loop_plan as mxl_mxl_loop_plan,
-    mxl_route as mxl_mxl_route,
-    mxl_score as mxl_mxl_score,
-)
-from stele_core.superlora import (
-    spr_factor as spr_spr_factor,
-    spr_fold as spr_spr_fold,
-    spr_group as spr_spr_group,
-    spr_loop_plan as spr_spr_loop_plan,
-    spr_score as spr_spr_score,
-    spr_unify as spr_spr_unify,
-)
-from stele_core.tiedlora import (
-    tld_frac as tld_tld_frac,
-    tld_loop_plan as tld_tld_loop_plan,
-    tld_scale as tld_tld_scale,
-    tld_score as tld_tld_score,
-    tld_select as tld_tld_select,
-    tld_tie as tld_tld_tie,
-)
-from stele_core.qalora import (
-    qal_adapt as qal_qal_adapt,
-    qal_group as qal_qal_group,
-    qal_loop_plan as qal_qal_loop_plan,
-    qal_merge as qal_qal_merge,
-    qal_quant as qal_qal_quant,
-    qal_score as qal_qal_score,
-)
-from stele_core.unilora import (
-    ulo_iso as ulo_ulo_iso,
-    ulo_loop_plan as ulo_ulo_loop_plan,
-    ulo_one as ulo_ulo_one,
-    ulo_score as ulo_ulo_score,
-    ulo_space as ulo_ulo_space,
-    ulo_vec as ulo_ulo_vec,
-)
-from stele_core.bora import (
-    bor_col as bor_bor_col,
-    bor_loop_plan as bor_bor_loop_plan,
-    bor_row as bor_bor_row,
-    bor_score as bor_bor_score,
-    bor_sym as bor_bor_sym,
-    bor_train as bor_bor_train,
-)
-from stele_core.qgalore import (
-    qga_lazy as qga_qga_lazy,
-    qga_loop_plan as qga_qga_loop_plan,
-    qga_mem as qga_qga_mem,
-    qga_proj as qga_qga_proj,
-    qga_score as qga_qga_score,
-    qga_weight as qga_qga_weight,
-)
-from stele_core.loraflow import (
-    lfw_few as lfw_lfw_few,
-    lfw_gate as lfw_lfw_gate,
-    lfw_loop_plan as lfw_lfw_loop_plan,
-    lfw_pool as lfw_lfw_pool,
-    lfw_score as lfw_lfw_score,
-    lfw_token as lfw_lfw_token,
-)
-from stele_core.rosa import (
-    ros_fft as ros_ros_fft,
-    ros_loop_plan as ros_ros_loop_plan,
-    ros_rank as ros_ros_rank,
-    ros_score as ros_ros_score,
-    ros_sparse as ros_ros_sparse,
-    ros_train as ros_ros_train,
-)
-from stele_core.abba import (
-    abb_expr as abb_abb_expr,
-    abb_hadamard as abb_abb_hadamard,
-    abb_left as abb_abb_left,
-    abb_loop_plan as abb_abb_loop_plan,
-    abb_right as abb_abb_right,
-    abb_score as abb_abb_score,
-)
-from stele_core.boha import (
-    bha_hadamard as bha_bha_hadamard,
-    bha_local as bha_bha_local,
-    bha_loop_plan as bha_bha_loop_plan,
-    bha_score as bha_bha_score,
-    bha_split as bha_bha_split,
-    bha_train as bha_bha_train,
-)
-from stele_core.smoa import (
-    smo_loop_plan as smo_smo_loop_plan,
-    smo_mod as smo_smo_mod,
-    smo_rank as smo_smo_rank,
-    smo_score as smo_smo_score,
-    smo_struct as smo_smo_struct,
-    smo_train as smo_smo_train,
-)
-from stele_core.glora import (
-    glo_loop_plan as glo_glo_loop_plan,
-    glo_prompt as glo_glo_prompt,
-    glo_scale as glo_glo_scale,
-    glo_score as glo_glo_score,
-    glo_search as glo_glo_search,
-    glo_zero as glo_glo_zero,
-)
-from stele_core.periodiclora import (
-    plr_loop_plan as plr_plr_loop_plan,
-    plr_merge as plr_plr_merge,
-    plr_rank as plr_plr_rank,
-    plr_reset as plr_plr_reset,
-    plr_score as plr_plr_score,
-    plr_stage as plr_plr_stage,
-)
-from stele_core.hira import (
-    hir_base as hir_hir_base,
-    hir_factors as hir_hir_factors,
-    hir_hadamard as hir_hir_hadamard,
-    hir_loop_plan as hir_hir_loop_plan,
-    hir_merge as hir_hir_merge,
-    hir_score as hir_hir_score,
-)
-from stele_core.concurrentlora import (
-    cnl_fuse as cnl_cnl_fuse,
-    cnl_hw as cnl_cnl_hw,
-    cnl_loop_plan as cnl_cnl_loop_plan,
-    cnl_pack as cnl_cnl_pack,
-    cnl_score as cnl_cnl_score,
-    cnl_train as cnl_cnl_train,
-)
-from stele_core.longlora import (
-    llr_loop_plan as llr_llr_loop_plan,
-    llr_lora as llr_llr_lora,
-    llr_score as llr_llr_score,
-    llr_shift as llr_llr_shift,
-    llr_sparse as llr_llr_sparse,
-    llr_window as llr_llr_window,
-)
-from stele_core.lisa import (
-    lis_layers as lis_lis_layers,
-    lis_loop_plan as lis_lis_loop_plan,
-    lis_memory as lis_lis_memory,
-    lis_sample as lis_lis_sample,
-    lis_score as lis_lis_score,
-    lis_unfreeze as lis_lis_unfreeze,
-)
-from stele_core.nlora import (
-    nlr_cheap as nlr_nlr_cheap,
-    nlr_init as nlr_nlr_init,
-    nlr_landmark as nlr_nlr_landmark,
-    nlr_loop_plan as nlr_nlr_loop_plan,
-    nlr_nystrom as nlr_nlr_nystrom,
-    nlr_score as nlr_nlr_score,
-)
-from stele_core.randsub import (
-    rsa_express as rsa_rsa_express,
-    rsa_loop_plan as rsa_rsa_loop_plan,
-    rsa_project as rsa_rsa_project,
-    rsa_score as rsa_rsa_score,
-    rsa_subspace as rsa_rsa_subspace,
-    rsa_train as rsa_rsa_train,
-)
-from stele_core.hra import (
-    hra_house as hra_hra_house,
-    hra_loop_plan as hra_hra_loop_plan,
-    hra_ortho as hra_hra_ortho,
-    hra_reflect as hra_hra_reflect,
-    hra_score as hra_hra_score,
-    hra_train as hra_hra_train,
-)
-from stele_core.hybridpeft import (
-    hyb_boft as hyb_hyb_boft,
-    hyb_fuse as hyb_hyb_fuse,
-    hyb_loop_plan as hyb_hyb_loop_plan,
-    hyb_lora as hyb_hyb_lora,
-    hyb_score as hyb_hyb_score,
-    hyb_stable as hyb_hyb_stable,
-)
-from stele_core.lorta import (
-    lrt_compact as lrt_lrt_compact,
-    lrt_cp as lrt_lrt_cp,
-    lrt_loop_plan as lrt_lrt_loop_plan,
-    lrt_score as lrt_lrt_score,
-    lrt_share as lrt_lrt_share,
-    lrt_tensor as lrt_lrt_tensor,
-)
-from stele_core.clora import (
-    clo_forget as clo_clo_forget,
-    clo_loop_plan as clo_clo_loop_plan,
-    clo_ortho as clo_clo_ortho,
-    clo_route as clo_clo_route,
-    clo_score as clo_clo_score,
-    clo_task as clo_clo_task,
-)
-from stele_core.alora import (
-    alo_ablate as alo_alo_ablate,
-    alo_init as alo_alo_init,
-    alo_loop_plan as alo_alo_loop_plan,
-    alo_prune as alo_alo_prune,
-    alo_realloc as alo_alo_realloc,
-    alo_score as alo_alo_score,
-)
-from stele_core.lntuning import (
-    lnt_attn as lnt_lnt_attn,
-    lnt_cheap as lnt_lnt_cheap,
-    lnt_loop_plan as lnt_lnt_loop_plan,
-    lnt_scale as lnt_lnt_scale,
-    lnt_score as lnt_lnt_score,
-    lnt_train as lnt_lnt_train,
-)
-from stele_core.lorafusion import (
-    lfu_batch as lfu_lfu_batch,
-    lfu_fuse as lfu_lfu_fuse,
-    lfu_loop_plan as lfu_lfu_loop_plan,
-    lfu_score as lfu_lfu_score,
-    lfu_speed as lfu_lfu_speed,
-    lfu_split as lfu_lfu_split,
-)
-from stele_core.tera import (
-    ter_freeze as ter_ter_freeze,
-    ter_highrank as ter_ter_highrank,
-    ter_loop_plan as ter_ter_loop_plan,
-    ter_scale as ter_ter_scale,
-    ter_score as ter_ter_score,
-    ter_tucker as ter_ter_tucker,
-)
-from stele_core.tenslora import (
-    tnl_budget as tnl_tnl_budget,
-    tnl_loop_plan as tnl_tnl_loop_plan,
-    tnl_mode as tnl_tnl_mode,
-    tnl_score as tnl_tnl_score,
-    tnl_stack as tnl_tnl_stack,
-    tnl_tucker as tnl_tnl_tucker,
+from stele_core.adaptiverag import (
+    adaptiverag_single_step as ar_adaptiverag_single_step,
 )
 from stele_core.adazeta import (
     azt_ff as azt_azt_ff,
+)
+from stele_core.adazeta import (
     azt_loop_plan as azt_azt_loop_plan,
+)
+from stele_core.adazeta import (
     azt_mem as azt_azt_mem,
+)
+from stele_core.adazeta import (
     azt_query as azt_azt_query,
+)
+from stele_core.adazeta import (
     azt_score as azt_azt_score,
+)
+from stele_core.adazeta import (
     azt_tt as azt_azt_tt,
 )
-from stele_core.fact import (
-    fct_loop_plan as fct_fct_loop_plan,
-    fct_score as fct_fct_score,
-    fct_tensor as fct_fct_tensor,
-    fct_tiny as fct_fct_tiny,
-    fct_tt as fct_fct_tt,
-    fct_tucker as fct_fct_tucker,
+from stele_core.agemem import (
+    agemem_discard_plan as ag_agemem_discard_plan,
 )
-from stele_core.lotr import (
-    ltr_core as ltr_ltr_core,
-    ltr_deep as ltr_ltr_deep,
-    ltr_loop_plan as ltr_ltr_loop_plan,
-    ltr_score as ltr_ltr_score,
-    ltr_share as ltr_ltr_share,
-    ltr_stack as ltr_ltr_stack,
+from stele_core.agemem import (
+    agemem_loop_plan as ag_agemem_loop_plan,
 )
-from stele_core.cara import (
-    cra_cpd as cra_cra_cpd,
-    cra_ffn as cra_cra_ffn,
-    cra_heads as cra_cra_heads,
-    cra_loop_plan as cra_cra_loop_plan,
-    cra_mha as cra_cra_mha,
-    cra_score as cra_cra_score,
+from stele_core.agemem import (
+    agemem_ltm_store as ag_agemem_ltm_store,
 )
-from stele_core.loretta import (
-    ltt_adp as ltt_ltt_adp,
-    ltt_loop_plan as ltt_ltt_loop_plan,
-    ltt_rep as ltt_ltt_rep,
-    ltt_score as ltt_ltt_score,
-    ltt_tiny as ltt_ltt_tiny,
-    ltt_tt as ltt_ltt_tt,
+from stele_core.agemem import (
+    agemem_retrieve as ag_agemem_retrieve,
 )
-from stele_core.c3a import (
-    c3a_circ as c3a_c3a_circ,
-    c3a_fft as c3a_c3a_fft,
-    c3a_kernel as c3a_c3a_kernel,
-    c3a_loop_plan as c3a_c3a_loop_plan,
-    c3a_rank as c3a_c3a_rank,
-    c3a_score as c3a_c3a_score,
+from stele_core.agemem import (
+    agemem_stm_manage as ag_agemem_stm_manage,
+)
+from stele_core.agemem import (
+    agemem_summarize as ag_agemem_summarize,
+)
+from stele_core.agent0 import (
+    curriculum_propose_task as a0_curriculum_propose_task,
+)
+from stele_core.agent0 import (
+    curriculum_reward as a0_curriculum_reward,
+)
+from stele_core.agent0 import (
+    executor_frontier_filter as a0_executor_frontier_filter,
+)
+from stele_core.agent0 import (
+    symbiotic_round_plan as a0_symbiotic_round_plan,
+)
+from stele_core.agent0 import (
+    tool_aware_pressure as a0_tool_aware_pressure,
+)
+from stele_core.agent0 import (
+    tool_use_reward as a0_tool_use_reward,
+)
+from stele_core.agentcoder import (
+    ac_loop_plan as ac_ac_loop_plan,
+)
+from stele_core.agentcoder import (
+    ac_pass_gate as ac_ac_pass_gate,
+)
+from stele_core.agentcoder import (
+    ac_programmer as ac_ac_programmer,
+)
+from stele_core.agentcoder import (
+    ac_refine as ac_ac_refine,
+)
+from stele_core.agentcoder import (
+    ac_test_designer as ac_ac_test_designer,
+)
+from stele_core.agentcoder import (
+    ac_test_executor as ac_ac_test_executor,
+)
+from stele_core.agentdog import (
+    classify_failure_mode as ad_classify_failure_mode,
+)
+from stele_core.agentdog import (
+    classify_real_world_harm as ad_classify_real_world_harm,
+)
+from stele_core.agentdog import (
+    classify_risk_source as ad_classify_risk_source,
+)
+from stele_core.agentdog import (
+    diagnose_trajectory as ad_diagnose_trajectory,
+)
+from stele_core.agentdog import (
+    diagnose_trajectory_step as ad_diagnose_trajectory_step,
+)
+from stele_core.agentdog import (
+    safe_but_unreasonable_scan as ad_safe_but_unreasonable_scan,
+)
+from stele_core.agentdog import (
+    taxonomy_inventory as ad_taxonomy_inventory,
+)
+from stele_core.agentevolver import (
+    attribute_step_credit as ae_attribute_step_credit,
+)
+from stele_core.agentevolver import (
+    curiosity_explore_plan as ae_curiosity_explore_plan,
+)
+from stele_core.agentevolver import (
+    experience_when_content as ae_experience_when_content,
+)
+from stele_core.agentevolver import (
+    mixed_rollout_split as ae_mixed_rollout_split,
+)
+from stele_core.agentevolver import (
+    self_question_task as ae_self_question_task,
+)
+from stele_core.agentfold import (
+    agentfold_context_budget as af_agentfold_context_budget,
+)
+from stele_core.agentfold import (
+    agentfold_deep_consolidate as af_agentfold_deep_consolidate,
+)
+from stele_core.agentfold import (
+    agentfold_fold_command as af_agentfold_fold_command,
+)
+from stele_core.agentfold import (
+    agentfold_granular_condense as af_agentfold_granular_condense,
+)
+from stele_core.agentfold import (
+    agentfold_loop_plan as af_agentfold_loop_plan,
+)
+from stele_core.agentfold import (
+    agentfold_workspace_split as af_agentfold_workspace_split,
+)
+from stele_core.agenther import (
+    classify_failure as ah_classify_failure,
+)
+from stele_core.agenther import (
+    extract_replay_outcome as ah_extract_replay_outcome,
+)
+from stele_core.agenther import (
+    hindsight_relabel_plan as ah_hindsight_relabel_plan,
+)
+from stele_core.agenther import (
+    multi_judge_accept as ah_multi_judge_accept,
+)
+from stele_core.agenther import (
+    package_training_pair as ah_package_training_pair,
+)
+from stele_core.agentir import (
+    cascade_route as air_cascade_route,
+)
+from stele_core.agentir import (
+    multi_channel_fuse as air_multi_channel_fuse,
+)
+from stele_core.algorithmofthoughts import (
+    aot_explore_subtree as aot_aot_explore_subtree,
+)
+from stele_core.algorithmofthoughts import (
+    aot_load_algorithm as aot_aot_load_algorithm,
+)
+from stele_core.algorithmofthoughts import (
+    aot_loop_plan as aot_aot_loop_plan,
+)
+from stele_core.algorithmofthoughts import (
+    aot_query_budget as aot_aot_query_budget,
+)
+from stele_core.algorithmofthoughts import (
+    aot_surpass_algo as aot_aot_surpass_algo,
+)
+from stele_core.algorithmofthoughts import (
+    aot_tunnel_vision as aot_aot_tunnel_vision,
+)
+from stele_core.alora import (
+    alo_ablate as alo_alo_ablate,
+)
+from stele_core.alora import (
+    alo_init as alo_alo_init,
+)
+from stele_core.alora import (
+    alo_loop_plan as alo_alo_loop_plan,
+)
+from stele_core.alora import (
+    alo_prune as alo_alo_prune,
+)
+from stele_core.alora import (
+    alo_realloc as alo_alo_realloc,
+)
+from stele_core.alora import (
+    alo_score as alo_alo_score,
+)
+from stele_core.amemguard import consensus_admit as ag_consensus_admit
+from stele_core.amsentry import (
+    retrieval_screen as am_retrieval_screen,
+)
+from stele_core.amsentry import (
+    save_policy as am_save_policy,
+)
+from stele_core.analogical import (
+    ana_adapt as ana_ana_adapt,
+)
+from stele_core.analogical import (
+    ana_knowledge as ana_ana_knowledge,
+)
+from stele_core.analogical import (
+    ana_loop_plan as ana_ana_loop_plan,
+)
+from stele_core.analogical import (
+    ana_no_label as ana_ana_no_label,
+)
+from stele_core.analogical import (
+    ana_recall as ana_ana_recall,
+)
+from stele_core.analogical import (
+    ana_solve as ana_ana_solve,
+)
+from stele_core.architect import context_bid as architect_context_bid
+from stele_core.archive import (
+    archive_plan as arch_archive_plan,
+)
+from stele_core.archive import (
+    list_archived as arch_list_archived,
+)
+from stele_core.ariadne import (
+    bridge_discover as ar_bridge_discover,
+)
+from stele_core.ariadne import (
+    fuse_cluster as ar_fuse_cluster,
+)
+from stele_core.ariadne import (
+    merge_link_add as ar_merge_link_add,
+)
+from stele_core.asymmetrylora import (
+    asy_bound as asy_asy_bound,
+)
+from stele_core.asymmetrylora import (
+    asy_freeze_a as asy_asy_freeze_a,
+)
+from stele_core.asymmetrylora import (
+    asy_loop_plan as asy_asy_loop_plan,
+)
+from stele_core.asymmetrylora import (
+    asy_role as asy_asy_role,
+)
+from stele_core.asymmetrylora import (
+    asy_score as asy_asy_score,
+)
+from stele_core.asymmetrylora import (
+    asy_train_b as asy_asy_train_b,
+)
+from stele_core.attemptprompt import (
+    atm_attend as atm_atm_attend,
+)
+from stele_core.attemptprompt import (
+    atm_loop_plan as atm_atm_loop_plan,
+)
+from stele_core.attemptprompt import (
+    atm_mix as atm_atm_mix,
+)
+from stele_core.attemptprompt import (
+    atm_modular as atm_atm_modular,
+)
+from stele_core.attemptprompt import (
+    atm_source as atm_atm_source,
+)
+from stele_core.attemptprompt import (
+    atm_target as atm_atm_target,
+)
+from stele_core.autocot import (
+    autocot_cluster as autocot_autocot_cluster,
+)
+from stele_core.autocot import (
+    autocot_diversity as autocot_autocot_diversity,
+)
+from stele_core.autocot import (
+    autocot_generate as autocot_autocot_generate,
+)
+from stele_core.autocot import (
+    autocot_heuristic as autocot_autocot_heuristic,
+)
+from stele_core.autocot import (
+    autocot_loop_plan as autocot_autocot_loop_plan,
+)
+from stele_core.autocot import (
+    autocot_sample as autocot_autocot_sample,
+)
+from stele_core.automaticpromptengineer import (
+    ape_human as ape_ape_human,
+)
+from stele_core.automaticpromptengineer import (
+    ape_loop_plan as ape_ape_loop_plan,
+)
+from stele_core.automaticpromptengineer import (
+    ape_propose as ape_ape_propose,
+)
+from stele_core.automaticpromptengineer import (
+    ape_score as ape_ape_score,
+)
+from stele_core.automaticpromptengineer import (
+    ape_select as ape_ape_select,
+)
+from stele_core.automaticpromptengineer import (
+    ape_steer as ape_ape_steer,
+)
+from stele_core.autoprompt import (
+    aup_loop_plan as aup_aup_loop_plan,
+)
+from stele_core.autoprompt import (
+    aup_probe as aup_aup_probe,
+)
+from stele_core.autoprompt import (
+    aup_score as aup_aup_score,
+)
+from stele_core.autoprompt import (
+    aup_search as aup_aup_search,
+)
+from stele_core.autoprompt import (
+    aup_template as aup_aup_template,
+)
+from stele_core.autoprompt import (
+    aup_trigger as aup_aup_trigger,
+)
+from stele_core.awm import (
+    induce_workflow as awm_induce_workflow,
+)
+from stele_core.awm import (
+    online_induce_gate as awm_online_induce_gate,
+)
+from stele_core.awm import (
+    retrieve_workflows as awm_retrieve_workflows,
+)
+from stele_core.awm import (
+    workflow_memory_add_plan as awm_workflow_memory_add_plan,
+)
+from stele_core.awm import (
+    workflow_step_budget as awm_workflow_step_budget,
+)
+from stele_core.beam import (
+    abstention_gate as bm_abstention_gate,
+)
+from stele_core.beam import (
+    beam_category_inventory as bm_beam_category_inventory,
+)
+from stele_core.beam import (
+    beam_eval_pack as bm_beam_eval_pack,
+)
+from stele_core.beam import (
+    classify_beam_query as bm_classify_beam_query,
+)
+from stele_core.beam import (
+    contradiction_resolve_plan as bm_contradiction_resolve_plan,
+)
+from stele_core.beam import (
+    event_order_check as bm_event_order_check,
+)
+from stele_core.beam import (
+    knowledge_update_check as bm_knowledge_update_check,
+)
+from stele_core.beam import (
+    localize_hallucination_stage as bm_localize_hallucination_stage,
+)
+from stele_core.bitfit import (
+    bft_bias as bft_bft_bias,
+)
+from stele_core.bitfit import (
+    bft_freeze as bft_bft_freeze,
+)
+from stele_core.bitfit import (
+    bft_loop_plan as bft_bft_loop_plan,
+)
+from stele_core.bitfit import (
+    bft_score as bft_bft_score,
+)
+from stele_core.bitfit import (
+    bft_tiny as bft_bft_tiny,
+)
+from stele_core.bitfit import (
+    bft_train as bft_bft_train,
 )
 from stele_core.boft import (
     bof_block as bof_bof_block,
+)
+from stele_core.boft import (
     bof_butter as bof_bof_butter,
+)
+from stele_core.boft import (
     bof_full as bof_bof_full,
+)
+from stele_core.boft import (
     bof_loop_plan as bof_bof_loop_plan,
+)
+from stele_core.boft import (
     bof_orth as bof_bof_orth,
+)
+from stele_core.boft import (
     bof_score as bof_bof_score,
 )
-from stele_core.sdt import (
-    sdt_dim as sdt_sdt_dim,
-    sdt_loop_plan as sdt_sdt_loop_plan,
-    sdt_mask as sdt_sdt_mask,
-    sdt_score as sdt_sdt_score,
-    sdt_ssm as sdt_sdt_ssm,
-    sdt_tune as sdt_sdt_tune,
+from stele_core.boha import (
+    bha_hadamard as bha_bha_hadamard,
 )
-from stele_core.meft import (
-    mef_adapt as mef_mef_adapt,
-    mef_cpu as mef_mef_cpu,
-    mef_fetch as mef_mef_fetch,
-    mef_loop_plan as mef_mef_loop_plan,
-    mef_route as mef_mef_route,
-    mef_score as mef_mef_score,
+from stele_core.boha import (
+    bha_local as bha_bha_local,
 )
-from stele_core.roles import (
-    infer_memory_role,
-    project_fact_interface,
-    quality_gate as roles_quality_gate,
-    role_collapse_scan,
+from stele_core.boha import (
+    bha_loop_plan as bha_bha_loop_plan,
 )
-from stele_core.versioning import (
-    checkout_view as ver_checkout_view,
-    commit_view as ver_commit_view,
-    copyability_gate as ver_copyability_gate,
-    diff_commits as ver_diff_commits,
-    get_read_head as ver_get_read_head,
-    list_commits as ver_list_commits,
-    merge_refs as ver_merge_refs,
-    set_read_head as ver_set_read_head,
-    tag_commit as ver_tag_commit,
-    verify_commit_chain as ver_verify_commit_chain,
+from stele_core.boha import (
+    bha_score as bha_bha_score,
 )
-from stele_core.strata import (
-    is_current_fact,
-    stale_fact_scan as strata_stale_fact_scan,
-    supersession_winners,
+from stele_core.boha import (
+    bha_split as bha_bha_split,
 )
-from stele_core.tarl import (
-    TARL_ACTIONS,
-    classify_update as tarl_classify_update,
-    ledger_view as tarl_ledger_view,
+from stele_core.boha import (
+    bha_train as bha_bha_train,
 )
-from stele_core.worth import (
-    low_worth_scan as worth_low_worth_scan,
-    memory_worth as worth_memory_worth,
-    passes_min_worth,
+from stele_core.bora import (
+    bor_col as bor_bor_col,
 )
-from stele_core.memtx import (
-    action_safe_gate as memtx_action_safe_gate,
-    aoep_checklist as memtx_aoep_checklist,
-    begin_transaction as memtx_begin_transaction,
-    get_transaction as memtx_get_transaction,
-    list_transactions as memtx_list_transactions,
-    mark_aborted as memtx_mark_aborted,
-    mark_committed as memtx_mark_committed,
-    maturity_of as memtx_maturity_of,
-    stage_entry as memtx_stage_entry,
-    validate_transaction as memtx_validate_transaction,
+from stele_core.bora import (
+    bor_loop_plan as bor_bor_loop_plan,
 )
-from stele_core.lattice import (
-    classify_conflict as lattice_classify_conflict,
-    compact_render as lattice_compact_render,
-    symbolic_conflict_scan as lattice_symbolic_conflict_scan,
+from stele_core.bora import (
+    bor_row as bor_bor_row,
+)
+from stele_core.bora import (
+    bor_score as bor_bor_score,
+)
+from stele_core.bora import (
+    bor_sym as bor_bor_sym,
+)
+from stele_core.bora import (
+    bor_train as bor_bor_train,
+)
+from stele_core.budgetmem import (
+    budget_module_plan as bm_budget_module_plan,
+)
+from stele_core.budgetmem import (
+    budget_tier_route as bm_budget_tier_route,
+)
+from stele_core.budgetmem import (
+    query_complexity as bm_query_complexity,
+)
+from stele_core.budgetmem import (
+    tier_params as bm_tier_params,
+)
+from stele_core.bufferofthoughts import (
+    bot_buffer_update as bot_bot_buffer_update,
+)
+from stele_core.bufferofthoughts import (
+    bot_cost_ratio as bot_bot_cost_ratio,
+)
+from stele_core.bufferofthoughts import (
+    bot_distill_template as bot_bot_distill_template,
+)
+from stele_core.bufferofthoughts import (
+    bot_instantiate as bot_bot_instantiate,
+)
+from stele_core.bufferofthoughts import (
+    bot_loop_plan as bot_bot_loop_plan,
+)
+from stele_core.bufferofthoughts import (
+    bot_retrieve_template as bot_bot_retrieve_template,
+)
+from stele_core.c3a import (
+    c3a_circ as c3a_c3a_circ,
+)
+from stele_core.c3a import (
+    c3a_fft as c3a_c3a_fft,
+)
+from stele_core.c3a import (
+    c3a_kernel as c3a_c3a_kernel,
+)
+from stele_core.c3a import (
+    c3a_loop_plan as c3a_c3a_loop_plan,
+)
+from stele_core.c3a import (
+    c3a_rank as c3a_c3a_rank,
+)
+from stele_core.c3a import (
+    c3a_score as c3a_c3a_score,
+)
+from stele_core.camel import (
+    camel_complete as camel_camel_complete,
+)
+from stele_core.camel import (
+    camel_inception as camel_camel_inception,
+)
+from stele_core.camel import (
+    camel_loop_plan as camel_camel_loop_plan,
+)
+from stele_core.camel import (
+    camel_roles as camel_camel_roles,
+)
+from stele_core.camel import (
+    camel_society as camel_camel_society,
+)
+from stele_core.camel import (
+    camel_turn as camel_camel_turn,
+)
+from stele_core.capseal import (
+    action_capability_inventory as cs_action_capability_inventory,
+)
+from stele_core.capseal import (
+    capability_export_probe as cs_capability_export_probe,
+)
+from stele_core.capseal import (
+    check_action_capability as cs_check_action_capability,
+)
+from stele_core.capseal import (
+    issue_action_capability as cs_issue_action_capability,
+)
+from stele_core.cara import (
+    cra_cpd as cra_cra_cpd,
+)
+from stele_core.cara import (
+    cra_ffn as cra_cra_ffn,
+)
+from stele_core.cara import (
+    cra_heads as cra_cra_heads,
+)
+from stele_core.cara import (
+    cra_loop_plan as cra_cra_loop_plan,
+)
+from stele_core.cara import (
+    cra_mha as cra_cra_mha,
+)
+from stele_core.cara import (
+    cra_score as cra_cra_score,
+)
+from stele_core.carelora import (
+    car_compress as car_car_compress,
+)
+from stele_core.carelora import (
+    car_loop_plan as car_car_loop_plan,
+)
+from stele_core.carelora import (
+    car_mem as car_car_mem,
+)
+from stele_core.carelora import (
+    car_recon as car_car_recon,
+)
+from stele_core.carelora import (
+    car_score as car_car_score,
+)
+from stele_core.carelora import (
+    car_train as car_car_train,
+)
+from stele_core.chainofdensity import (
+    cod_entities as cod_cod_entities,
+)
+from stele_core.chainofdensity import (
+    cod_fuse as cod_cod_fuse,
+)
+from stele_core.chainofdensity import (
+    cod_length as cod_cod_length,
+)
+from stele_core.chainofdensity import (
+    cod_loop_plan as cod_cod_loop_plan,
+)
+from stele_core.chainofdensity import (
+    cod_sparse as cod_cod_sparse,
+)
+from stele_core.chainofdensity import (
+    cod_tradeoff as cod_cod_tradeoff,
+)
+from stele_core.chainoflora import (
+    col_extend as col_col_extend,
+)
+from stele_core.chainoflora import (
+    col_gap as col_col_gap,
+)
+from stele_core.chainoflora import (
+    col_knot as col_col_knot,
+)
+from stele_core.chainoflora import (
+    col_loop_plan as col_col_loop_plan,
+)
+from stele_core.chainoflora import (
+    col_score as col_col_score,
+)
+from stele_core.chainoflora import (
+    col_tune as col_col_tune,
+)
+from stele_core.chainofverification import (
+    cove_answer as cove_cove_answer,
+)
+from stele_core.chainofverification import (
+    cove_draft as cove_cove_draft,
+)
+from stele_core.chainofverification import (
+    cove_final as cove_cove_final,
+)
+from stele_core.chainofverification import (
+    cove_hallucination as cove_cove_hallucination,
+)
+from stele_core.chainofverification import (
+    cove_loop_plan as cove_cove_loop_plan,
+)
+from stele_core.chainofverification import (
+    cove_plan as cove_cove_plan,
+)
+from stele_core.chameleon import (
+    cham_compose as cham_cham_compose,
+)
+from stele_core.chameleon import (
+    cham_constraint as cham_cham_constraint,
+)
+from stele_core.chameleon import (
+    cham_execute as cham_cham_execute,
+)
+from stele_core.chameleon import (
+    cham_inventory as cham_cham_inventory,
+)
+from stele_core.chameleon import (
+    cham_loop_plan as cham_cham_loop_plan,
+)
+from stele_core.chameleon import (
+    cham_plan as cham_cham_plan,
+)
+from stele_core.cheatsheet import (
+    compact_memory_gate as dc_compact_memory_gate,
+)
+from stele_core.cheatsheet import (
+    curator_decide as dc_curator_decide,
+)
+from stele_core.cheatsheet import (
+    dc_rs_order_check as dc_dc_rs_order_check,
+)
+from stele_core.cheatsheet import (
+    extract_cheatsheet_snippet as dc_extract_cheatsheet_snippet,
+)
+from stele_core.cheatsheet import (
+    retrieve_cheatsheet as dc_retrieve_cheatsheet,
+)
+from stele_core.clora import (
+    clo_forget as clo_clo_forget,
+)
+from stele_core.clora import (
+    clo_loop_plan as clo_clo_loop_plan,
+)
+from stele_core.clora import (
+    clo_ortho as clo_clo_ortho,
+)
+from stele_core.clora import (
+    clo_route as clo_clo_route,
+)
+from stele_core.clora import (
+    clo_score as clo_clo_score,
+)
+from stele_core.clora import (
+    clo_task as clo_clo_task,
+)
+from stele_core.cma import (
+    cma_associative_route as cm_cma_associative_route,
+)
+from stele_core.cma import (
+    cma_consolidate as cm_cma_consolidate,
+)
+from stele_core.cma import (
+    cma_loop_plan as cm_cma_loop_plan,
+)
+from stele_core.cma import (
+    cma_persist as cm_cma_persist,
+)
+from stele_core.cma import (
+    cma_probe_gate as cm_cma_probe_gate,
+)
+from stele_core.cma import (
+    cma_selective_retain as cm_cma_selective_retain,
+)
+from stele_core.cma import (
+    cma_temporal_chain as cm_cma_temporal_chain,
+)
+from stele_core.cmgl import (
+    admit_gate as cmgl_admit_gate,
+)
+from stele_core.cmgl import (
+    list_admit_receipts as cmgl_list_admit_receipts,
+)
+from stele_core.cmgl import (
+    verify_admit_receipt as cmgl_verify_admit_receipt,
+)
+from stele_core.compacter import (
+    cmp_compact as cmp_cmp_compact,
+)
+from stele_core.compacter import (
+    cmp_insert as cmp_cmp_insert,
+)
+from stele_core.compacter import (
+    cmp_kronecker as cmp_cmp_kronecker,
+)
+from stele_core.compacter import (
+    cmp_loop_plan as cmp_cmp_loop_plan,
+)
+from stele_core.compacter import (
+    cmp_score as cmp_cmp_score,
+)
+from stele_core.compacter import (
+    cmp_train as cmp_cmp_train,
+)
+from stele_core.complexityprompt import (
+    cbp_loop_plan as cbp_cbp_loop_plan,
+)
+from stele_core.complexityprompt import (
+    cbp_robust as cbp_cbp_robust,
+)
+from stele_core.complexityprompt import (
+    cbp_sample_chains as cbp_cbp_sample_chains,
+)
+from stele_core.complexityprompt import (
+    cbp_score as cbp_cbp_score,
+)
+from stele_core.complexityprompt import (
+    cbp_select as cbp_cbp_select,
+)
+from stele_core.complexityprompt import (
+    cbp_vote_complex as cbp_cbp_vote_complex,
+)
+from stele_core.compressthenserve import (
+    cts_basis as cts_cts_basis,
+)
+from stele_core.compressthenserve import (
+    cts_cluster as cts_cts_cluster,
+)
+from stele_core.compressthenserve import (
+    cts_collect as cts_cts_collect,
+)
+from stele_core.compressthenserve import (
+    cts_loop_plan as cts_cts_loop_plan,
+)
+from stele_core.compressthenserve import (
+    cts_scale as cts_cts_scale,
+)
+from stele_core.compressthenserve import (
+    cts_score as cts_cts_score,
+)
+from stele_core.concurrentlora import (
+    cnl_fuse as cnl_cnl_fuse,
+)
+from stele_core.concurrentlora import (
+    cnl_hw as cnl_cnl_hw,
+)
+from stele_core.concurrentlora import (
+    cnl_loop_plan as cnl_cnl_loop_plan,
+)
+from stele_core.concurrentlora import (
+    cnl_pack as cnl_cnl_pack,
+)
+from stele_core.concurrentlora import (
+    cnl_score as cnl_cnl_score,
+)
+from stele_core.concurrentlora import (
+    cnl_train as cnl_cnl_train,
+)
+from stele_core.consistencygate import (
+    consistency_admit as cg_consistency_admit,
+)
+from stele_core.consistencygate import (
+    support_score as cg_support_score,
+)
+from stele_core.contrastivecot import (
+    ccot_auto as ccot_ccot_auto,
+)
+from stele_core.contrastivecot import (
+    ccot_contrast as ccot_ccot_contrast,
+)
+from stele_core.contrastivecot import (
+    ccot_invalid as ccot_ccot_invalid,
+)
+from stele_core.contrastivecot import (
+    ccot_loop_plan as ccot_ccot_loop_plan,
+)
+from stele_core.contrastivecot import (
+    ccot_reason as ccot_ccot_reason,
+)
+from stele_core.contrastivecot import (
+    ccot_valid as ccot_ccot_valid,
+)
+from stele_core.corda import (
+    cda_adapt as cda_cda_adapt,
+)
+from stele_core.corda import (
+    cda_cov as cda_cda_cov,
+)
+from stele_core.corda import (
+    cda_forget as cda_cda_forget,
+)
+from stele_core.corda import (
+    cda_loop_plan as cda_cda_loop_plan,
+)
+from stele_core.corda import (
+    cda_mode as cda_cda_mode,
+)
+from stele_core.corda import (
+    cda_score as cda_cda_score,
 )
 from stele_core.cordon import (
     cancel_effect as cordon_cancel_effect,
+)
+from stele_core.cordon import (
     compensate_effect as cordon_compensate_effect,
+)
+from stele_core.cordon import (
     list_effects as cordon_list_effects,
+)
+from stele_core.cordon import (
     mark_dispatched as cordon_mark_dispatched,
+)
+from stele_core.cordon import (
     release_effects as cordon_release_effects,
+)
+from stele_core.cordon import (
     stage_effect as cordon_stage_effect,
 )
-from stele_core.stale import (
-    ipa_gap_scan as stale_ipa_gap_scan,
-    premise_resistance as stale_premise_resistance,
-    related_slot_scan as stale_related_slot_scan,
-    state_resolution as stale_state_resolution,
-    verify_transition as stale_verify_transition,
+from stele_core.crag import (
+    crag_action_select as cg_crag_action_select,
 )
-from stele_core.gem import gem_correctness_report
-from stele_core.fuse import (
-    clear_projection_pin as fuse_clear_projection_pin,
-    correction_handle as fuse_correction_handle,
-    get_projection_pin as fuse_get_projection_pin,
-    list_projection_pins as fuse_list_projection_pins,
-    pin_projection as fuse_pin_projection,
-    project_resolve as fuse_project_resolve,
+from stele_core.crag import (
+    crag_ambiguous_blend as cg_crag_ambiguous_blend,
 )
-from stele_core.toki_ops import (
-    anomaly_scan as toki_anomaly_scan,
-    classify_write_operator as toki_classify_write_operator,
-    tip_for_conflict_key as toki_tip_for_conflict_key,
+from stele_core.crag import (
+    crag_correct_refine as cg_crag_correct_refine,
 )
-from stele_core.architect import context_bid as architect_context_bid
+from stele_core.crag import (
+    crag_evaluate_retrieval as cg_crag_evaluate_retrieval,
+)
+from stele_core.crag import (
+    crag_loop_plan as cg_crag_loop_plan,
+)
+from stele_core.crag import (
+    crag_web_fallback_plan as cg_crag_web_fallback_plan,
+)
+from stele_core.credguard import (
+    credential_reject_gate as cg_credential_reject_gate,
+)
+from stele_core.credguard import (
+    credential_scan_entry as cg_credential_scan_entry,
+)
+from stele_core.credguard import (
+    credential_store_scan as cg_credential_store_scan,
+)
+from stele_core.critic import (
+    critic_draft as critic_critic_draft,
+)
+from stele_core.critic import (
+    critic_iterate as critic_critic_iterate,
+)
+from stele_core.critic import (
+    critic_loop_plan as critic_critic_loop_plan,
+)
+from stele_core.critic import (
+    critic_revise as critic_critic_revise,
+)
+from stele_core.critic import (
+    critic_stop as critic_critic_stop,
+)
+from stele_core.critic import (
+    critic_tool_check as critic_critic_tool_check,
+)
+from stele_core.cumulativereasoning import (
+    cr_accumulate as cr_cr_accumulate,
+)
+from stele_core.cumulativereasoning import (
+    cr_loop_plan as cr_cr_loop_plan,
+)
+from stele_core.cumulativereasoning import (
+    cr_propose as cr_cr_propose,
+)
+from stele_core.cumulativereasoning import (
+    cr_report as cr_cr_report,
+)
+from stele_core.cumulativereasoning import (
+    cr_roles as cr_cr_roles,
+)
+from stele_core.cumulativereasoning import (
+    cr_verify as cr_cr_verify,
+)
+from stele_core.cupmem import (
+    adjudicate_update as cupmem_adjudicate_update,
+)
+from stele_core.cupmem import (
+    authorize_retrieval as cupmem_authorize_retrieval,
+)
+from stele_core.cupmem import (
+    unknown_current_slots as cupmem_unknown_current_slots,
+)
+from stele_core.dcpm import (
+    dcpm_cross_domain_collision as dc_dcpm_cross_domain_collision,
+)
+from stele_core.dcpm import (
+    dcpm_day_write as dc_dcpm_day_write,
+)
+from stele_core.dcpm import (
+    dcpm_hierarchy_level as dc_dcpm_hierarchy_level,
+)
+from stele_core.dcpm import (
+    dcpm_loop_plan as dc_dcpm_loop_plan,
+)
+from stele_core.dcpm import (
+    dcpm_night_induce as dc_dcpm_night_induce,
+)
+from stele_core.dcpm import (
+    dcpm_supersedes_chain as dc_dcpm_supersedes_chain,
+)
 from stele_core.decision import (
     issue_decision_receipt,
     list_decision_receipts,
     verify_decision_receipt,
+)
+from stele_core.decomposedprompting import (
+    dep_decompose as dep_dep_decompose,
+)
+from stele_core.decomposedprompting import (
+    dep_delegate as dep_dep_delegate,
+)
+from stele_core.decomposedprompting import (
+    dep_library_size as dep_dep_library_size,
+)
+from stele_core.decomposedprompting import (
+    dep_loop_plan as dep_dep_loop_plan,
+)
+from stele_core.decomposedprompting import (
+    dep_recurse as dep_dep_recurse,
+)
+from stele_core.decomposedprompting import (
+    dep_swap_symbolic as dep_dep_swap_symbolic,
+)
+from stele_core.deductive import (
+    dv_ground as dv_dv_ground,
+)
+from stele_core.deductive import (
+    dv_loop_plan as dv_dv_loop_plan,
+)
+from stele_core.deductive import (
+    dv_natural_program as dv_dv_natural_program,
+)
+from stele_core.deductive import (
+    dv_premise_scope as dv_dv_premise_scope,
+)
+from stele_core.deductive import (
+    dv_step_verify as dv_dv_step_verify,
+)
+from stele_core.deductive import (
+    dv_unanimity as dv_dv_unanimity,
+)
+from stele_core.delora import (
+    dlr_bound as dlr_dlr_bound,
+)
+from stele_core.delora import (
+    dlr_loop_plan as dlr_dlr_loop_plan,
+)
+from stele_core.delora import (
+    dlr_norm as dlr_dlr_norm,
+)
+from stele_core.delora import (
+    dlr_robust as dlr_dlr_robust,
+)
+from stele_core.delora import (
+    dlr_score as dlr_dlr_score,
+)
+from stele_core.delora import (
+    dlr_train as dlr_dlr_train,
+)
+from stele_core.deltalora import (
+    dlo_adapters as dlo_dlo_adapters,
+)
+from stele_core.deltalora import (
+    dlo_delta as dlo_dlo_delta,
+)
+from stele_core.deltalora import (
+    dlo_highrank as dlo_dlo_highrank,
+)
+from stele_core.deltalora import (
+    dlo_loop_plan as dlo_dlo_loop_plan,
+)
+from stele_core.deltalora import (
+    dlo_propagate as dlo_dlo_propagate,
+)
+from stele_core.deltalora import (
+    dlo_score as dlo_dlo_score,
+)
+from stele_core.deprepair import (
+    build_mem_action_graph as dr_build_mem_action_graph,
+)
+from stele_core.deprepair import (
+    dependency_trace as dr_dependency_trace,
+)
+from stele_core.deprepair import (
+    preserve_independent as dr_preserve_independent,
+)
+from stele_core.deprepair import (
+    selective_replay_plan as dr_selective_replay_plan,
+)
+from stele_core.derived_index import rebuild_sqlite_index, search_sqlite_index
+from stele_core.diffpruning import (
+    dpr_diff as dpr_dpr_diff,
+)
+from stele_core.diffpruning import (
+    dpr_loop_plan as dpr_dpr_loop_plan,
+)
+from stele_core.diffpruning import (
+    dpr_mask as dpr_dpr_mask,
+)
+from stele_core.diffpruning import (
+    dpr_prune as dpr_dpr_prune,
+)
+from stele_core.diffpruning import (
+    dpr_score as dpr_dpr_score,
+)
+from stele_core.diffpruning import (
+    dpr_sparse as dpr_dpr_sparse,
+)
+from stele_core.distill import assert_distilled_entry
+from stele_core.dora import (
+    dora_decompose as dora_dora_decompose,
+)
+from stele_core.dora import (
+    dora_direction as dora_dora_direction,
+)
+from stele_core.dora import (
+    dora_loop_plan as dora_dora_loop_plan,
+)
+from stele_core.dora import (
+    dora_magnitude as dora_dora_magnitude,
+)
+from stele_core.dora import (
+    dora_score as dora_dora_score,
+)
+from stele_core.dora import (
+    dora_vs_lora as dora_dora_vs_lora,
+)
+from stele_core.droplora import (
+    drl_infer as drl_drl_infer,
+)
+from stele_core.droplora import (
+    drl_loop_plan as drl_drl_loop_plan,
+)
+from stele_core.droplora import (
+    drl_mask as drl_drl_mask,
+)
+from stele_core.droplora import (
+    drl_rank as drl_drl_rank,
+)
+from stele_core.droplora import (
+    drl_score as drl_drl_score,
+)
+from stele_core.droplora import (
+    drl_train as drl_drl_train,
+)
+from stele_core.dsp import (
+    dsp_bootstrap_demo as ds_dsp_bootstrap_demo,
+)
+from stele_core.dsp import (
+    dsp_compose_program as ds_dsp_compose_program,
+)
+from stele_core.dsp import (
+    dsp_loop_plan as ds_dsp_loop_plan,
+)
+from stele_core.dsp import (
+    dsp_multihop_hop as ds_dsp_multihop_hop,
+)
+from stele_core.dsp import (
+    dsp_predict as ds_dsp_predict,
+)
+from stele_core.dsp import (
+    dsp_search as ds_dsp_search,
+)
+from stele_core.dylora import (
+    dyl_loop_plan as dyl_dyl_loop_plan,
+)
+from stele_core.dylora import (
+    dyl_range as dyl_dyl_range,
+)
+from stele_core.dylora import (
+    dyl_sample as dyl_dyl_sample,
+)
+from stele_core.dylora import (
+    dyl_score as dyl_dyl_score,
+)
+from stele_core.dylora import (
+    dyl_searchfree as dyl_dyl_searchfree,
+)
+from stele_core.dylora import (
+    dyl_select as dyl_dyl_select,
+)
+from stele_core.echomem import (
+    budget_binding_check as em_budget_binding_check,
+)
+from stele_core.echomem import (
+    history_collapse_gate as em_history_collapse_gate,
+)
+from stele_core.echomem import (
+    provenance_credit_mask as em_provenance_credit_mask,
+)
+from stele_core.echomem import (
+    reconstruct_policy_context as em_reconstruct_policy_context,
+)
+from stele_core.echomem import (
+    select_turn_memories as em_select_turn_memories,
+)
+from stele_core.echomem import (
+    write_turn_memory as em_write_turn_memory,
+)
+from stele_core.emg import (
+    insight_inject as emg_insight_inject,
+)
+from stele_core.emg import (
+    match_correction as emg_match_correction,
+)
+from stele_core.emotionprompt import (
+    emo_append as emo_emo_append,
+)
+from stele_core.emotionprompt import (
+    emo_loop_plan as emo_emo_loop_plan,
+)
+from stele_core.emotionprompt import (
+    emo_psych as emo_emo_psych,
+)
+from stele_core.emotionprompt import (
+    emo_run as emo_emo_run,
+)
+from stele_core.emotionprompt import (
+    emo_stimulus as emo_emo_stimulus,
+)
+from stele_core.emotionprompt import (
+    emo_truth as emo_emo_truth,
+)
+from stele_core.erskill import (
+    BUILTIN_SKILLS,
+)
+from stele_core.erskill import (
+    compose_retrieval_skill as er_compose_retrieval_skill,
+)
+from stele_core.erskill import (
+    list_primitives as er_list_primitives,
+)
+from stele_core.erskill import (
+    list_retrieval_skills as er_list_retrieval_skills,
+)
+from stele_core.erskill import (
+    route_retrieval_skill as er_route_retrieval_skill,
+)
+from stele_core.ether import (
+    eth_loop_plan as eth_eth_loop_plan,
+)
+from stele_core.ether import (
+    eth_plane as eth_eth_plane,
+)
+from stele_core.ether import (
+    eth_plus as eth_eth_plus,
+)
+from stele_core.ether import (
+    eth_reflect as eth_eth_reflect,
+)
+from stele_core.ether import (
+    eth_score as eth_eth_score,
+)
+from stele_core.ether import (
+    eth_train as eth_eth_train,
+)
+from stele_core.evermemos import (
+    consolidate_memscenes as ev_consolidate_memscenes,
+)
+from stele_core.evermemos import (
+    foresight_filter as ev_foresight_filter,
+)
+from stele_core.evermemos import (
+    form_memcell as ev_form_memcell,
+)
+from stele_core.evermemos import (
+    necessity_sufficiency_check as ev_necessity_sufficiency_check,
+)
+from stele_core.evermemos import (
+    profile_evolve_plan as ev_profile_evolve_plan,
+)
+from stele_core.evermemos import (
+    reconstructive_recollect as ev_reconstructive_recollect,
+)
+from stele_core.everythingofthoughts import (
+    xot_flexible as xot_xot_flexible,
+)
+from stele_core.everythingofthoughts import (
+    xot_loop_plan as xot_xot_loop_plan,
+)
+from stele_core.everythingofthoughts import (
+    xot_map as xot_xot_map,
+)
+from stele_core.everythingofthoughts import (
+    xot_mcts as xot_xot_mcts,
+)
+from stele_core.everythingofthoughts import (
+    xot_penrose as xot_xot_penrose,
+)
+from stele_core.everythingofthoughts import (
+    xot_revise as xot_xot_revise,
+)
+from stele_core.evolver import (
+    distill_principle as ev_distill_principle,
+)
+from stele_core.evolver import (
+    lifecycle_phase_gate as ev_lifecycle_phase_gate,
+)
+from stele_core.evolver import (
+    principle_dedupe_plan as ev_principle_dedupe_plan,
+)
+from stele_core.evolver import (
+    principle_metric_score as ev_principle_metric_score,
+)
+from stele_core.evolver import (
+    prune_low_score_principles as ev_prune_low_score_principles,
+)
+from stele_core.evolver import (
+    search_experience_action as ev_search_experience_action,
+)
+from stele_core.evomemory import (
+    evolution_similarity_hint as evo_evolution_similarity_hint,
+)
+from stele_core.evomemory import (
+    evomem_refine_plan as evo_evomem_refine_plan,
+)
+from stele_core.evomemory import (
+    exprag_retrieve as evo_exprag_retrieve,
+)
+from stele_core.evomemory import (
+    search_predict_evolve_check as evo_search_predict_evolve_check,
+)
+from stele_core.evomemory import (
+    streaming_task_append as evo_streaming_task_append,
+)
+from stele_core.evoprompt import (
+    evp_cross as evp_evp_cross,
+)
+from stele_core.evoprompt import (
+    evp_ea as evp_evp_ea,
+)
+from stele_core.evoprompt import (
+    evp_init as evp_evp_init,
+)
+from stele_core.evoprompt import (
+    evp_loop_plan as evp_evp_loop_plan,
+)
+from stele_core.evoprompt import (
+    evp_mutate as evp_evp_mutate,
+)
+from stele_core.evoprompt import (
+    evp_select as evp_evp_select,
+)
+from stele_core.execution import (
+    authority_gate as exec_authority_gate,
+)
+from stele_core.execution import (
+    claim_closure as exec_claim_closure,
+)
+from stele_core.execution import (
+    list_executions as exec_list_executions,
+)
+from stele_core.execution import (
+    record_execution as exec_record_execution,
+)
+from stele_core.execution import (
+    verify_execution_chain as exec_verify_execution_chain,
+)
+from stele_core.execution import (
+    verify_execution_claim as exec_verify_execution_claim,
+)
+from stele_core.expel import (
+    experience_pool_add as expel_experience_pool_add,
+)
+from stele_core.expel import (
+    insight_importance_gate as expel_insight_importance_gate,
+)
+from stele_core.expel import (
+    insight_op as expel_insight_op,
+)
+from stele_core.expel import (
+    retrieve_insights as expel_retrieve_insights,
+)
+from stele_core.expel import (
+    retrieve_similar_successes as expel_retrieve_similar_successes,
 )
 from stele_core.export import (
     export_pack,
@@ -2684,16 +1429,674 @@ from stele_core.export import (
     verify_pack,
     verify_pack_seal,
 )
+from stele_core.fact import (
+    fct_loop_plan as fct_fct_loop_plan,
+)
+from stele_core.fact import (
+    fct_score as fct_fct_score,
+)
+from stele_core.fact import (
+    fct_tensor as fct_fct_tensor,
+)
+from stele_core.fact import (
+    fct_tiny as fct_fct_tiny,
+)
+from stele_core.fact import (
+    fct_tt as fct_fct_tt,
+)
+from stele_core.fact import (
+    fct_tucker as fct_fct_tucker,
+)
+from stele_core.fademem import (
+    fade_scan as fade_fade_scan,
+)
+from stele_core.fademem import (
+    fade_strength as fade_fade_strength,
+)
+from stele_core.fademem import (
+    fusion_candidates as fade_fusion_candidates,
+)
+from stele_core.fademem import (
+    weibull_relevance as fade_weibull_relevance,
+)
+from stele_core.faithfulcot import (
+    fcot_faithfulness as fcot_fcot_faithfulness,
+)
+from stele_core.faithfulcot import (
+    fcot_interleave as fcot_fcot_interleave,
+)
+from stele_core.faithfulcot import (
+    fcot_loop_plan as fcot_fcot_loop_plan,
+)
+from stele_core.faithfulcot import (
+    fcot_solve as fcot_fcot_solve,
+)
+from stele_core.faithfulcot import (
+    fcot_translate as fcot_fcot_translate,
+)
+from stele_core.faithfulcot import (
+    fcot_vs_cot as fcot_fcot_vs_cot,
+)
+from stele_core.flare import (
+    flare_active_step as fl_flare_active_step,
+)
+from stele_core.flare import (
+    flare_anticipate_sentence as fl_flare_anticipate_sentence,
+)
+from stele_core.flare import (
+    flare_loop_plan as fl_flare_loop_plan,
+)
+from stele_core.flare import (
+    flare_low_confidence as fl_flare_low_confidence,
+)
+from stele_core.flare import (
+    flare_regenerate_sentence as fl_flare_regenerate_sentence,
+)
+from stele_core.flare import (
+    flare_retrieve_for_regen as fl_flare_retrieve_for_regen,
+)
+from stele_core.fleetprop import (
+    fleet_scope_gate as fp_fleet_scope_gate,
+)
+from stele_core.fleetprop import (
+    propagate_plan as fp_propagate_plan,
+)
+from stele_core.fleetprop import (
+    stale_propagation_scan as fp_stale_propagation_scan,
+)
+from stele_core.flora import (
+    flo_agg as flo_flo_agg,
+)
+from stele_core.flora import (
+    flo_clients as flo_flo_clients,
+)
+from stele_core.flora import (
+    flo_hetero as flo_flo_hetero,
+)
+from stele_core.flora import (
+    flo_loop_plan as flo_flo_loop_plan,
+)
+from stele_core.flora import (
+    flo_score as flo_flo_score,
+)
+from stele_core.flora import (
+    flo_stack as flo_flo_stack,
+)
+from stele_core.fluxmem import (
+    flux_connect_form as fx_flux_connect_form,
+)
+from stele_core.fluxmem import (
+    flux_consolidate as fx_flux_consolidate,
+)
+from stele_core.fluxmem import (
+    flux_feedback_refine as fx_flux_feedback_refine,
+)
+from stele_core.fluxmem import (
+    flux_loop_plan as fx_flux_loop_plan,
+)
+from stele_core.fluxmem import (
+    flux_maturity_gate as fx_flux_maturity_gate,
+)
+from stele_core.fluxmem import (
+    flux_prune_interference as fx_flux_prune_interference,
+)
+from stele_core.fluxmem import (
+    flux_repair_link as fx_flux_repair_link,
+)
+from stele_core.flylora import (
+    fly_implicit as fly_fly_implicit,
+)
+from stele_core.flylora import (
+    fly_loop_plan as fly_fly_loop_plan,
+)
+from stele_core.flylora import (
+    fly_proj as fly_fly_proj,
+)
+from stele_core.flylora import (
+    fly_score as fly_fly_score,
+)
+from stele_core.flylora import (
+    fly_topk as fly_fly_topk,
+)
+from stele_core.flylora import (
+    fly_train as fly_fly_train,
+)
+from stele_core.fourierft import (
+    fft_basis as fft_fft_basis,
+)
+from stele_core.fourierft import (
+    fft_coeff as fft_fft_coeff,
+)
+from stele_core.fourierft import (
+    fft_idft as fft_fft_idft,
+)
+from stele_core.fourierft import (
+    fft_loop_plan as fft_fft_loop_plan,
+)
+from stele_core.fourierft import (
+    fft_score as fft_fft_score,
+)
+from stele_core.fourierft import (
+    fft_sparse as fft_fft_sparse,
+)
+from stele_core.freshness import (
+    assemble_current as fr_assemble_current,
+)
+from stele_core.freshness import (
+    extract_version_markers as fr_extract_version_markers,
+)
+from stele_core.freshness import (
+    freshness_resolve as fr_freshness_resolve,
+)
+from stele_core.freshness import (
+    hop_freshness as fr_hop_freshness,
+)
+from stele_core.fuse import (
+    clear_projection_pin as fuse_clear_projection_pin,
+)
+from stele_core.fuse import (
+    correction_handle as fuse_correction_handle,
+)
+from stele_core.fuse import (
+    get_projection_pin as fuse_get_projection_pin,
+)
+from stele_core.fuse import (
+    list_projection_pins as fuse_list_projection_pins,
+)
+from stele_core.fuse import (
+    pin_projection as fuse_pin_projection,
+)
+from stele_core.fuse import (
+    project_resolve as fuse_project_resolve,
+)
+from stele_core.galore import (
+    gal_full as gal_gal_full,
+)
+from stele_core.galore import (
+    gal_grad as gal_gal_grad,
+)
+from stele_core.galore import (
+    gal_loop_plan as gal_gal_loop_plan,
+)
+from stele_core.galore import (
+    gal_project as gal_gal_project,
+)
+from stele_core.galore import (
+    gal_score as gal_gal_score,
+)
+from stele_core.galore import (
+    gal_step as gal_gal_step,
+)
+from stele_core.gam import (
+    consolidate_candidates as gam_consolidate_candidates,
+)
+from stele_core.gam import (
+    episodic_buffer as gam_episodic_buffer,
+)
+from stele_core.gam import (
+    semantic_boundary as gam_semantic_boundary,
+)
+from stele_core.gelora import (
+    gel_budget as gel_gel_budget,
+)
+from stele_core.gelora import (
+    gel_idim as gel_gel_idim,
+)
+from stele_core.gelora import (
+    gel_loop_plan as gel_gel_loop_plan,
+)
+from stele_core.gelora import (
+    gel_rank as gel_gel_rank,
+)
+from stele_core.gelora import (
+    gel_score as gel_gel_score,
+)
+from stele_core.gelora import (
+    gel_train as gel_gel_train,
+)
+from stele_core.gem import gem_correctness_report
+from stele_core.genread import (
+    genread_answer as gn_genread_answer,
+)
+from stele_core.genread import (
+    genread_compare_retrieve as gn_genread_compare_retrieve,
+)
+from stele_core.genread import (
+    genread_generate_context as gn_genread_generate_context,
+)
+from stele_core.genread import (
+    genread_ground_optional as gn_genread_ground_optional,
+)
+from stele_core.genread import (
+    genread_hybrid as gn_genread_hybrid,
+)
+from stele_core.genread import (
+    genread_loop_plan as gn_genread_loop_plan,
+)
+from stele_core.geolora import (
+    geo_budget as geo_geo_budget,
+)
+from stele_core.geolora import (
+    geo_dyn as geo_geo_dyn,
+)
+from stele_core.geolora import (
+    geo_loop_plan as geo_geo_loop_plan,
+)
+from stele_core.geolora import (
+    geo_ortho as geo_geo_ortho,
+)
+from stele_core.geolora import (
+    geo_score as geo_geo_score,
+)
+from stele_core.geolora import (
+    geo_train as geo_geo_train,
+)
+from stele_core.glora import (
+    glo_loop_plan as glo_glo_loop_plan,
+)
+from stele_core.glora import (
+    glo_prompt as glo_glo_prompt,
+)
+from stele_core.glora import (
+    glo_scale as glo_glo_scale,
+)
+from stele_core.glora import (
+    glo_score as glo_glo_score,
+)
+from stele_core.glora import (
+    glo_search as glo_glo_search,
+)
+from stele_core.glora import (
+    glo_zero as glo_glo_zero,
+)
+from stele_core.gmemory import (
+    bidirectional_retrieve as gm_bidirectional_retrieve,
+)
+from stele_core.gmemory import (
+    build_query_graph as gm_build_query_graph,
+)
+from stele_core.gmemory import (
+    classify_graph_tier as gm_classify_graph_tier,
+)
+from stele_core.gmemory import (
+    downward_interaction_traverse as gm_downward_interaction_traverse,
+)
+from stele_core.gmemory import (
+    hierarchy_update_plan as gm_hierarchy_update_plan,
+)
+from stele_core.gmemory import (
+    upward_insight_traverse as gm_upward_insight_traverse,
+)
 from stele_core.governance import (
     apply_promote,
     apply_resolve_contested,
     require_supporting_evidence,
     validate_promotion_evidence,
 )
+from stele_core.govmem import (
+    dual_project as gm_dual_project,
+)
+from stele_core.govmem import (
+    entity_context as gm_entity_context,
+)
+from stele_core.govmem import (
+    entity_leak_probe as gm_entity_leak_probe,
+)
+from stele_core.govmem import (
+    governance_route as gm_governance_route,
+)
+from stele_core.govmem import (
+    session_delta_deliver as gm_session_delta_deliver,
+)
+from stele_core.govmem import (
+    session_delta_open as gm_session_delta_open,
+)
+from stele_core.govmem import (
+    session_delta_status as gm_session_delta_status,
+)
 from stele_core.graph import blast_radius as graph_blast_radius
 from stele_core.graph import lineage_trust as graph_lineage_trust
 from stele_core.graph import merge_classify as graph_merge_classify
 from stele_core.graph import path_trust as graph_path_trust
+from stele_core.graphofthoughts import (
+    got_add_thought as got_got_add_thought,
+)
+from stele_core.graphofthoughts import (
+    got_aggregate as got_got_aggregate,
+)
+from stele_core.graphofthoughts import (
+    got_feedback as got_got_feedback,
+)
+from stele_core.graphofthoughts import (
+    got_link as got_got_link,
+)
+from stele_core.graphofthoughts import (
+    got_loop_plan as got_got_loop_plan,
+)
+from stele_core.graphofthoughts import (
+    got_score_graph as got_got_score_graph,
+)
+from stele_core.graphreader import (
+    graphreader_build_node as gr_graphreader_build_node,
+)
+from stele_core.graphreader import (
+    graphreader_loop_plan as gr_graphreader_loop_plan,
+)
+from stele_core.graphreader import (
+    graphreader_note_insight as gr_graphreader_note_insight,
+)
+from stele_core.graphreader import (
+    graphreader_read_neighbors as gr_graphreader_read_neighbors,
+)
+from stele_core.graphreader import (
+    graphreader_read_node as gr_graphreader_read_node,
+)
+from stele_core.graphreader import (
+    graphreader_reflect_plan as gr_graphreader_reflect_plan,
+)
+from stele_core.gretriever import (
+    gretriever_highlight as gv_gretriever_highlight,
+)
+from stele_core.gretriever import (
+    gretriever_loop_plan as gv_gretriever_loop_plan,
+)
+from stele_core.gretriever import (
+    gretriever_node_prize as gv_gretriever_node_prize,
+)
+from stele_core.gretriever import (
+    gretriever_pcst_select as gv_gretriever_pcst_select,
+)
+from stele_core.gretriever import (
+    gretriever_soft_prompt_plan as gv_gretriever_soft_prompt_plan,
+)
+from stele_core.gretriever import (
+    gretriever_subgraph as gv_gretriever_subgraph,
+)
+from stele_core.grips import (
+    grips_accept as grips_grips_accept,
+)
+from stele_core.grips import (
+    grips_api as grips_grips_api,
+)
+from stele_core.grips import (
+    grips_edit as grips_grips_edit,
+)
+from stele_core.grips import (
+    grips_loop_plan as grips_grips_loop_plan,
+)
+from stele_core.grips import (
+    grips_score as grips_grips_score,
+)
+from stele_core.grips import (
+    grips_seed as grips_grips_seed,
+)
+from stele_core.himem import (
+    himem_extract_note as hi_himem_extract_note,
+)
+from stele_core.himem import (
+    himem_link_episode_note as hi_himem_link_episode_note,
+)
+from stele_core.himem import (
+    himem_loop_plan as hi_himem_loop_plan,
+)
+from stele_core.himem import (
+    himem_reconsolidate as hi_himem_reconsolidate,
+)
+from stele_core.himem import (
+    himem_retrieve_strategy as hi_himem_retrieve_strategy,
+)
+from stele_core.himem import (
+    himem_segment_episode as hi_himem_segment_episode,
+)
+from stele_core.hindsight import (
+    classify_network as hs_classify_network,
+)
+from stele_core.hindsight import (
+    network_inventory as hs_network_inventory,
+)
+from stele_core.hindsight import (
+    opinion_reinforce as hs_opinion_reinforce,
+)
+from stele_core.hindsight import (
+    recall_multi_strategy as hs_recall_multi_strategy,
+)
+from stele_core.hindsight import (
+    reflect_plan as hs_reflect_plan,
+)
+from stele_core.hindsight import (
+    retain_plan as hs_retain_plan,
+)
+from stele_core.hintbeforesolving import (
+    hsp_answer as hsp_hsp_answer,
+)
+from stele_core.hintbeforesolving import (
+    hsp_compose as hsp_hsp_compose,
+)
+from stele_core.hintbeforesolving import (
+    hsp_hint as hsp_hsp_hint,
+)
+from stele_core.hintbeforesolving import (
+    hsp_loop_plan as hsp_hsp_loop_plan,
+)
+from stele_core.hintbeforesolving import (
+    hsp_quality as hsp_hsp_quality,
+)
+from stele_core.hintbeforesolving import (
+    hsp_solve as hsp_hsp_solve,
+)
+from stele_core.hipporag import (
+    multi_hop_retrieve as hippo_multi_hop_retrieve,
+)
+from stele_core.hipporag import (
+    ppr_scores as hippo_ppr_scores,
+)
+from stele_core.hira import (
+    hir_base as hir_hir_base,
+)
+from stele_core.hira import (
+    hir_factors as hir_hir_factors,
+)
+from stele_core.hira import (
+    hir_hadamard as hir_hir_hadamard,
+)
+from stele_core.hira import (
+    hir_loop_plan as hir_hir_loop_plan,
+)
+from stele_core.hira import (
+    hir_merge as hir_hir_merge,
+)
+from stele_core.hira import (
+    hir_score as hir_hir_score,
+)
+from stele_core.hmem import (
+    hmem_consolidate_nodes as hm_hmem_consolidate_nodes,
+)
+from stele_core.hmem import (
+    hmem_decompose_query as hm_hmem_decompose_query,
+)
+from stele_core.hmem import (
+    hmem_evolution_gate as hm_hmem_evolution_gate,
+)
+from stele_core.hmem import (
+    hmem_hybrid_retrieve as hm_hmem_hybrid_retrieve,
+)
+from stele_core.hmem import (
+    hmem_leaf_event as hm_hmem_leaf_event,
+)
+from stele_core.hmem import (
+    hmem_link_entities as hm_hmem_link_entities,
+)
+from stele_core.hmeml import (
+    hmeml_descend as hl_hmeml_descend,
+)
+from stele_core.hmeml import (
+    hmeml_efficiency_score as hl_hmeml_efficiency_score,
+)
+from stele_core.hmeml import (
+    hmeml_loop_plan as hl_hmeml_loop_plan,
+)
+from stele_core.hmeml import (
+    hmeml_parent_link as hl_hmeml_parent_link,
+)
+from stele_core.hmeml import (
+    hmeml_route_query as hl_hmeml_route_query,
+)
+from stele_core.hmeml import (
+    hmeml_store_level as hl_hmeml_store_level,
+)
+from stele_core.houlsby import (
+    had_freeze as had_had_freeze,
+)
+from stele_core.houlsby import (
+    had_insert as had_had_insert,
+)
+from stele_core.houlsby import (
+    had_latency as had_had_latency,
+)
+from stele_core.houlsby import (
+    had_loop_plan as had_had_loop_plan,
+)
+from stele_core.houlsby import (
+    had_score as had_had_score,
+)
+from stele_core.houlsby import (
+    had_train as had_had_train,
+)
+from stele_core.hra import (
+    hra_house as hra_hra_house,
+)
+from stele_core.hra import (
+    hra_loop_plan as hra_hra_loop_plan,
+)
+from stele_core.hra import (
+    hra_ortho as hra_hra_ortho,
+)
+from stele_core.hra import (
+    hra_reflect as hra_hra_reflect,
+)
+from stele_core.hra import (
+    hra_score as hra_hra_score,
+)
+from stele_core.hra import (
+    hra_train as hra_hra_train,
+)
+from stele_core.hugginggpt import (
+    hgpt_execute as hgpt_hgpt_execute,
+)
+from stele_core.hugginggpt import (
+    hgpt_loop_plan as hgpt_hgpt_loop_plan,
+)
+from stele_core.hugginggpt import (
+    hgpt_modality as hgpt_hgpt_modality,
+)
+from stele_core.hugginggpt import (
+    hgpt_plan as hgpt_hgpt_plan,
+)
+from stele_core.hugginggpt import (
+    hgpt_select as hgpt_hgpt_select,
+)
+from stele_core.hugginggpt import (
+    hgpt_summarize as hgpt_hgpt_summarize,
+)
+from stele_core.hybridpeft import (
+    hyb_boft as hyb_hyb_boft,
+)
+from stele_core.hybridpeft import (
+    hyb_fuse as hyb_hyb_fuse,
+)
+from stele_core.hybridpeft import (
+    hyb_loop_plan as hyb_hyb_loop_plan,
+)
+from stele_core.hybridpeft import (
+    hyb_lora as hyb_hyb_lora,
+)
+from stele_core.hybridpeft import (
+    hyb_score as hyb_hyb_score,
+)
+from stele_core.hybridpeft import (
+    hyb_stable as hyb_hyb_stable,
+)
+from stele_core.hyde import (
+    hyde_encode_proxy as hy_hyde_encode_proxy,
+)
+from stele_core.hyde import (
+    hyde_filter_hallucination as hy_hyde_filter_hallucination,
+)
+from stele_core.hyde import (
+    hyde_ground_corpus as hy_hyde_ground_corpus,
+)
+from stele_core.hyde import (
+    hyde_hypothetical_doc as hy_hyde_hypothetical_doc,
+)
+from stele_core.hyde import (
+    hyde_loop_plan as hy_hyde_loop_plan,
+)
+from stele_core.hyde import (
+    hyde_retrieve_by_hyp as hy_hyde_retrieve_by_hyp,
+)
+from stele_core.hydralora import (
+    hyd_heads as hyd_hyd_heads,
+)
+from stele_core.hydralora import (
+    hyd_loop_plan as hyd_hyd_loop_plan,
+)
+from stele_core.hydralora import (
+    hyd_nodomain as hyd_hyd_nodomain,
+)
+from stele_core.hydralora import (
+    hyd_route as hyd_hyd_route,
+)
+from stele_core.hydralora import (
+    hyd_score as hyd_hyd_score,
+)
+from stele_core.hydralora import (
+    hyd_share as hyd_hyd_share,
+)
+from stele_core.hymem import (
+    classify_slot as hy_classify_slot,
+)
+from stele_core.hymem import (
+    isolate_pack as hy_isolate_pack,
+)
+from stele_core.hyperskill import (
+    hyperskill_add_hyperedge as hs_hyperskill_add_hyperedge,
+)
+from stele_core.hyperskill import (
+    hyperskill_add_skill as hs_hyperskill_add_skill,
+)
+from stele_core.hyperskill import (
+    hyperskill_add_subtask as hs_hyperskill_add_subtask,
+)
+from stele_core.hyperskill import (
+    hyperskill_dual_path_retrieve as hs_hyperskill_dual_path_retrieve,
+)
+from stele_core.hyperskill import (
+    hyperskill_loop_plan as hs_hyperskill_loop_plan,
+)
+from stele_core.hyperskill import (
+    hyperskill_maintain_plan as hs_hyperskill_maintain_plan,
+)
+from stele_core.hyperskill import (
+    hyperskill_rank_skills as hs_hyperskill_rank_skills,
+)
+from stele_core.ia3 import (
+    ia3_loop_plan as ia3_ia3_loop_plan,
+)
+from stele_core.ia3 import (
+    ia3_mixed as ia3_ia3_mixed,
+)
+from stele_core.ia3 import (
+    ia3_scale as ia3_ia3_scale,
+)
+from stele_core.ia3 import (
+    ia3_score as ia3_ia3_score,
+)
+from stele_core.ia3 import (
+    ia3_train as ia3_ia3_train,
+)
+from stele_core.ia3 import (
+    ia3_vector as ia3_ia3_vector,
+)
 from stele_core.index.lexical import tokenize
 from stele_core.index.temporal import is_stale
 from stele_core.integrity import (
@@ -2705,9 +2108,2798 @@ from stele_core.integrity import (
     verify_seal,
     verify_store,
 )
-from stele_core.lifecycle import LIFECYCLE_TIERS, lifecycle_inventory, lifecycle_tier, parse_conflict_key
+from stele_core.ircot import (
+    ircot_answer_ready as ir_ircot_answer_ready,
+)
+from stele_core.ircot import (
+    ircot_cot_step as ir_ircot_cot_step,
+)
+from stele_core.ircot import (
+    ircot_hallucination_check as ir_ircot_hallucination_check,
+)
+from stele_core.ircot import (
+    ircot_interleave as ir_ircot_interleave,
+)
+from stele_core.ircot import (
+    ircot_loop_plan as ir_ircot_loop_plan,
+)
+from stele_core.ircot import (
+    ircot_retrieve_guided as ir_ircot_retrieve_guided,
+)
+from stele_core.iterretgen import (
+    iterretgen_adapt_retriever as it_iterretgen_adapt_retriever,
+)
+from stele_core.iterretgen import (
+    iterretgen_generate as it_iterretgen_generate,
+)
+from stele_core.iterretgen import (
+    iterretgen_iterate as it_iterretgen_iterate,
+)
+from stele_core.iterretgen import (
+    iterretgen_loop_plan as it_iterretgen_loop_plan,
+)
+from stele_core.iterretgen import (
+    iterretgen_retrieve_next as it_iterretgen_retrieve_next,
+)
+from stele_core.iterretgen import (
+    iterretgen_use_as_query as it_iterretgen_use_as_query,
+)
+from stele_core.knowledgelayer import (
+    classify_persistence_layer as kl_classify_persistence_layer,
+)
+from stele_core.knowledgelayer import (
+    intelligence_reject_gate as kl_intelligence_reject_gate,
+)
+from stele_core.knowledgelayer import (
+    knowledge_protect_scan as kl_knowledge_protect_scan,
+)
+from stele_core.knowledgelayer import (
+    layer_inventory as kl_layer_inventory,
+)
+from stele_core.knowledgelayer import (
+    persistence_policy as kl_persistence_policy,
+)
+from stele_core.kronlora import (
+    krl_compress as krl_krl_compress,
+)
+from stele_core.kronlora import (
+    krl_kron as krl_krl_kron,
+)
+from stele_core.kronlora import (
+    krl_loop_plan as krl_krl_loop_plan,
+)
+from stele_core.kronlora import (
+    krl_lora as krl_krl_lora,
+)
+from stele_core.kronlora import (
+    krl_score as krl_krl_score,
+)
+from stele_core.kronlora import (
+    krl_train as krl_krl_train,
+)
+from stele_core.lats import (
+    lats_env_feedback as lats_lats_env_feedback,
+)
+from stele_core.lats import (
+    lats_expand as lats_lats_expand,
+)
+from stele_core.lats import (
+    lats_loop_plan as lats_lats_loop_plan,
+)
+from stele_core.lats import (
+    lats_reflect as lats_lats_reflect,
+)
+from stele_core.lats import (
+    lats_select as lats_lats_select,
+)
+from stele_core.lats import (
+    lats_value as lats_lats_value,
+)
+from stele_core.lattice import (
+    classify_conflict as lattice_classify_conflict,
+)
+from stele_core.lattice import (
+    compact_render as lattice_compact_render,
+)
+from stele_core.lattice import (
+    symbolic_conflict_scan as lattice_symbolic_conflict_scan,
+)
+from stele_core.leasttomost import (
+    ltm_carry_forward as ltm_ltm_carry_forward,
+)
+from stele_core.leasttomost import (
+    ltm_compose_final as ltm_ltm_compose_final,
+)
+from stele_core.leasttomost import (
+    ltm_decompose as ltm_ltm_decompose,
+)
+from stele_core.leasttomost import (
+    ltm_easy_to_hard as ltm_ltm_easy_to_hard,
+)
+from stele_core.leasttomost import (
+    ltm_loop_plan as ltm_ltm_loop_plan,
+)
+from stele_core.leasttomost import (
+    ltm_solve_sub as ltm_ltm_solve_sub,
+)
+from stele_core.lifecycle import (
+    LIFECYCLE_TIERS,
+    lifecycle_inventory,
+    lifecycle_tier,
+    parse_conflict_key,
+)
+from stele_core.lightmem import (
+    assign_stage as light_assign_stage,
+)
+from stele_core.lightmem import (
+    sensory_filter as light_sensory_filter,
+)
+from stele_core.lightmem import (
+    stage_budget_plan as light_stage_budget_plan,
+)
+from stele_core.lightmem import (
+    stage_inventory as light_stage_inventory,
+)
+from stele_core.lightmem import (
+    topic_segments as light_topic_segments,
+)
+from stele_core.lightrag import (
+    lightrag_dual_retrieve as lr_lightrag_dual_retrieve,
+)
+from stele_core.lightrag import (
+    lightrag_graph_vector_fuse as lr_lightrag_graph_vector_fuse,
+)
+from stele_core.lightrag import (
+    lightrag_incremental_update as lr_lightrag_incremental_update,
+)
+from stele_core.lightrag import (
+    lightrag_index_entity as lr_lightrag_index_entity,
+)
+from stele_core.lightrag import (
+    lightrag_index_relation as lr_lightrag_index_relation,
+)
+from stele_core.lightrag import (
+    lightrag_loop_plan as lr_lightrag_loop_plan,
+)
+from stele_core.lisa import (
+    lis_layers as lis_lis_layers,
+)
+from stele_core.lisa import (
+    lis_loop_plan as lis_lis_loop_plan,
+)
+from stele_core.lisa import (
+    lis_memory as lis_lis_memory,
+)
+from stele_core.lisa import (
+    lis_sample as lis_lis_sample,
+)
+from stele_core.lisa import (
+    lis_score as lis_lis_score,
+)
+from stele_core.lisa import (
+    lis_unfreeze as lis_lis_unfreeze,
+)
+from stele_core.liveevo import (
+    compile_task_guideline as le_compile_task_guideline,
+)
+from stele_core.liveevo import (
+    experience_bank_record as le_experience_bank_record,
+)
+from stele_core.liveevo import (
+    forget_stale_experience as le_forget_stale_experience,
+)
+from stele_core.liveevo import (
+    liveevo_online_round as le_liveevo_online_round,
+)
+from stele_core.liveevo import (
+    meta_guideline_record as le_meta_guideline_record,
+)
+from stele_core.liveevo import (
+    update_experience_weight as le_update_experience_weight,
+)
+from stele_core.lntuning import (
+    lnt_attn as lnt_lnt_attn,
+)
+from stele_core.lntuning import (
+    lnt_cheap as lnt_lnt_cheap,
+)
+from stele_core.lntuning import (
+    lnt_loop_plan as lnt_lnt_loop_plan,
+)
+from stele_core.lntuning import (
+    lnt_scale as lnt_lnt_scale,
+)
+from stele_core.lntuning import (
+    lnt_score as lnt_lnt_score,
+)
+from stele_core.lntuning import (
+    lnt_train as lnt_lnt_train,
+)
+from stele_core.loftq import (
+    lfq_gap as lfq_lfq_gap,
+)
+from stele_core.loftq import (
+    lfq_init as lfq_lfq_init,
+)
+from stele_core.loftq import (
+    lfq_loop_plan as lfq_lfq_loop_plan,
+)
+from stele_core.loftq import (
+    lfq_quant as lfq_lfq_quant,
+)
+from stele_core.loftq import (
+    lfq_score as lfq_lfq_score,
+)
+from stele_core.loftq import (
+    lfq_train as lfq_lfq_train,
+)
+from stele_core.loha import (
+    lha_express as lha_lha_express,
+)
+from stele_core.loha import (
+    lha_hadamard as lha_lha_hadamard,
+)
+from stele_core.loha import (
+    lha_loop_plan as lha_lha_loop_plan,
+)
+from stele_core.loha import (
+    lha_pair as lha_lha_pair,
+)
+from stele_core.loha import (
+    lha_score as lha_lha_score,
+)
+from stele_core.loha import (
+    lha_train as lha_lha_train,
+)
+from stele_core.lokr import (
+    lkr_factors as lkr_lkr_factors,
+)
+from stele_core.lokr import (
+    lkr_kron as lkr_lkr_kron,
+)
+from stele_core.lokr import (
+    lkr_loop_plan as lkr_lkr_loop_plan,
+)
+from stele_core.lokr import (
+    lkr_preserve as lkr_lkr_preserve,
+)
+from stele_core.lokr import (
+    lkr_score as lkr_lkr_score,
+)
+from stele_core.lokr import (
+    lkr_vectorize as lkr_lkr_vectorize,
+)
+from stele_core.longlora import (
+    llr_loop_plan as llr_llr_loop_plan,
+)
+from stele_core.longlora import (
+    llr_lora as llr_llr_lora,
+)
+from stele_core.longlora import (
+    llr_score as llr_llr_score,
+)
+from stele_core.longlora import (
+    llr_shift as llr_llr_shift,
+)
+from stele_core.longlora import (
+    llr_sparse as llr_llr_sparse,
+)
+from stele_core.longlora import (
+    llr_window as llr_llr_window,
+)
+from stele_core.lora import (
+    lora_freeze as lora_lora_freeze,
+)
+from stele_core.lora import (
+    lora_latency as lora_lora_latency,
+)
+from stele_core.lora import (
+    lora_loop_plan as lora_lora_loop_plan,
+)
+from stele_core.lora import (
+    lora_merge as lora_lora_merge,
+)
+from stele_core.lora import (
+    lora_rank as lora_lora_rank,
+)
+from stele_core.lora import (
+    lora_train as lora_lora_train,
+)
+from stele_core.loracomposer import (
+    lco_concepts as lco_lco_concepts,
+)
+from stele_core.loracomposer import (
+    lco_free as lco_lco_free,
+)
+from stele_core.loracomposer import (
+    lco_inject as lco_lco_inject,
+)
+from stele_core.loracomposer import (
+    lco_isolate as lco_lco_isolate,
+)
+from stele_core.loracomposer import (
+    lco_loop_plan as lco_lco_loop_plan,
+)
+from stele_core.loracomposer import (
+    lco_score as lco_lco_score,
+)
+from stele_core.loradash import (
+    lds_dash as lds_lds_dash,
+)
+from stele_core.loradash import (
+    lds_impact as lds_lds_impact,
+)
+from stele_core.loradash import (
+    lds_loop_plan as lds_lds_loop_plan,
+)
+from stele_core.loradash import (
+    lds_prelaunch as lds_lds_prelaunch,
+)
+from stele_core.loradash import (
+    lds_score as lds_lds_score,
+)
+from stele_core.loradash import (
+    lds_tsd as lds_lds_tsd,
+)
+from stele_core.loradrop import (
+    ldr_eval as ldr_ldr_eval,
+)
+from stele_core.loradrop import (
+    ldr_keep as ldr_ldr_keep,
+)
+from stele_core.loradrop import (
+    ldr_loop_plan as ldr_ldr_loop_plan,
+)
+from stele_core.loradrop import (
+    ldr_prune as ldr_ldr_prune,
+)
+from stele_core.loradrop import (
+    ldr_score as ldr_ldr_score,
+)
+from stele_core.loradrop import (
+    ldr_share as ldr_ldr_share,
+)
+from stele_core.lorafa import (
+    lfa_freeze_a as lfa_lfa_freeze_a,
+)
+from stele_core.lorafa import (
+    lfa_loop_plan as lfa_lfa_loop_plan,
+)
+from stele_core.lorafa import (
+    lfa_memory as lfa_lfa_memory,
+)
+from stele_core.lorafa import (
+    lfa_merge as lfa_lfa_merge,
+)
+from stele_core.lorafa import (
+    lfa_score as lfa_lfa_score,
+)
+from stele_core.lorafa import (
+    lfa_train_b as lfa_lfa_train_b,
+)
+from stele_core.loraflow import (
+    lfw_few as lfw_lfw_few,
+)
+from stele_core.loraflow import (
+    lfw_gate as lfw_lfw_gate,
+)
+from stele_core.loraflow import (
+    lfw_loop_plan as lfw_lfw_loop_plan,
+)
+from stele_core.loraflow import (
+    lfw_pool as lfw_lfw_pool,
+)
+from stele_core.loraflow import (
+    lfw_score as lfw_lfw_score,
+)
+from stele_core.loraflow import (
+    lfw_token as lfw_lfw_token,
+)
+from stele_core.lorafusion import (
+    lfu_batch as lfu_lfu_batch,
+)
+from stele_core.lorafusion import (
+    lfu_fuse as lfu_lfu_fuse,
+)
+from stele_core.lorafusion import (
+    lfu_loop_plan as lfu_lfu_loop_plan,
+)
+from stele_core.lorafusion import (
+    lfu_score as lfu_lfu_score,
+)
+from stele_core.lorafusion import (
+    lfu_speed as lfu_lfu_speed,
+)
+from stele_core.lorafusion import (
+    lfu_split as lfu_lfu_split,
+)
+from stele_core.loraga import (
+    lga_fast as lga_lga_fast,
+)
+from stele_core.loraga import (
+    lga_grad as lga_lga_grad,
+)
+from stele_core.loraga import (
+    lga_loop_plan as lga_lga_loop_plan,
+)
+from stele_core.loraga import (
+    lga_scale as lga_lga_scale,
+)
+from stele_core.loraga import (
+    lga_score as lga_lga_score,
+)
+from stele_core.loraga import (
+    lga_svd as lga_lga_svd,
+)
+from stele_core.lorahub import (
+    lhb_adapt as lhb_lhb_adapt,
+)
+from stele_core.lorahub import (
+    lhb_compose as lhb_lhb_compose,
+)
+from stele_core.lorahub import (
+    lhb_loop_plan as lhb_lhb_loop_plan,
+)
+from stele_core.lorahub import (
+    lhb_nograd as lhb_lhb_nograd,
+)
+from stele_core.lorahub import (
+    lhb_pool as lhb_lhb_pool,
+)
+from stele_core.lorahub import (
+    lhb_score as lhb_lhb_score,
+)
+from stele_core.lorainit import (
+    lin_fast as lin_lin_fast,
+)
+from stele_core.lorainit import (
+    lin_init as lin_lin_init,
+)
+from stele_core.lorainit import (
+    lin_loop_plan as lin_lin_loop_plan,
+)
+from stele_core.lorainit import (
+    lin_score as lin_lin_score,
+)
+from stele_core.lorainit import (
+    lin_train as lin_lin_train,
+)
+from stele_core.lorainit import (
+    lin_tsd as lin_lin_tsd,
+)
+from stele_core.loralego import (
+    llg_cluster as llg_llg_cluster,
+)
+from stele_core.loralego import (
+    llg_loop_plan as llg_llg_loop_plan,
+)
+from stele_core.loralego import (
+    llg_merge as llg_llg_merge,
+)
+from stele_core.loralego import (
+    llg_modular as llg_llg_modular,
+)
+from stele_core.loralego import (
+    llg_msu as llg_llg_msu,
+)
+from stele_core.loralego import (
+    llg_score as llg_llg_score,
+)
+from stele_core.loramini import (
+    lmi_inner as lmi_lmi_inner,
+)
+from stele_core.loramini import (
+    lmi_loop_plan as lmi_lmi_loop_plan,
+)
+from stele_core.loramini import (
+    lmi_score as lmi_lmi_score,
+)
+from stele_core.loramini import (
+    lmi_split as lmi_lmi_split,
+)
+from stele_core.loramini import (
+    lmi_tiny as lmi_lmi_tiny,
+)
+from stele_core.loramini import (
+    lmi_train as lmi_lmi_train,
+)
+from stele_core.loramoe import (
+    lme_balance as lme_lme_balance,
+)
+from stele_core.loramoe import (
+    lme_forget as lme_lme_forget,
+)
+from stele_core.loramoe import (
+    lme_loop_plan as lme_lme_loop_plan,
+)
+from stele_core.loramoe import (
+    lme_plugin as lme_lme_plugin,
+)
+from stele_core.loramoe import (
+    lme_route as lme_lme_route,
+)
+from stele_core.loramoe import (
+    lme_score as lme_lme_score,
+)
+from stele_core.loranull import (
+    lnu_act as lnu_lnu_act,
+)
+from stele_core.loranull import (
+    lnu_forget as lnu_lnu_forget,
+)
+from stele_core.loranull import (
+    lnu_loop_plan as lnu_lnu_loop_plan,
+)
+from stele_core.loranull import (
+    lnu_null as lnu_lnu_null,
+)
+from stele_core.loranull import (
+    lnu_score as lnu_lnu_score,
+)
+from stele_core.loranull import (
+    lnu_train as lnu_lnu_train,
+)
+from stele_core.loraone import (
+    lon_align as lon_lon_align,
+)
+from stele_core.loraone import (
+    lon_grad as lon_lon_grad,
+)
+from stele_core.loraone import (
+    lon_immediate as lon_lon_immediate,
+)
+from stele_core.loraone import (
+    lon_loop_plan as lon_lon_loop_plan,
+)
+from stele_core.loraone import (
+    lon_score as lon_lon_score,
+)
+from stele_core.loraone import (
+    lon_train as lon_lon_train,
+)
+from stele_core.loraplus import (
+    lrp_loop_plan as lrp_lrp_loop_plan,
+)
+from stele_core.loraplus import (
+    lrp_ratio as lrp_lrp_ratio,
+)
+from stele_core.loraplus import (
+    lrp_score as lrp_lrp_score,
+)
+from stele_core.loraplus import (
+    lrp_speed as lrp_lrp_speed,
+)
+from stele_core.loraplus import (
+    lrp_split as lrp_lrp_split,
+)
+from stele_core.loraplus import (
+    lrp_train as lrp_lrp_train,
+)
+from stele_core.lorapro import (
+    lpr_adjust as lpr_lpr_adjust,
+)
+from stele_core.lorapro import (
+    lpr_bridge as lpr_lpr_bridge,
+)
+from stele_core.lorapro import (
+    lpr_equiv as lpr_lpr_equiv,
+)
+from stele_core.lorapro import (
+    lpr_loop_plan as lpr_lpr_loop_plan,
+)
+from stele_core.lorapro import (
+    lpr_score as lpr_lpr_score,
+)
+from stele_core.lorapro import (
+    lpr_train as lpr_lpr_train,
+)
+from stele_core.lorarar import (
+    lrr_fast as lrr_lrr_fast,
+)
+from stele_core.lorarar import (
+    lrr_hyper as lrr_lrr_hyper,
+)
+from stele_core.lorarar import (
+    lrr_loop_plan as lrr_lrr_loop_plan,
+)
+from stele_core.lorarar import (
+    lrr_merge as lrr_lrr_merge,
+)
+from stele_core.lorarar import (
+    lrr_pair as lrr_lrr_pair,
+)
+from stele_core.lorarar import (
+    lrr_score as lrr_lrr_score,
+)
+from stele_core.lorashear import (
+    lsh_footprint as lsh_lsh_footprint,
+)
+from stele_core.lorashear import (
+    lsh_graph as lsh_lsh_graph,
+)
+from stele_core.lorashear import (
+    lsh_loop_plan as lsh_lsh_loop_plan,
+)
+from stele_core.lorashear import (
+    lsh_prune as lsh_lsh_prune,
+)
+from stele_core.lorashear import (
+    lsh_recover as lsh_lsh_recover,
+)
+from stele_core.lorashear import (
+    lsh_score as lsh_lsh_score,
+)
+from stele_core.lorasp import (
+    lsp_freeze as lsp_lsp_freeze,
+)
+from stele_core.lorasp import (
+    lsp_loop_plan as lsp_lsp_loop_plan,
+)
+from stele_core.lorasp import (
+    lsp_memory as lsp_lsp_memory,
+)
+from stele_core.lorasp import (
+    lsp_score as lsp_lsp_score,
+)
+from stele_core.lorasp import (
+    lsp_select as lsp_lsp_select,
+)
+from stele_core.lorasp import (
+    lsp_train as lsp_lsp_train,
+)
+from stele_core.loratsd import (
+    lts_combo as lts_lts_combo,
+)
+from stele_core.loratsd import (
+    lts_dash as lts_lts_dash,
+)
+from stele_core.loratsd import (
+    lts_init as lts_lts_init,
+)
+from stele_core.loratsd import (
+    lts_loop_plan as lts_lts_loop_plan,
+)
+from stele_core.loratsd import (
+    lts_score as lts_lts_score,
+)
+from stele_core.loratsd import (
+    lts_tsd as lts_lts_tsd,
+)
+from stele_core.loraxs import (
+    lxs_loop_plan as lxs_lxs_loop_plan,
+)
+from stele_core.loraxs import (
+    lxs_r as lxs_lxs_r,
+)
+from stele_core.loraxs import (
+    lxs_score as lxs_lxs_score,
+)
+from stele_core.loraxs import (
+    lxs_svd as lxs_lxs_svd,
+)
+from stele_core.loraxs import (
+    lxs_tiny as lxs_lxs_tiny,
+)
+from stele_core.loraxs import (
+    lxs_train as lxs_lxs_train,
+)
+from stele_core.loretta import (
+    ltt_adp as ltt_ltt_adp,
+)
+from stele_core.loretta import (
+    ltt_loop_plan as ltt_ltt_loop_plan,
+)
+from stele_core.loretta import (
+    ltt_rep as ltt_ltt_rep,
+)
+from stele_core.loretta import (
+    ltt_score as ltt_ltt_score,
+)
+from stele_core.loretta import (
+    ltt_tiny as ltt_ltt_tiny,
+)
+from stele_core.loretta import (
+    ltt_tt as ltt_ltt_tt,
+)
+from stele_core.lorta import (
+    lrt_compact as lrt_lrt_compact,
+)
+from stele_core.lorta import (
+    lrt_cp as lrt_lrt_cp,
+)
+from stele_core.lorta import (
+    lrt_loop_plan as lrt_lrt_loop_plan,
+)
+from stele_core.lorta import (
+    lrt_score as lrt_lrt_score,
+)
+from stele_core.lorta import (
+    lrt_share as lrt_lrt_share,
+)
+from stele_core.lorta import (
+    lrt_tensor as lrt_lrt_tensor,
+)
+from stele_core.lotr import (
+    ltr_core as ltr_ltr_core,
+)
+from stele_core.lotr import (
+    ltr_deep as ltr_ltr_deep,
+)
+from stele_core.lotr import (
+    ltr_loop_plan as ltr_ltr_loop_plan,
+)
+from stele_core.lotr import (
+    ltr_score as ltr_ltr_score,
+)
+from stele_core.lotr import (
+    ltr_share as ltr_ltr_share,
+)
+from stele_core.lotr import (
+    ltr_stack as ltr_ltr_stack,
+)
+from stele_core.mae import (
+    mae_judge_score as mae_judge_score_fn,
+)
+from stele_core.mae import (
+    mae_propose_question as mae_propose_question_fn,
+)
+from stele_core.mae import (
+    mae_proposer_reward as mae_proposer_reward_fn,
+)
+from stele_core.mae import (
+    mae_quality_filter as mae_quality_filter_fn,
+)
+from stele_core.mae import (
+    mae_solve_attempt as mae_solve_attempt_fn,
+)
+from stele_core.mae import (
+    mae_triad_round_plan as mae_triad_round_plan_fn,
+)
+from stele_core.maieutic import (
+    mai_abduce as mai_mai_abduce,
+)
+from stele_core.maieutic import (
+    mai_consistent as mai_mai_consistent,
+)
+from stele_core.maieutic import (
+    mai_loop_plan as mai_mai_loop_plan,
+)
+from stele_core.maieutic import (
+    mai_recurse as mai_mai_recurse,
+)
+from stele_core.maieutic import (
+    mai_sat as mai_mai_sat,
+)
+from stele_core.maieutic import (
+    mai_unreliable as mai_mai_unreliable,
+)
+from stele_core.malora import (
+    mal_down as mal_mal_down,
+)
+from stele_core.malora import (
+    mal_eff as mal_mal_eff,
+)
+from stele_core.malora import (
+    mal_loop_plan as mal_mal_loop_plan,
+)
+from stele_core.malora import (
+    mal_mix as mal_mal_mix,
+)
+from stele_core.malora import (
+    mal_score as mal_mal_score,
+)
+from stele_core.malora import (
+    mal_up as mal_mal_up,
+)
+from stele_core.mandol import (
+    mandol_agglomerate as md_mandol_agglomerate,
+)
+from stele_core.mandol import (
+    mandol_basic_unit as md_mandol_basic_unit,
+)
+from stele_core.mandol import (
+    mandol_hybrid_retrieve as md_mandol_hybrid_retrieve,
+)
+from stele_core.mandol import (
+    mandol_loop_plan as md_mandol_loop_plan,
+)
+from stele_core.mandol import (
+    mandol_query_route as md_mandol_query_route,
+)
+from stele_core.mandol import (
+    mandol_semantic_map_put as md_mandol_semantic_map_put,
+)
+from stele_core.mandol import (
+    mandol_token_budget as md_mandol_token_budget,
+)
+from stele_core.mapgate import (
+    action_risk_gate as map_action_risk_gate,
+)
+from stele_core.mapgate import (
+    write_gate as map_write_gate,
+)
+from stele_core.meft import (
+    mef_adapt as mef_mef_adapt,
+)
+from stele_core.meft import (
+    mef_cpu as mef_mef_cpu,
+)
+from stele_core.meft import (
+    mef_fetch as mef_mef_fetch,
+)
+from stele_core.meft import (
+    mef_loop_plan as mef_mef_loop_plan,
+)
+from stele_core.meft import (
+    mef_route as mef_mef_route,
+)
+from stele_core.meft import (
+    mef_score as mef_mef_score,
+)
+from stele_core.melora_ensemble import (
+    meo_diag as meo_meo_diag,
+)
+from stele_core.melora_ensemble import (
+    meo_loop_plan as meo_meo_loop_plan,
+)
+from stele_core.melora_ensemble import (
+    meo_mini as meo_meo_mini,
+)
+from stele_core.melora_ensemble import (
+    meo_rank as meo_meo_rank,
+)
+from stele_core.melora_ensemble import (
+    meo_score as meo_meo_score,
+)
+from stele_core.melora_ensemble import (
+    meo_train as meo_meo_train,
+)
+from stele_core.memalpha import (
+    classify_memory_slot as ma_classify_memory_slot,
+)
+from stele_core.memalpha import (
+    compression_ratio as ma_compression_ratio,
+)
+from stele_core.memalpha import (
+    length_generalization_gate as ma_length_generalization_gate,
+)
+from stele_core.memalpha import (
+    memalpha_reward_bundle as ma_memalpha_reward_bundle,
+)
+from stele_core.memalpha import (
+    memory_write_op as ma_memory_write_op,
+)
+from stele_core.memalpha import (
+    process_chunk_plan as ma_process_chunk_plan,
+)
+from stele_core.memanto import (
+    memanto_conflict_resolve as ma_memanto_conflict_resolve,
+)
+from stele_core.memanto import (
+    memanto_latency_gate as ma_memanto_latency_gate,
+)
+from stele_core.memanto import (
+    memanto_loop_plan as ma_memanto_loop_plan,
+)
+from stele_core.memanto import (
+    memanto_retrieve as ma_memanto_retrieve,
+)
+from stele_core.memanto import (
+    memanto_store_typed as ma_memanto_store_typed,
+)
+from stele_core.memanto import (
+    memanto_version as ma_memanto_version,
+)
+from stele_core.memcon import control_suggest as memcon_control_suggest
+from stele_core.memdata import (
+    localized_maintenance_plan as md_localized_maintenance_plan,
+)
+from stele_core.memdata import (
+    maintenance_cost_compare as md_maintenance_cost_compare,
+)
+from stele_core.memengine import (
+    memengine_bind_model as me_memengine_bind_model,
+)
+from stele_core.memengine import (
+    memengine_compose_operation as me_memengine_compose_operation,
+)
+from stele_core.memengine import (
+    memengine_config_set as me_memengine_config_set,
+)
+from stele_core.memengine import (
+    memengine_loop_plan as me_memengine_loop_plan,
+)
+from stele_core.memengine import (
+    memengine_pluggable as me_memengine_pluggable,
+)
+from stele_core.memengine import (
+    memengine_reflect_plan as me_memengine_reflect_plan,
+)
+from stele_core.memengine import (
+    memengine_register_function as me_memengine_register_function,
+)
+from stele_core.memevolve import (
+    architecture_profile as me_architecture_profile,
+)
+from stele_core.memevolve import (
+    diagnose_architecture as me_diagnose_architecture,
+)
+from stele_core.memevolve import (
+    list_design_space as me_list_design_space,
+)
+from stele_core.memevolve import (
+    propose_architecture_variants as me_propose_architecture_variants,
+)
+from stele_core.memevolve import (
+    rank_architecture_fitness as me_rank_architecture_fitness,
+)
+from stele_core.memevolve import (
+    select_architecture_parents as me_select_architecture_parents,
+)
+from stele_core.memforest import (
+    build_memtree as mf_build_memtree,
+)
+from stele_core.memforest import (
+    coarse_to_fine as mf_coarse_to_fine,
+)
+from stele_core.memforest import (
+    dirty_path_plan as mf_dirty_path_plan,
+)
+from stele_core.memgas import (
+    memgas_associate as mg_memgas_associate,
+)
+from stele_core.memgas import (
+    memgas_entropy_route as mg_memgas_entropy_route,
+)
+from stele_core.memgas import (
+    memgas_filter_plan as mg_memgas_filter_plan,
+)
+from stele_core.memgas import (
+    memgas_loop_plan as mg_memgas_loop_plan,
+)
+from stele_core.memgas import (
+    memgas_select_granularity as mg_memgas_select_granularity,
+)
+from stele_core.memgas import (
+    memgas_unit as mg_memgas_unit,
+)
+from stele_core.memgate import (
+    retrieval_admit as mg_retrieval_admit,
+)
+from stele_core.memgate import (
+    task_conditioned_pack as mg_task_conditioned_pack,
+)
+from stele_core.memgen import (
+    faculty_classify as mg_faculty_classify,
+)
+from stele_core.memgen import (
+    interweave_cycle_plan as mg_interweave_cycle_plan,
+)
+from stele_core.memgen import (
+    memory_trigger_decide as mg_memory_trigger_decide,
+)
+from stele_core.memgen import (
+    sparse_invoke_penalty as mg_sparse_invoke_penalty,
+)
+from stele_core.memgen import (
+    weave_latent_memory as mg_weave_latent_memory,
+)
+from stele_core.memgen import (
+    weaver_only_update_gate as mg_weaver_only_update_gate,
+)
+from stele_core.memgpt import (
+    memgpt_archival_search as mg_memgpt_archival_search,
+)
+from stele_core.memgpt import (
+    memgpt_loop_plan as mg_memgpt_loop_plan,
+)
+from stele_core.memgpt import (
+    memgpt_main_capacity as mg_memgpt_main_capacity,
+)
+from stele_core.memgpt import (
+    memgpt_page_in as mg_memgpt_page_in,
+)
+from stele_core.memgpt import (
+    memgpt_page_out as mg_memgpt_page_out,
+)
+from stele_core.memgpt import (
+    memgpt_recall_search as mg_memgpt_recall_search,
+)
+from stele_core.memgraphrag import (
+    mgr_detect_conflict as mgr_mgr_detect_conflict,
+)
+from stele_core.memgraphrag import (
+    mgr_loop_plan as mgr_mgr_loop_plan,
+)
+from stele_core.memgraphrag import (
+    mgr_multilayer_retrieve as mgr_mgr_multilayer_retrieve,
+)
+from stele_core.memgraphrag import (
+    mgr_propagate as mgr_mgr_propagate,
+)
+from stele_core.memgraphrag import (
+    mgr_resolve_plan as mgr_mgr_resolve_plan,
+)
+from stele_core.memgraphrag import (
+    mgr_store_layer as mgr_mgr_store_layer,
+)
+from stele_core.memma import (
+    answerability_check as mm_answerability_check,
+)
+from stele_core.memma import (
+    meta_thinker_guidance as mm_meta_thinker_guidance,
+)
+from stele_core.memma import (
+    repair_from_probes as mm_repair_from_probes,
+)
+from stele_core.memma import (
+    synthesize_probe_qa as mm_synthesize_probe_qa,
+)
+from stele_core.memma import (
+    verify_probes as mm_verify_probes,
+)
+from stele_core.memobrain import (
+    memobrain_dep_edge as mb_memobrain_dep_edge,
+)
+from stele_core.memobrain import (
+    memobrain_flush_budget as mb_memobrain_flush_budget,
+)
+from stele_core.memobrain import (
+    memobrain_fold_subtraj as mb_memobrain_fold_subtraj,
+)
+from stele_core.memobrain import (
+    memobrain_loop_plan as mb_memobrain_loop_plan,
+)
+from stele_core.memobrain import (
+    memobrain_prune_invalid as mb_memobrain_prune_invalid,
+)
+from stele_core.memobrain import (
+    memobrain_salience_keep as mb_memobrain_salience_keep,
+)
+from stele_core.memorag import (
+    memorag_clue as mr_memorag_clue,
+)
+from stele_core.memorag import (
+    memorag_dual_system as mr_memorag_dual_system,
+)
+from stele_core.memorag import (
+    memorag_generate_plan as mr_memorag_generate_plan,
+)
+from stele_core.memorag import (
+    memorag_loop_plan as mr_memorag_loop_plan,
+)
+from stele_core.memorag import (
+    memorag_memorize as mr_memorag_memorize,
+)
+from stele_core.memorag import (
+    memorag_retrieve_by_clue as mr_memorag_retrieve_by_clue,
+)
+from stele_core.memorybank import (
+    mbank_forget_curve as mb_mbank_forget_curve,
+)
+from stele_core.memorybank import (
+    mbank_loop_plan as mb_mbank_loop_plan,
+)
+from stele_core.memorybank import (
+    mbank_personality_synth as mb_mbank_personality_synth,
+)
+from stele_core.memorybank import (
+    mbank_reinforce as mb_mbank_reinforce,
+)
+from stele_core.memorybank import (
+    mbank_store_memory as mb_mbank_store_memory,
+)
+from stele_core.memorybank import (
+    mbank_summon as mb_mbank_summon,
+)
+from stele_core.memoryos import (
+    classify_memory_tier as mo_classify_memory_tier,
+)
+from stele_core.memoryos import (
+    heat_score as mo_heat_score,
+)
+from stele_core.memoryos import (
+    hierarchical_retrieve as mo_hierarchical_retrieve,
+)
+from stele_core.memoryos import (
+    mtm_evict_plan as mo_mtm_evict_plan,
+)
+from stele_core.memoryos import (
+    promote_to_lpm_plan as mo_promote_to_lpm_plan,
+)
+from stele_core.memoryos import (
+    segment_pages as mo_segment_pages,
+)
+from stele_core.memoryos import (
+    stm_to_mtm_plan as mo_stm_to_mtm_plan,
+)
+from stele_core.memoryr1 import (
+    classify_memory_op as mr_classify_memory_op,
+)
+from stele_core.memoryr1 import (
+    conflict_update_plan as mr_conflict_update_plan,
+)
+from stele_core.memoryr1 import (
+    delete_stale_plan as mr_delete_stale_plan,
+)
+from stele_core.memoryr1 import (
+    memory_op_plan as mr_memory_op_plan,
+)
+from stele_core.memoryr1 import (
+    noop_gate as mr_noop_gate,
+)
+from stele_core.memos import (
+    memos_compose as mo_memos_compose,
+)
+from stele_core.memos import (
+    memos_create_cube as mo_memos_create_cube,
+)
+from stele_core.memos import (
+    memos_fuse_gate as mo_memos_fuse_gate,
+)
+from stele_core.memos import (
+    memos_lifecycle as mo_memos_lifecycle,
+)
+from stele_core.memos import (
+    memos_loop_plan as mo_memos_loop_plan,
+)
+from stele_core.memos import (
+    memos_migrate as mo_memos_migrate,
+)
+from stele_core.memos import (
+    memos_schedule as mo_memos_schedule,
+)
+from stele_core.mempoison import (
+    collusion_risk_gate as mpz_collusion_risk_gate,
+)
+from stele_core.mempoison import (
+    compositional_coalition_scan as mpz_compositional_coalition_scan,
+)
+from stele_core.mempoison import (
+    dormant_trigger_scan as mpz_dormant_trigger_scan,
+)
+from stele_core.mempoison import (
+    mempoison_ladder_report as mpz_mempoison_ladder_report,
+)
+from stele_core.mempoison import (
+    salami_pair_probe as mpz_salami_pair_probe,
+)
+from stele_core.mempoison import (
+    slot_coverage as mpz_slot_coverage,
+)
+from stele_core.mempoison import (
+    threat_tier_classify as mpz_threat_tier_classify,
+)
+from stele_core.memr3 import (
+    evidence_gap as memr3_evidence_gap,
+)
+from stele_core.memr3 import (
+    gap_tracker_update as memr3_gap_tracker_update,
+)
+from stele_core.memr3 import (
+    reflective_retrieve_plan as memr3_reflective_retrieve_plan,
+)
+from stele_core.memrefine import (
+    compress_candidates as mr_compress_candidates,
+)
+from stele_core.memrefine import (
+    refine_plan as mr_refine_plan,
+)
+from stele_core.memrl import (
+    ieu_record as mr_ieu_record,
+)
+from stele_core.memrl import (
+    semantic_vs_utility_warn as mr_semantic_vs_utility_warn,
+)
+from stele_core.memrl import (
+    two_phase_retrieve as mr_two_phase_retrieve,
+)
+from stele_core.memrl import (
+    utility_q_update as mr_utility_q_update,
+)
+from stele_core.memrl import (
+    value_aware_select as mr_value_aware_select,
+)
+from stele_core.memsec import (
+    execute_chain_probe as ms_execute_chain_probe,
+)
+from stele_core.memsec import (
+    lifecycle_report as ms_lifecycle_report,
+)
+from stele_core.memsec import (
+    persistence_probe as ms_persistence_probe,
+)
+from stele_core.memsec import (
+    selective_repair_plan as ms_selective_repair_plan,
+)
+from stele_core.memskill import (
+    designer_evolve_plan as ms_designer_evolve_plan,
+)
+from stele_core.memskill import (
+    execute_skill_plan as ms_execute_skill_plan,
+)
+from stele_core.memskill import (
+    init_skill_bank as ms_init_skill_bank,
+)
+from stele_core.memskill import (
+    record_hard_case as ms_record_hard_case,
+)
+from stele_core.memskill import (
+    select_skills as ms_select_skills,
+)
+from stele_core.memskill import (
+    span_partition as ms_span_partition,
+)
+from stele_core.memtx import (
+    action_safe_gate as memtx_action_safe_gate,
+)
+from stele_core.memtx import (
+    aoep_checklist as memtx_aoep_checklist,
+)
+from stele_core.memtx import (
+    begin_transaction as memtx_begin_transaction,
+)
+from stele_core.memtx import (
+    get_transaction as memtx_get_transaction,
+)
+from stele_core.memtx import (
+    list_transactions as memtx_list_transactions,
+)
+from stele_core.memtx import (
+    mark_aborted as memtx_mark_aborted,
+)
+from stele_core.memtx import (
+    mark_committed as memtx_mark_committed,
+)
+from stele_core.memtx import (
+    maturity_of as memtx_maturity_of,
+)
+from stele_core.memtx import (
+    stage_entry as memtx_stage_entry,
+)
+from stele_core.memtx import (
+    validate_transaction as memtx_validate_transaction,
+)
+from stele_core.memwalker import (
+    memwalker_build_node as mw_memwalker_build_node,
+)
+from stele_core.memwalker import (
+    memwalker_gather as mw_memwalker_gather,
+)
+from stele_core.memwalker import (
+    memwalker_loop_plan as mw_memwalker_loop_plan,
+)
+from stele_core.memwalker import (
+    memwalker_navigate as mw_memwalker_navigate,
+)
+from stele_core.memwalker import (
+    memwalker_path_gate as mw_memwalker_path_gate,
+)
+from stele_core.memwalker import (
+    memwalker_segment as mw_memwalker_segment,
+)
+from stele_core.memweaver import (
+    build_hybrid_weave as mw_build_hybrid_weave,
+)
+from stele_core.memweaver import (
+    dual_channel_retrieve as mw_dual_channel_retrieve,
+)
+from stele_core.memweaver import (
+    experience_abstract_plan as mw_experience_abstract_plan,
+)
+from stele_core.memweaver import (
+    multi_hop_depth_score as mw_multi_hop_depth_score,
+)
+from stele_core.memweaver import (
+    temporal_session_conflict_scan as mw_temporal_session_conflict_scan,
+)
+from stele_core.memweaver import (
+    weave_layer_assign as mw_weave_layer_assign,
+)
+from stele_core.metacognitive import (
+    mcp_confidence as mcp_mcp_confidence,
+)
+from stele_core.metacognitive import (
+    mcp_interpret as mcp_mcp_interpret,
+)
+from stele_core.metacognitive import (
+    mcp_justify as mcp_mcp_justify,
+)
+from stele_core.metacognitive import (
+    mcp_loop_plan as mcp_mcp_loop_plan,
+)
+from stele_core.metacognitive import (
+    mcp_recognize as mcp_mcp_recognize,
+)
+from stele_core.metacognitive import (
+    mcp_reevaluate as mcp_mcp_reevaluate,
+)
+from stele_core.metaprompting import (
+    mp_assign_expert as mp_mp_assign_expert,
+)
+from stele_core.metaprompting import (
+    mp_break_task as mp_mp_break_task,
+)
+from stele_core.metaprompting import (
+    mp_loop_plan as mp_mp_loop_plan,
+)
+from stele_core.metaprompting import (
+    mp_oversee as mp_mp_oversee,
+)
+from stele_core.metaprompting import (
+    mp_task_agnostic as mp_mp_task_agnostic,
+)
+from stele_core.metaprompting import (
+    mp_verify as mp_mp_verify,
+)
+from stele_core.metis import (
+    crystallize_plan_to_tool as mt_crystallize_plan_to_tool,
+)
+from stele_core.metis import (
+    dual_retrieve as mt_dual_retrieve,
+)
+from stele_core.metis import (
+    metis_loop_plan as mt_metis_loop_plan,
+)
+from stele_core.metis import (
+    promote_kind_gate as mt_promote_kind_gate,
+)
+from stele_core.metis import (
+    representation_tradeoff as mt_representation_tradeoff,
+)
+from stele_core.metis import (
+    text_experience_store as mt_text_experience_store,
+)
+from stele_core.milora import (
+    mil_freeze as mil_mil_freeze,
+)
+from stele_core.milora import (
+    mil_loop_plan as mil_mil_loop_plan,
+)
+from stele_core.milora import (
+    mil_minor as mil_mil_minor,
+)
+from stele_core.milora import (
+    mil_preserve as mil_mil_preserve,
+)
+from stele_core.milora import (
+    mil_score as mil_mil_score,
+)
+from stele_core.milora import (
+    mil_svd as mil_mil_svd,
+)
+from stele_core.mindmemos import (
+    contamination_scan as mm_contamination_scan,
+)
+from stele_core.mindmemos import (
+    dreaming_consolidate_plan as mm_dreaming_consolidate_plan,
+)
+from stele_core.mindmemos import (
+    ept_classify as mm_ept_classify,
+)
+from stele_core.mindmemos import (
+    feedback_revise_plan as mm_feedback_revise_plan,
+)
+from stele_core.mindmemos import (
+    functional_role_assign as mm_functional_role_assign,
+)
+from stele_core.mindmemos import (
+    skill_evolve_plan as mm_skill_evolve_plan,
+)
+from stele_core.mindmemos import (
+    type_route_retrieve as mm_type_route_retrieve,
+)
+from stele_core.miss import (
+    mss_loop_plan as mss_mss_loop_plan,
+)
+from stele_core.miss import (
+    mss_pareto as mss_mss_pareto,
+)
+from stele_core.miss import (
+    mss_score as mss_mss_score,
+)
+from stele_core.miss import (
+    mss_shard as mss_mss_shard,
+)
+from stele_core.miss import (
+    mss_share as mss_mss_share,
+)
+from stele_core.miss import (
+    mss_train as mss_mss_train,
+)
+from stele_core.mixlora import (
+    mxl_attn as mxl_mxl_attn,
+)
+from stele_core.mixlora import (
+    mxl_balance as mxl_mxl_balance,
+)
+from stele_core.mixlora import (
+    mxl_experts as mxl_mxl_experts,
+)
+from stele_core.mixlora import (
+    mxl_loop_plan as mxl_mxl_loop_plan,
+)
+from stele_core.mixlora import (
+    mxl_route as mxl_mxl_route,
+)
+from stele_core.mixlora import (
+    mxl_score as mxl_mxl_score,
+)
+from stele_core.mlora import (
+    mla_batch as mla_mla_batch,
+)
+from stele_core.mlora import (
+    mla_eff as mla_mla_eff,
+)
+from stele_core.mlora import (
+    mla_loop_plan as mla_mla_loop_plan,
+)
+from stele_core.mlora import (
+    mla_pipe as mla_mla_pipe,
+)
+from stele_core.mlora import (
+    mla_score as mla_mla_score,
+)
+from stele_core.mlora import (
+    mla_train as mla_mla_train,
+)
+from stele_core.mnemonic import (
+    post_delete_verify as mn_post_delete_verify,
+)
+from stele_core.mnemonic import (
+    rollback_plan as mn_rollback_plan,
+)
+from stele_core.mnemonic import (
+    sovereignty_checklist as mn_sovereignty_checklist,
+)
+from stele_core.moelora import (
+    mel_contrast as mel_mel_contrast,
+)
+from stele_core.moelora import (
+    mel_experts as mel_mel_experts,
+)
+from stele_core.moelora import (
+    mel_gate as mel_mel_gate,
+)
+from stele_core.moelora import (
+    mel_loop_plan as mel_mel_loop_plan,
+)
+from stele_core.moelora import (
+    mel_score as mel_mel_score,
+)
+from stele_core.moelora import (
+    mel_sparse as mel_mel_sparse,
+)
+from stele_core.momentumaidedprompt import (
+    mapo_beam as mapo_mapo_beam,
+)
+from stele_core.momentumaidedprompt import (
+    mapo_faster as mapo_mapo_faster,
+)
+from stele_core.momentumaidedprompt import (
+    mapo_loop_plan as mapo_mapo_loop_plan,
+)
+from stele_core.momentumaidedprompt import (
+    mapo_momentum as mapo_mapo_momentum,
+)
+from stele_core.momentumaidedprompt import (
+    mapo_posgrad as mapo_mapo_posgrad,
+)
+from stele_core.momentumaidedprompt import (
+    mapo_ucb as mapo_mapo_ucb,
+)
+from stele_core.mora import (
+    mor_compress as mor_mor_compress,
+)
+from stele_core.mora import (
+    mor_expand as mor_mor_expand,
+)
+from stele_core.mora import (
+    mor_loop_plan as mor_mor_loop_plan,
+)
+from stele_core.mora import (
+    mor_merge as mor_mor_merge,
+)
+from stele_core.mora import (
+    mor_score as mor_mor_score,
+)
+from stele_core.mora import (
+    mor_square as mor_mor_square,
+)
+from stele_core.moslora import (
+    msl_fuse as msl_msl_fuse,
+)
+from stele_core.moslora import (
+    msl_loop_plan as msl_msl_loop_plan,
+)
+from stele_core.moslora import (
+    msl_mixer as msl_msl_mixer,
+)
+from stele_core.moslora import (
+    msl_score as msl_msl_score,
+)
+from stele_core.moslora import (
+    msl_split as msl_msl_split,
+)
+from stele_core.moslora import (
+    msl_train as msl_msl_train,
+)
+from stele_core.mpbench import (
+    channel_admit_batch as mp_channel_admit_batch,
+)
+from stele_core.mpbench import (
+    classify_write_channel as mp_classify_write_channel,
+)
+from stele_core.mpbench import (
+    source_isolation_gate as mp_source_isolation_gate,
+)
+from stele_core.mpbench import (
+    write_channel_inventory as mp_write_channel_inventory,
+)
+from stele_core.msce import (
+    crystallize_skill as msce_crystallize_skill,
+)
+from stele_core.msce import (
+    skill_catalog as msce_skill_catalog,
+)
+from stele_core.msce import (
+    skill_eligibility as msce_skill_eligibility,
+)
+from stele_core.msce import (
+    value_backfill as msce_value_backfill,
+)
+from stele_core.mtllora import (
+    mtl_interfere as mtl_mtl_interfere,
+)
+from stele_core.mtllora import (
+    mtl_loop_plan as mtl_mtl_loop_plan,
+)
+from stele_core.mtllora import (
+    mtl_score as mtl_mtl_score,
+)
+from stele_core.mtllora import (
+    mtl_share as mtl_mtl_share,
+)
+from stele_core.mtllora import (
+    mtl_spec as mtl_mtl_spec,
+)
+from stele_core.mtllora import (
+    mtl_task as mtl_mtl_task,
+)
+from stele_core.multiagentdebate import (
+    mad_converge as mad_mad_converge,
+)
+from stele_core.multiagentdebate import (
+    mad_critique as mad_mad_critique,
+)
+from stele_core.multiagentdebate import (
+    mad_debate as mad_mad_debate,
+)
+from stele_core.multiagentdebate import (
+    mad_factuality as mad_mad_factuality,
+)
+from stele_core.multiagentdebate import (
+    mad_loop_plan as mad_mad_loop_plan,
+)
+from stele_core.multiagentdebate import (
+    mad_propose as mad_mad_propose,
+)
+from stele_core.multilora import (
+    mlr_demo as mlr_mlr_demo,
+)
+from stele_core.multilora import (
+    mlr_init as mlr_mlr_init,
+)
+from stele_core.multilora import (
+    mlr_loop_plan as mlr_mlr_loop_plan,
+)
+from stele_core.multilora import (
+    mlr_scale as mlr_mlr_scale,
+)
+from stele_core.multilora import (
+    mlr_score as mlr_mlr_score,
+)
+from stele_core.multilora import (
+    mlr_train as mlr_mlr_train,
+)
+from stele_core.multimodalcot import (
+    mmcot_fuse as mmcot_mmcot_fuse,
+)
+from stele_core.multimodalcot import (
+    mmcot_hallucination as mmcot_mmcot_hallucination,
+)
+from stele_core.multimodalcot import (
+    mmcot_infer as mmcot_mmcot_infer,
+)
+from stele_core.multimodalcot import (
+    mmcot_loop_plan as mmcot_mmcot_loop_plan,
+)
+from stele_core.multimodalcot import (
+    mmcot_rationale as mmcot_mmcot_rationale,
+)
+from stele_core.multimodalcot import (
+    mmcot_separate as mmcot_mmcot_separate,
+)
+from stele_core.multitaskprompttuning import (
+    mptp_efficient as mptp_mptp_efficient,
+)
+from stele_core.multitaskprompttuning import (
+    mptp_factor as mptp_mptp_factor,
+)
+from stele_core.multitaskprompttuning import (
+    mptp_loop_plan as mptp_mptp_loop_plan,
+)
+from stele_core.multitaskprompttuning import (
+    mptp_score as mptp_mptp_score,
+)
+from stele_core.multitaskprompttuning import (
+    mptp_shared as mptp_mptp_shared,
+)
+from stele_core.multitaskprompttuning import (
+    mptp_transfer as mptp_mptp_transfer,
+)
+from stele_core.nemori import (
+    anticipatory_schema as nm_anticipatory_schema,
+)
+from stele_core.nemori import (
+    deserves_memory_gate as nm_deserves_memory_gate,
+)
+from stele_core.nemori import (
+    distill_batch_plan as nm_distill_batch_plan,
+)
+from stele_core.nemori import (
+    integrate_episodic_narrative as nm_integrate_episodic_narrative,
+)
+from stele_core.nemori import (
+    prediction_error_distill as nm_prediction_error_distill,
+)
+from stele_core.nlora import (
+    nlr_cheap as nlr_nlr_cheap,
+)
+from stele_core.nlora import (
+    nlr_init as nlr_nlr_init,
+)
+from stele_core.nlora import (
+    nlr_landmark as nlr_nlr_landmark,
+)
+from stele_core.nlora import (
+    nlr_loop_plan as nlr_nlr_loop_plan,
+)
+from stele_core.nlora import (
+    nlr_nystrom as nlr_nlr_nystrom,
+)
+from stele_core.nlora import (
+    nlr_score as nlr_nlr_score,
+)
+from stele_core.nola import (
+    nla_basis as nla_nla_basis,
+)
+from stele_core.nola import (
+    nla_coeff as nla_nla_coeff,
+)
+from stele_core.nola import (
+    nla_compact as nla_nla_compact,
+)
+from stele_core.nola import (
+    nla_loop_plan as nla_nla_loop_plan,
+)
+from stele_core.nola import (
+    nla_score as nla_nla_score,
+)
+from stele_core.nola import (
+    nla_train as nla_nla_train,
+)
+from stele_core.oblivion_gate import (
+    reasoning_reserve_plan as og_reasoning_reserve_plan,
+)
+from stele_core.oblivion_gate import (
+    uncertainty_retrieve_gate as og_uncertainty_retrieve_gate,
+)
+from stele_core.oblivion_gate import (
+    uncertainty_score as og_uncertainty_score,
+)
+from stele_core.oft import (
+    oft_butterfly as oft_oft_butterfly,
+)
+from stele_core.oft import (
+    oft_energy as oft_oft_energy,
+)
+from stele_core.oft import (
+    oft_loop_plan as oft_oft_loop_plan,
+)
+from stele_core.oft import (
+    oft_ortho as oft_oft_ortho,
+)
+from stele_core.oft import (
+    oft_score as oft_oft_score,
+)
+from stele_core.oft import (
+    oft_train as oft_oft_train,
+)
+from stele_core.olora import (
+    olr_loop_plan as olr_olr_loop_plan,
+)
+from stele_core.olora import (
+    olr_ortho as olr_olr_ortho,
+)
+from stele_core.olora import (
+    olr_qr as olr_olr_qr,
+)
+from stele_core.olora import (
+    olr_score as olr_olr_score,
+)
+from stele_core.olora import (
+    olr_stable as olr_olr_stable,
+)
+from stele_core.olora import (
+    olr_train as olr_olr_train,
+)
+from stele_core.omem import (
+    omem_extract_persona as om_omem_extract_persona,
+)
+from stele_core.omem import (
+    omem_hierarchy_retrieve as om_omem_hierarchy_retrieve,
+)
+from stele_core.omem import (
+    omem_loop_plan as om_omem_loop_plan,
+)
+from stele_core.omem import (
+    omem_profile_gate as om_omem_profile_gate,
+)
+from stele_core.omem import (
+    omem_scale_memory_time as om_omem_scale_memory_time,
+)
+from stele_core.omem import (
+    omem_update_event as om_omem_update_event,
+)
+from stele_core.oplora import (
+    opl_constrain as opl_opl_constrain,
+)
+from stele_core.oplora import (
+    opl_forget as opl_opl_forget,
+)
+from stele_core.oplora import (
+    opl_loop_plan as opl_opl_loop_plan,
+)
+from stele_core.oplora import (
+    opl_proj as opl_opl_proj,
+)
+from stele_core.oplora import (
+    opl_score as opl_opl_score,
+)
+from stele_core.oplora import (
+    opl_train as opl_opl_train,
+)
+from stele_core.oplora_alt import (
+    aop_alt as aop_aop_alt,
+)
+from stele_core.oplora_alt import (
+    aop_loop_plan as aop_aop_loop_plan,
+)
+from stele_core.oplora_alt import (
+    aop_score as aop_aop_score,
+)
+from stele_core.oplora_alt import (
+    aop_sub as aop_aop_sub,
+)
+from stele_core.oplora_alt import (
+    aop_svd as aop_aop_svd,
+)
+from stele_core.oplora_alt import (
+    aop_train as aop_aop_train,
+)
+from stele_core.optimizationbyprompting import (
+    opro_append as opro_opro_append,
+)
+from stele_core.optimizationbyprompting import (
+    opro_best as opro_opro_best,
+)
+from stele_core.optimizationbyprompting import (
+    opro_loop_plan as opro_opro_loop_plan,
+)
+from stele_core.optimizationbyprompting import (
+    opro_meta as opro_opro_meta,
+)
+from stele_core.optimizationbyprompting import (
+    opro_propose as opro_opro_propose,
+)
+from stele_core.optimizationbyprompting import (
+    opro_score as opro_opro_score,
+)
+from stele_core.pageindex import (
+    pageindex_add_section as pi_pageindex_add_section,
+)
+from stele_core.pageindex import (
+    pageindex_build_toc as pi_pageindex_build_toc,
+)
+from stele_core.pageindex import (
+    pageindex_loop_plan as pi_pageindex_loop_plan,
+)
+from stele_core.pageindex import (
+    pageindex_reason_nav as pi_pageindex_reason_nav,
+)
+from stele_core.pageindex import (
+    pageindex_select_section as pi_pageindex_select_section,
+)
+from stele_core.pageindex import (
+    pageindex_trace_path as pi_pageindex_trace_path,
+)
+from stele_core.pam import (
+    build_merkle_dag as pam_build_merkle_dag,
+)
+from stele_core.pam import (
+    check_capability as pam_check_capability,
+)
+from stele_core.pam import (
+    classify_memory_component as pam_classify_memory_component,
+)
+from stele_core.pam import (
+    issue_capability_token as pam_issue_capability_token,
+)
+from stele_core.pam import (
+    rehydrate_safe_plan as pam_rehydrate_safe_plan,
+)
+from stele_core.pam import (
+    selective_disclose as pam_selective_disclose,
+)
+from stele_core.pam import (
+    verify_merkle_root as pam_verify_merkle_root,
+)
+from stele_core.pamu import (
+    extract_preference_signal as pu_extract_preference_signal,
+)
+from stele_core.pamu import (
+    format_preference_prompt as pu_format_preference_prompt,
+)
+from stele_core.pamu import (
+    fuse_preference as pu_fuse_preference,
+)
+from stele_core.pamu import (
+    preference_change_detect as pu_preference_change_detect,
+)
+from stele_core.pamu import (
+    preference_update_plan as pu_preference_update_plan,
+)
+from stele_core.patchtxn import (
+    patch_test as pt_patch_test,
+)
+from stele_core.patchtxn import (
+    recover_active_map as pt_recover_active_map,
+)
+from stele_core.patchtxn import (
+    temporal_resolve as pt_temporal_resolve,
+)
+from stele_core.periodiclora import (
+    plr_loop_plan as plr_plr_loop_plan,
+)
+from stele_core.periodiclora import (
+    plr_merge as plr_plr_merge,
+)
+from stele_core.periodiclora import (
+    plr_rank as plr_plr_rank,
+)
+from stele_core.periodiclora import (
+    plr_reset as plr_plr_reset,
+)
+from stele_core.periodiclora import (
+    plr_score as plr_plr_score,
+)
+from stele_core.periodiclora import (
+    plr_stage as plr_plr_stage,
+)
+from stele_core.pissa import (
+    psa_fast as psa_psa_fast,
+)
+from stele_core.pissa import (
+    psa_loop_plan as psa_psa_loop_plan,
+)
+from stele_core.pissa import (
+    psa_principal as psa_psa_principal,
+)
+from stele_core.pissa import (
+    psa_residual as psa_psa_residual,
+)
+from stele_core.pissa import (
+    psa_score as psa_psa_score,
+)
+from stele_core.pissa import (
+    psa_svd as psa_psa_svd,
+)
+from stele_core.planandsolve import (
+    ps_calc_guard as ps_ps_calc_guard,
+)
+from stele_core.planandsolve import (
+    ps_devise_plan as ps_ps_devise_plan,
+)
+from stele_core.planandsolve import (
+    ps_execute as ps_ps_execute,
+)
+from stele_core.planandsolve import (
+    ps_loop_plan as ps_ps_loop_plan,
+)
+from stele_core.planandsolve import (
+    ps_missing_step_fix as ps_ps_missing_step_fix,
+)
+from stele_core.planandsolve import (
+    ps_plus_extract as ps_ps_plus_extract,
+)
+from stele_core.planrag import (
+    planrag_analysis_query as pr_planrag_analysis_query,
+)
+from stele_core.planrag import (
+    planrag_decide as pr_planrag_decide,
+)
+from stele_core.planrag import (
+    planrag_loop_plan as pr_planrag_loop_plan,
+)
+from stele_core.planrag import (
+    planrag_make_plan as pr_planrag_make_plan,
+)
+from stele_core.planrag import (
+    planrag_replan as pr_planrag_replan,
+)
+from stele_core.planrag import (
+    planrag_retrieve_data as pr_planrag_retrieve_data,
+)
+from stele_core.prefixtuning import (
+    pfx_freeze as pfx_pfx_freeze,
+)
+from stele_core.prefixtuning import (
+    pfx_generate as pfx_pfx_generate,
+)
+from stele_core.prefixtuning import (
+    pfx_loop_plan as pfx_pfx_loop_plan,
+)
+from stele_core.prefixtuning import (
+    pfx_optimize as pfx_pfx_optimize,
+)
+from stele_core.prefixtuning import (
+    pfx_prefix as pfx_pfx_prefix,
+)
+from stele_core.prefixtuning import (
+    pfx_task as pfx_pfx_task,
+)
+from stele_core.preflect import (
+    distill_planning_error as pf_distill_planning_error,
+)
+from stele_core.preflect import (
+    preflect_before_execute_gate as pf_preflect_before_execute_gate,
+)
+from stele_core.preflect import (
+    prospective_critique_plan as pf_prospective_critique_plan,
+)
+from stele_core.preflect import (
+    replan_on_deviation as pf_replan_on_deviation,
+)
+from stele_core.preflect import (
+    revise_plan_proposal as pf_revise_plan_proposal,
+)
+from stele_core.procmem import (
+    define_skill_triplet as pm_define_skill_triplet,
+)
+from stele_core.procmem import (
+    ppo_gate_verify as pm_ppo_gate_verify,
+)
+from stele_core.procmem import (
+    semantic_gradient_candidate as pm_semantic_gradient_candidate,
+)
+from stele_core.procmem import (
+    skill_score_maintain as pm_skill_score_maintain,
+)
+from stele_core.procmem import (
+    skill_select_gate as pm_skill_select_gate,
+)
+from stele_core.procmem import (
+    skill_terminate_check as pm_skill_terminate_check,
+)
+from stele_core.programaided import (
+    pal_decompose_only as pal_pal_decompose_only,
+)
+from stele_core.programaided import (
+    pal_emit_program as pal_pal_emit_program,
+)
+from stele_core.programaided import (
+    pal_loop_plan as pal_pal_loop_plan,
+)
+from stele_core.programaided import (
+    pal_offload_solve as pal_pal_offload_solve,
+)
+from stele_core.programaided import (
+    pal_read_answer as pal_pal_read_answer,
+)
+from stele_core.programaided import (
+    pal_vs_cot as pal_pal_vs_cot,
+)
+from stele_core.programofthoughts import (
+    pot_disentangle as pot_pot_disentangle,
+)
+from stele_core.programofthoughts import (
+    pot_emit_program as pot_pot_emit_program,
+)
+from stele_core.programofthoughts import (
+    pot_loop_plan as pot_pot_loop_plan,
+)
+from stele_core.programofthoughts import (
+    pot_read_result as pot_pot_read_result,
+)
+from stele_core.programofthoughts import (
+    pot_sandbox_run as pot_pot_sandbox_run,
+)
+from stele_core.programofthoughts import (
+    pot_self_consistency as pot_pot_self_consistency,
+)
+from stele_core.prograph import (
+    extract_residuals as pg_extract_residuals,
+)
+from stele_core.prograph import (
+    profile_expand as pg_profile_expand,
+)
+from stele_core.prograph import (
+    register_entities as pg_register_entities,
+)
+from stele_core.prograph import (
+    residual_augment as pg_residual_augment,
+)
+from stele_core.progressivehint import (
+    php_base_answer as php_php_base_answer,
+)
+from stele_core.progressivehint import (
+    php_combine_sc as php_php_combine_sc,
+)
+from stele_core.progressivehint import (
+    php_emit_hint as php_php_emit_hint,
+)
+from stele_core.progressivehint import (
+    php_loop_plan as php_php_loop_plan,
+)
+from stele_core.progressivehint import (
+    php_reask as php_php_reask,
+)
+from stele_core.progressivehint import (
+    php_stable_stop as php_php_stable_stop,
+)
+from stele_core.promptagent import (
+    pag_backprop as pag_pag_backprop,
+)
+from stele_core.promptagent import (
+    pag_expand as pag_pag_expand,
+)
+from stele_core.promptagent import (
+    pag_expert as pag_pag_expert,
+)
+from stele_core.promptagent import (
+    pag_loop_plan as pag_pag_loop_plan,
+)
+from stele_core.promptagent import (
+    pag_reflect as pag_pag_reflect,
+)
+from stele_core.promptagent import (
+    pag_state as pag_pag_state,
+)
+from stele_core.promptbreeder import (
+    pbr_diversity as pbr_pbr_diversity,
+)
+from stele_core.promptbreeder import (
+    pbr_fitness as pbr_pbr_fitness,
+)
+from stele_core.promptbreeder import (
+    pbr_init as pbr_pbr_init,
+)
+from stele_core.promptbreeder import (
+    pbr_loop_plan as pbr_pbr_loop_plan,
+)
+from stele_core.promptbreeder import (
+    pbr_mutate as pbr_pbr_mutate,
+)
+from stele_core.promptbreeder import (
+    pbr_selfref as pbr_pbr_selfref,
+)
+from stele_core.prompttuning import (
+    ptl_input_only as ptl_ptl_input_only,
+)
+from stele_core.prompttuning import (
+    ptl_loop_plan as ptl_ptl_loop_plan,
+)
+from stele_core.prompttuning import (
+    ptl_optimize as ptl_ptl_optimize,
+)
+from stele_core.prompttuning import (
+    ptl_prepend as ptl_ptl_prepend,
+)
+from stele_core.prompttuning import (
+    ptl_scale as ptl_ptl_scale,
+)
+from stele_core.prompttuning import (
+    ptl_soft as ptl_ptl_soft,
+)
+from stele_core.protegi import (
+    ptg_bandit as ptg_ptg_bandit,
+)
+from stele_core.protegi import (
+    ptg_beam as ptg_ptg_beam,
+)
+from stele_core.protegi import (
+    ptg_edit as ptg_ptg_edit,
+)
+from stele_core.protegi import (
+    ptg_gradient as ptg_ptg_gradient,
+)
+from stele_core.protegi import (
+    ptg_jailbreak as ptg_ptg_jailbreak,
+)
+from stele_core.protegi import (
+    ptg_loop_plan as ptg_ptg_loop_plan,
+)
+from stele_core.ptuningv2 import (
+    ptv_deep as ptv_ptv_deep,
+)
+from stele_core.ptuningv2 import (
+    ptv_inject as ptv_ptv_inject,
+)
+from stele_core.ptuningv2 import (
+    ptv_loop_plan as ptv_ptv_loop_plan,
+)
+from stele_core.ptuningv2 import (
+    ptv_seqtag as ptv_ptv_seqtag,
+)
+from stele_core.ptuningv2 import (
+    ptv_tune as ptv_ptv_tune,
+)
+from stele_core.ptuningv2 import (
+    ptv_universal as ptv_ptv_universal,
+)
+from stele_core.punica import (
+    pun_backbone as pun_pun_backbone,
+)
+from stele_core.punica import (
+    pun_loop_plan as pun_pun_loop_plan,
+)
+from stele_core.punica import (
+    pun_multi as pun_pun_multi,
+)
+from stele_core.punica import (
+    pun_sched as pun_pun_sched,
+)
+from stele_core.punica import (
+    pun_score as pun_pun_score,
+)
+from stele_core.punica import (
+    pun_sgmv as pun_pun_sgmv,
+)
+from stele_core.qalora import (
+    qal_adapt as qal_qal_adapt,
+)
+from stele_core.qalora import (
+    qal_group as qal_qal_group,
+)
+from stele_core.qalora import (
+    qal_loop_plan as qal_qal_loop_plan,
+)
+from stele_core.qalora import (
+    qal_merge as qal_qal_merge,
+)
+from stele_core.qalora import (
+    qal_quant as qal_qal_quant,
+)
+from stele_core.qalora import (
+    qal_score as qal_qal_score,
+)
+from stele_core.qdylora import (
+    qdy_loop_plan as qdy_qdy_loop_plan,
+)
+from stele_core.qdylora import (
+    qdy_pick as qdy_qdy_pick,
+)
+from stele_core.qdylora import (
+    qdy_quant as qdy_qdy_quant,
+)
+from stele_core.qdylora import (
+    qdy_range as qdy_qdy_range,
+)
+from stele_core.qdylora import (
+    qdy_score as qdy_qdy_score,
+)
+from stele_core.qdylora import (
+    qdy_train as qdy_qdy_train,
+)
+from stele_core.qgalore import (
+    qga_lazy as qga_qga_lazy,
+)
+from stele_core.qgalore import (
+    qga_loop_plan as qga_qga_loop_plan,
+)
+from stele_core.qgalore import (
+    qga_mem as qga_qga_mem,
+)
+from stele_core.qgalore import (
+    qga_proj as qga_qga_proj,
+)
+from stele_core.qgalore import (
+    qga_score as qga_qga_score,
+)
+from stele_core.qgalore import (
+    qga_weight as qga_qga_weight,
+)
+from stele_core.qlora import (
+    qlo_adapter as qlo_qlo_adapter,
+)
+from stele_core.qlora import (
+    qlo_loop_plan as qlo_qlo_loop_plan,
+)
+from stele_core.qlora import (
+    qlo_memory as qlo_qlo_memory,
+)
+from stele_core.qlora import (
+    qlo_nf4 as qlo_qlo_nf4,
+)
+from stele_core.qlora import (
+    qlo_quantize as qlo_qlo_quantize,
+)
+from stele_core.qlora import (
+    qlo_score as qlo_qlo_score,
+)
+from stele_core.qpissa import (
+    qps_error as qps_qps_error,
+)
+from stele_core.qpissa import (
+    qps_loop_plan as qps_qps_loop_plan,
+)
+from stele_core.qpissa import (
+    qps_principal as qps_qps_principal,
+)
+from stele_core.qpissa import (
+    qps_quant as qps_qps_quant,
+)
+from stele_core.qpissa import (
+    qps_score as qps_qps_score,
+)
+from stele_core.qpissa import (
+    qps_train as qps_qps_train,
+)
+from stele_core.quietstar import (
+    qs_hard_token_aid as qs_qs_hard_token_aid,
+)
+from stele_core.quietstar import (
+    qs_loop_plan as qs_qs_loop_plan,
+)
+from stele_core.quietstar import (
+    qs_mix_head as qs_qs_mix_head,
+)
+from stele_core.quietstar import (
+    qs_parallel_sample as qs_qs_parallel_sample,
+)
+from stele_core.quietstar import (
+    qs_thought_bounds as qs_qs_thought_bounds,
+)
+from stele_core.quietstar import (
+    qs_zero_shot_flag as qs_qs_zero_shot_flag,
+)
+from stele_core.qumem import (
+    qumem_decompose as qm_qumem_decompose,
+)
+from stele_core.qumem import (
+    qumem_infer_user_state as qm_qumem_infer_user_state,
+)
+from stele_core.qumem import (
+    qumem_loop_plan as qm_qumem_loop_plan,
+)
+from stele_core.qumem import (
+    qumem_plan_queries as qm_qumem_plan_queries,
+)
+from stele_core.qumem import (
+    qumem_segment_episode as qm_qumem_segment_episode,
+)
+from stele_core.qumem import (
+    qumem_temporal_valid as qm_qumem_temporal_valid,
+)
+from stele_core.randlora import (
+    rlo_bases as rlo_rlo_bases,
+)
+from stele_core.randlora import (
+    rlo_fullrank as rlo_rlo_fullrank,
+)
+from stele_core.randlora import (
+    rlo_loop_plan as rlo_rlo_loop_plan,
+)
+from stele_core.randlora import (
+    rlo_scale as rlo_rlo_scale,
+)
+from stele_core.randlora import (
+    rlo_score as rlo_rlo_score,
+)
+from stele_core.randlora import (
+    rlo_train as rlo_rlo_train,
+)
+from stele_core.randsub import (
+    rsa_express as rsa_rsa_express,
+)
+from stele_core.randsub import (
+    rsa_loop_plan as rsa_rsa_loop_plan,
+)
+from stele_core.randsub import (
+    rsa_project as rsa_rsa_project,
+)
+from stele_core.randsub import (
+    rsa_score as rsa_rsa_score,
+)
+from stele_core.randsub import (
+    rsa_subspace as rsa_rsa_subspace,
+)
+from stele_core.randsub import (
+    rsa_train as rsa_rsa_train,
+)
+from stele_core.raptor import (
+    raptor_cluster as rp_raptor_cluster,
+)
+from stele_core.raptor import (
+    raptor_collapsed_retrieve as rp_raptor_collapsed_retrieve,
+)
+from stele_core.raptor import (
+    raptor_embed_chunk as rp_raptor_embed_chunk,
+)
+from stele_core.raptor import (
+    raptor_loop_plan as rp_raptor_loop_plan,
+)
+from stele_core.raptor import (
+    raptor_summarize_node as rp_raptor_summarize_node,
+)
+from stele_core.raptor import (
+    raptor_tree_traverse as rp_raptor_tree_traverse,
+)
+from stele_core.react import (
+    react_action as rc_react_action,
+)
+from stele_core.react import (
+    react_finish as rc_react_finish,
+)
+from stele_core.react import (
+    react_loop_plan as rc_react_loop_plan,
+)
+from stele_core.react import (
+    react_observe as rc_react_observe,
+)
+from stele_core.react import (
+    react_thought as rc_react_thought,
+)
+from stele_core.react import (
+    react_trajectory as rc_react_trajectory,
+)
+from stele_core.reasoningbank import (
+    consolidate_strategy_plan as rb_consolidate_strategy_plan,
+)
+from stele_core.reasoningbank import (
+    distill_strategy_item as rb_distill_strategy_item,
+)
+from stele_core.reasoningbank import (
+    failure_lesson_gate as rb_failure_lesson_gate,
+)
+from stele_core.reasoningbank import (
+    matts_contrastive_plan as rb_matts_contrastive_plan,
+)
+from stele_core.reasoningbank import (
+    retrieve_strategies as rb_retrieve_strategies,
+)
+from stele_core.reasoningviaplanning import (
+    rap_balance as rap_rap_balance,
+)
+from stele_core.reasoningviaplanning import (
+    rap_expand as rap_rap_expand,
+)
+from stele_core.reasoningviaplanning import (
+    rap_loop_plan as rap_rap_loop_plan,
+)
+from stele_core.reasoningviaplanning import (
+    rap_reward as rap_rap_reward,
+)
+from stele_core.reasoningviaplanning import (
+    rap_select_path as rap_rap_select_path,
+)
+from stele_core.reasoningviaplanning import (
+    rap_world_state as rap_rap_world_state,
+)
+from stele_core.recmem import (
+    recmem_buffer_subconscious as rm_recmem_buffer_subconscious,
+)
+from stele_core.recmem import (
+    recmem_consolidate_episodic as rm_recmem_consolidate_episodic,
+)
+from stele_core.recmem import (
+    recmem_loop_plan as rm_recmem_loop_plan,
+)
+from stele_core.recmem import (
+    recmem_merge_retrieve as rm_recmem_merge_retrieve,
+)
+from stele_core.recmem import (
+    recmem_recurrence_gate as rm_recmem_recurrence_gate,
+)
+from stele_core.recmem import (
+    recmem_semantic_refine as rm_recmem_semantic_refine,
+)
+from stele_core.recursionofthought import (
+    rot_conquer as rot_rot_conquer,
+)
+from stele_core.recursionofthought import (
+    rot_context_limit as rot_rot_context_limit,
+)
+from stele_core.recursionofthought import (
+    rot_divide as rot_rot_divide,
+)
+from stele_core.recursionofthought import (
+    rot_loop_plan as rot_rot_loop_plan,
+)
+from stele_core.recursionofthought import (
+    rot_merge as rot_rot_merge,
+)
+from stele_core.recursionofthought import (
+    rot_trigger as rot_rot_trigger,
+)
+from stele_core.reflective_mm import (
+    prospective_reflect as rmm_d_prospective_reflect,
+)
+from stele_core.reflective_mm import (
+    rerank_memories as rmm_d_rerank_memories,
+)
+from stele_core.reflective_mm import (
+    retrieval_refine_plan as rmm_d_retrieval_refine_plan,
+)
+from stele_core.reflective_mm import (
+    retrieve_topic_memories as rmm_d_retrieve_topic_memories,
+)
+from stele_core.reflective_mm import (
+    retrospective_cite_feedback as rmm_d_retrospective_cite_feedback,
+)
+from stele_core.reflective_mm import (
+    topic_memory_bank as rmm_d_topic_memory_bank,
+)
+from stele_core.reflexion import (
+    rx_evaluate as rx_rx_evaluate,
+)
+from stele_core.reflexion import (
+    rx_loop_plan as rx_rx_loop_plan,
+)
+from stele_core.reflexion import (
+    rx_memory_store as rx_rx_memory_store,
+)
+from stele_core.reflexion import (
+    rx_next_trial as rx_rx_next_trial,
+)
+from stele_core.reflexion import (
+    rx_trial_run as rx_rx_trial_run,
+)
+from stele_core.reflexion import (
+    rx_verbal_reflect as rx_rx_verbal_reflect,
+)
+from stele_core.reft import (
+    rft_edit as rft_rft_edit,
+)
+from stele_core.reft import (
+    rft_loop_plan as rft_rft_loop_plan,
+)
+from stele_core.reft import (
+    rft_repr as rft_rft_repr,
+)
+from stele_core.reft import (
+    rft_score as rft_rft_score,
+)
+from stele_core.reft import (
+    rft_train as rft_rft_train,
+)
+from stele_core.reft import (
+    rft_weightless as rft_rft_weightless,
+)
+from stele_core.relora import (
+    rlr_high as rlr_rlr_high,
+)
+from stele_core.relora import (
+    rlr_jagged as rlr_rlr_jagged,
+)
+from stele_core.relora import (
+    rlr_loop_plan as rlr_rlr_loop_plan,
+)
+from stele_core.relora import (
+    rlr_merge as rlr_rlr_merge,
+)
+from stele_core.relora import (
+    rlr_score as rlr_rlr_score,
+)
+from stele_core.relora import (
+    rlr_warm as rlr_rlr_warm,
+)
+from stele_core.reme import (
+    adaptive_rewrite_plan as reme_adaptive_rewrite_plan,
+)
+from stele_core.reme import (
+    multi_faceted_distill as reme_multi_faceted_distill,
+)
+from stele_core.reme import (
+    scenario_retrieve as reme_scenario_retrieve,
+)
+from stele_core.reme import (
+    selective_add_plan as reme_selective_add_plan,
+)
+from stele_core.reme import (
+    utility_after_reuse as reme_utility_after_reuse,
+)
+from stele_core.reme import (
+    utility_prune_plan as reme_utility_prune_plan,
+)
+from stele_core.remem import (
+    agentic_retrieve_plan as rm_agentic_retrieve_plan,
+)
+from stele_core.remem import (
+    build_hybrid_episodic_graph as rm_build_hybrid_episodic_graph,
+)
+from stele_core.remem import (
+    extract_episodic_gist as rm_extract_episodic_gist,
+)
+from stele_core.remem import (
+    extract_temporal_facts as rm_extract_temporal_facts,
+)
+from stele_core.remem import (
+    ordinal_event_query as rm_ordinal_event_query,
+)
+from stele_core.remem import (
+    situational_bind as rm_situational_bind,
+)
+from stele_core.repair import (
+    cascade_descendants as repair_cascade_descendants,
+)
+from stele_core.repair import (
+    cascade_exposure as repair_cascade_exposure,
+)
+from stele_core.repair import (
+    non_revival_probe as repair_non_revival_probe,
+)
+from stele_core.repair import (
+    repair_plan as repair_repair_plan,
+)
+from stele_core.repair import (
+    repair_select_mincut as repair_repair_select_mincut,
+)
+from stele_core.replug import (
+    replug_blackbox_forward as rp_replug_blackbox_forward,
+)
+from stele_core.replug import (
+    replug_ensemble_probs as rp_replug_ensemble_probs,
+)
+from stele_core.replug import (
+    replug_loop_plan as rp_replug_loop_plan,
+)
+from stele_core.replug import (
+    replug_prepend_doc as rp_replug_prepend_doc,
+)
+from stele_core.replug import (
+    replug_retrieve_docs as rp_replug_retrieve_docs,
+)
+from stele_core.replug import (
+    replug_supervise_retriever as rp_replug_supervise_retriever,
+)
 from stele_core.retrieval import Retriever, _scope_allows, _valid_at_point
+from stele_core.rewoo import (
+    rewoo_decouple as rewoo_rewoo_decouple,
+)
+from stele_core.rewoo import (
+    rewoo_loop_plan as rewoo_rewoo_loop_plan,
+)
+from stele_core.rewoo import (
+    rewoo_plan as rewoo_rewoo_plan,
+)
+from stele_core.rewoo import (
+    rewoo_solver as rewoo_rewoo_solver,
+)
+from stele_core.rewoo import (
+    rewoo_token_save as rewoo_rewoo_token_save,
+)
+from stele_core.rewoo import (
+    rewoo_worker as rewoo_rewoo_worker,
+)
+from stele_core.rfmem import (
+    rfmem_alpha_mix as rf_rfmem_alpha_mix,
+)
+from stele_core.rfmem import (
+    rfmem_familiarity_score as rf_rfmem_familiarity_score,
+)
+from stele_core.rfmem import (
+    rfmem_loop_plan as rf_rfmem_loop_plan,
+)
+from stele_core.rfmem import (
+    rfmem_path_route as rf_rfmem_path_route,
+)
+from stele_core.rfmem import (
+    rfmem_recollect_expand as rf_rfmem_recollect_expand,
+)
+from stele_core.rfmem import (
+    rfmem_top_k_familiar as rf_rfmem_top_k_familiar,
+)
+from stele_core.ripplemem import (
+    ripple_expand as rp_ripple_expand,
+)
+from stele_core.ripplemem import (
+    ripple_link_entity as rp_ripple_link_entity,
+)
+from stele_core.ripplemem import (
+    ripple_loop_plan as rp_ripple_loop_plan,
+)
+from stele_core.ripplemem import (
+    ripple_recollect_gate as rp_ripple_recollect_gate,
+)
+from stele_core.ripplemem import (
+    ripple_seed_retrieve as rp_ripple_seed_retrieve,
+)
+from stele_core.ripplemem import (
+    ripple_store_episode as rp_ripple_store_episode,
+)
 from stele_core.risk import INJECTION_MARKERS, scan_entry, scan_text
+from stele_core.rlprompt import (
+    rlp_discrete as rlp_rlp_discrete,
+)
+from stele_core.rlprompt import (
+    rlp_init as rlp_rlp_init,
+)
+from stele_core.rlprompt import (
+    rlp_loop_plan as rlp_rlp_loop_plan,
+)
+from stele_core.rlprompt import (
+    rlp_reward as rlp_rlp_reward,
+)
+from stele_core.rlprompt import (
+    rlp_sample as rlp_rlp_sample,
+)
+from stele_core.rlprompt import (
+    rlp_update as rlp_rlp_update,
+)
+from stele_core.roles import (
+    infer_memory_role,
+    project_fact_interface,
+    role_collapse_scan,
+)
+from stele_core.roles import (
+    quality_gate as roles_quality_gate,
+)
+from stele_core.rosa import (
+    ros_fft as ros_ros_fft,
+)
+from stele_core.rosa import (
+    ros_loop_plan as ros_ros_loop_plan,
+)
+from stele_core.rosa import (
+    ros_rank as ros_ros_rank,
+)
+from stele_core.rosa import (
+    ros_score as ros_ros_score,
+)
+from stele_core.rosa import (
+    ros_sparse as ros_ros_sparse,
+)
+from stele_core.rosa import (
+    ros_train as ros_ros_train,
+)
+from stele_core.rqrag import (
+    rqrag_decompose as rq_rqrag_decompose,
+)
+from stele_core.rqrag import (
+    rqrag_disambiguate as rq_rqrag_disambiguate,
+)
+from stele_core.rqrag import (
+    rqrag_loop_plan as rq_rqrag_loop_plan,
+)
+from stele_core.rqrag import (
+    rqrag_refine_mode as rq_rqrag_refine_mode,
+)
+from stele_core.rqrag import (
+    rqrag_retrieve_refined as rq_rqrag_retrieve_refined,
+)
+from stele_core.rqrag import (
+    rqrag_rewrite as rq_rqrag_rewrite,
+)
+from stele_core.rrm import (
+    anomaly_trigger as rrm_anomaly_trigger,
+)
+from stele_core.rrm import (
+    distill_retrieval_experience as rrm_distill_retrieval_experience,
+)
+from stele_core.rrm import (
+    experience_lifecycle_score as rrm_experience_lifecycle_score,
+)
+from stele_core.rrm import (
+    isolate_factual_from_procedural as rrm_isolate_factual_from_procedural,
+)
+from stele_core.rrm import (
+    prune_experience_plan as rrm_prune_experience_plan,
+)
+from stele_core.rrm import (
+    query_level_guidance as rrm_query_level_guidance,
+)
+from stele_core.rrr import (
+    rrr_loop_plan as rr_rrr_loop_plan,
+)
+from stele_core.rrr import (
+    rrr_read as rr_rrr_read,
+)
+from stele_core.rrr import (
+    rrr_reader_feedback as rr_rrr_reader_feedback,
+)
+from stele_core.rrr import (
+    rrr_retrieve as rr_rrr_retrieve,
+)
+from stele_core.rrr import (
+    rrr_rewrite_query as rr_rrr_rewrite_query,
+)
+from stele_core.rrr import (
+    rrr_train_rewriter_plan as rr_rrr_train_rewriter_plan,
+)
+from stele_core.rslora import (
+    rsl_loop_plan as rsl_rsl_loop_plan,
+)
+from stele_core.rslora import (
+    rsl_rank as rsl_rsl_rank,
+)
+from stele_core.rslora import (
+    rsl_scale as rsl_rsl_scale,
+)
+from stele_core.rslora import (
+    rsl_score as rsl_rsl_score,
+)
+from stele_core.rslora import (
+    rsl_stable as rsl_rsl_stable,
+)
+from stele_core.rslora import (
+    rsl_train as rsl_rsl_train,
+)
+from stele_core.rzero import (
+    challenger_propose as rz_challenger_propose,
+)
+from stele_core.rzero import (
+    coevolve_round_plan as rz_coevolve_round_plan,
+)
+from stele_core.rzero import (
+    curriculum_band_filter as rz_curriculum_band_filter,
+)
+from stele_core.rzero import (
+    majority_vote_label as rz_majority_vote_label,
+)
+from stele_core.rzero import (
+    solver_binary_reward as rz_solver_binary_reward,
+)
+from stele_core.rzero import (
+    uncertainty_reward as rz_uncertainty_reward,
+)
+from stele_core.sagema import (
+    sage_challenge_task as sage_challenge_task_fn,
+)
+from stele_core.sagema import (
+    sage_closed_loop_round as sage_closed_loop_round_fn,
+)
+from stele_core.sagema import (
+    sage_critic_filter as sage_critic_filter_fn,
+)
+from stele_core.sagema import (
+    sage_drift_gate as sage_drift_gate_fn,
+)
+from stele_core.sagema import (
+    sage_plan_steps as sage_plan_steps_fn,
+)
+from stele_core.sagema import (
+    sage_solve_with_plan as sage_solve_with_plan_fn,
+)
+from stele_core.samule import (
+    failure_centric_gate as sa_failure_centric_gate,
+)
+from stele_core.samule import (
+    foresight_reflect as sa_foresight_reflect,
+)
+from stele_core.samule import (
+    inter_task_transfer as sa_inter_task_transfer,
+)
+from stele_core.samule import (
+    intra_task_taxonomy as sa_intra_task_taxonomy,
+)
+from stele_core.samule import (
+    merge_reflections as sa_merge_reflections,
+)
+from stele_core.samule import (
+    single_trajectory_reflect as sa_single_trajectory_reflect,
+)
 from stele_core.schema import (
     OUTCOME_KINDS,
     SchemaError,
@@ -2718,7 +4910,1037 @@ from stele_core.schema import (
     validate_evidence,
     validate_scope,
 )
+from stele_core.scm import (
+    sleep_cycle_plan as scm_sleep_cycle_plan,
+)
+from stele_core.scm import (
+    sleep_trigger as scm_sleep_trigger,
+)
+from stele_core.scm import (
+    value_tag as scm_value_tag,
+)
+from stele_core.scm import (
+    wm_clear as scm_wm_clear,
+)
+from stele_core.scm import (
+    wm_list as scm_wm_list,
+)
+from stele_core.scm import (
+    wm_push as scm_wm_push,
+)
+from stele_core.sdt import (
+    sdt_dim as sdt_sdt_dim,
+)
+from stele_core.sdt import (
+    sdt_loop_plan as sdt_sdt_loop_plan,
+)
+from stele_core.sdt import (
+    sdt_mask as sdt_sdt_mask,
+)
+from stele_core.sdt import (
+    sdt_score as sdt_sdt_score,
+)
+from stele_core.sdt import (
+    sdt_ssm as sdt_sdt_ssm,
+)
+from stele_core.sdt import (
+    sdt_tune as sdt_sdt_tune,
+)
+from stele_core.selfask import (
+    selfask_compose_answer as sa_selfask_compose_answer,
+)
+from stele_core.selfask import (
+    selfask_demo_prompt as sa_selfask_demo_prompt,
+)
+from stele_core.selfask import (
+    selfask_followup as sa_selfask_followup,
+)
+from stele_core.selfask import (
+    selfask_loop_plan as sa_selfask_loop_plan,
+)
+from stele_core.selfask import (
+    selfask_search_intercept as sa_selfask_search_intercept,
+)
+from stele_core.selfask import (
+    selfask_stop as sa_selfask_stop,
+)
+from stele_core.selfcons import (
+    sc_collect_answers as sc_sc_collect_answers,
+)
+from stele_core.selfcons import (
+    sc_loop_plan as sc_sc_loop_plan,
+)
+from stele_core.selfcons import (
+    sc_majority_vote as sc_sc_majority_vote,
+)
+from stele_core.selfcons import (
+    sc_marginalize as sc_sc_marginalize,
+)
+from stele_core.selfcons import (
+    sc_sample_path as sc_sc_sample_path,
+)
+from stele_core.selfcons import (
+    sc_temperature as sc_sc_temperature,
+)
+from stele_core.selfdiscover import (
+    sd_adapt as sd_sd_adapt,
+)
+from stele_core.selfdiscover import (
+    sd_apply_instance as sd_sd_apply_instance,
+)
+from stele_core.selfdiscover import (
+    sd_compute_ratio as sd_sd_compute_ratio,
+)
+from stele_core.selfdiscover import (
+    sd_implement as sd_sd_implement,
+)
+from stele_core.selfdiscover import (
+    sd_loop_plan as sd_sd_loop_plan,
+)
+from stele_core.selfdiscover import (
+    sd_select_modules as sd_sd_select_modules,
+)
+from stele_core.selfrag import (
+    selfrag_loop_plan as sr_selfrag_loop_plan,
+)
+from stele_core.selfrag import (
+    selfrag_need_retrieve as sr_selfrag_need_retrieve,
+)
+from stele_core.selfrag import (
+    selfrag_relevance_critique as sr_selfrag_relevance_critique,
+)
+from stele_core.selfrag import (
+    selfrag_select_best as sr_selfrag_select_best,
+)
+from stele_core.selfrag import (
+    selfrag_support_critique as sr_selfrag_support_critique,
+)
+from stele_core.selfrag import (
+    selfrag_utility_critique as sr_selfrag_utility_critique,
+)
+from stele_core.selfrefine import (
+    sr_feedback as sr_sr_feedback,
+)
+from stele_core.selfrefine import (
+    sr_generate as sr_sr_generate,
+)
+from stele_core.selfrefine import (
+    sr_iterate as sr_sr_iterate,
+)
+from stele_core.selfrefine import (
+    sr_loop_plan as sr_sr_loop_plan,
+)
+from stele_core.selfrefine import (
+    sr_no_train as sr_sr_no_train,
+)
+from stele_core.selfrefine import (
+    sr_refine as sr_sr_refine,
+)
+from stele_core.selftaughtreasoner import (
+    star_bootstrap_round as star_star_bootstrap_round,
+)
+from stele_core.selftaughtreasoner import (
+    star_filter_correct as star_star_filter_correct,
+)
+from stele_core.selftaughtreasoner import (
+    star_finetune_proxy as star_star_finetune_proxy,
+)
+from stele_core.selftaughtreasoner import (
+    star_generate as star_star_generate,
+)
+from stele_core.selftaughtreasoner import (
+    star_loop_plan as star_star_loop_plan,
+)
+from stele_core.selftaughtreasoner import (
+    star_rationalize as star_star_rationalize,
+)
+from stele_core.selfverification import (
+    sve_forward as sve_sve_forward,
+)
+from stele_core.selfverification import (
+    sve_loop_plan as sve_sve_loop_plan,
+)
+from stele_core.selfverification import (
+    sve_mask as sve_sve_mask,
+)
+from stele_core.selfverification import (
+    sve_repredict as sve_sve_repredict,
+)
+from stele_core.selfverification import (
+    sve_score as sve_sve_score,
+)
+from stele_core.selfverification import (
+    sve_select as sve_sve_select,
+)
+from stele_core.sfams import (
+    cis_scan as sfams_cis_scan,
+)
+from stele_core.sfams import (
+    composite_importance as sfams_composite_importance,
+)
+from stele_core.shira import (
+    shr_fusion as shr_shr_fusion,
+)
+from stele_core.shira import (
+    shr_loop_plan as shr_shr_loop_plan,
+)
+from stele_core.shira import (
+    shr_mask as shr_shr_mask,
+)
+from stele_core.shira import (
+    shr_score as shr_shr_score,
+)
+from stele_core.shira import (
+    shr_switch as shr_shr_switch,
+)
+from stele_core.shira import (
+    shr_tune as shr_shr_tune,
+)
+from stele_core.simplemem import (
+    simplemem_compress as sm_simplemem_compress,
+)
+from stele_core.simplemem import (
+    simplemem_intent_scope as sm_simplemem_intent_scope,
+)
+from stele_core.simplemem import (
+    simplemem_loop_plan as sm_simplemem_loop_plan,
+)
+from stele_core.simplemem import (
+    simplemem_multiview_index as sm_simplemem_multiview_index,
+)
+from stele_core.simplemem import (
+    simplemem_synthesize as sm_simplemem_synthesize,
+)
+from stele_core.simplemem import (
+    simplemem_token_ratio as sm_simplemem_token_ratio,
+)
+from stele_core.skeletonofthought import (
+    sot_emit_skeleton as sot_sot_emit_skeleton,
+)
+from stele_core.skeletonofthought import (
+    sot_extract_points as sot_sot_extract_points,
+)
+from stele_core.skeletonofthought import (
+    sot_latency_gain as sot_sot_latency_gain,
+)
+from stele_core.skeletonofthought import (
+    sot_loop_plan as sot_sot_loop_plan,
+)
+from stele_core.skeletonofthought import (
+    sot_parallel_expand as sot_sot_parallel_expand,
+)
+from stele_core.skeletonofthought import (
+    sot_router as sot_sot_router,
+)
+from stele_core.skillcraft import (
+    skillcraft_execute_skill as sc_skillcraft_execute_skill,
+)
+from stele_core.skillcraft import (
+    skillcraft_get_skill as sc_skillcraft_get_skill,
+)
+from stele_core.skillcraft import (
+    skillcraft_list_skills as sc_skillcraft_list_skills,
+)
+from stele_core.skillcraft import (
+    skillcraft_loop_plan as sc_skillcraft_loop_plan,
+)
+from stele_core.skillcraft import (
+    skillcraft_save_skill as sc_skillcraft_save_skill,
+)
+from stele_core.skillcraft import (
+    skillcraft_token_efficiency as sc_skillcraft_token_efficiency,
+)
+from stele_core.skillcraft import (
+    skillcraft_verify_skill as sc_skillcraft_verify_skill,
+)
+from stele_core.skillflow import (
+    orchestration_action_select as sf_orchestration_action_select,
+)
+from stele_core.skillflow import (
+    phase_evolve_gate as sf_phase_evolve_gate,
+)
+from stele_core.skillflow import (
+    skill_curation_decide as sf_skill_curation_decide,
+)
+from stele_core.skillflow import (
+    skill_marginal_flow as sf_skill_marginal_flow,
+)
+from stele_core.skillflow import (
+    step_importance as sf_step_importance,
+)
+from stele_core.skillflow import (
+    ttb_residual as sf_ttb_residual,
+)
+from stele_core.skillrank import (
+    skill_prereq_expand as sr_skill_prereq_expand,
+)
+from stele_core.skillrank import (
+    skill_rank as sr_skill_rank,
+)
+from stele_core.skillroute import (
+    compose_skill_dag as sr_compose_skill_dag,
+)
+from stele_core.skillroute import (
+    decompose_task_steps as sr_decompose_task_steps,
+)
+from stele_core.skillroute import (
+    granularity_match_check as sr_granularity_match_check,
+)
+from stele_core.skillroute import (
+    retrieve_skills_for_steps as sr_retrieve_skills_for_steps,
+)
+from stele_core.skillroute import (
+    sad_feedback_loop as sr_sad_feedback_loop,
+)
+from stele_core.skillweaver import (
+    distill_skill_api as sw_distill_skill_api,
+)
+from stele_core.skillweaver import (
+    hone_skill_api as sw_hone_skill_api,
+)
+from stele_core.skillweaver import (
+    practice_skill_run as sw_practice_skill_run,
+)
+from stele_core.skillweaver import (
+    propose_skill as sw_propose_skill,
+)
+from stele_core.skillweaver import (
+    skill_library_register as sw_skill_library_register,
+)
+from stele_core.skillweaver import (
+    transfer_skill_gate as sw_transfer_skill_gate,
+)
+from stele_core.sleepgate import (
+    conflict_tag as sg_conflict_tag,
+)
+from stele_core.sleepgate import (
+    consolidate_survivors as sg_consolidate_survivors,
+)
+from stele_core.sleepgate import (
+    forget_gate_plan as sg_forget_gate_plan,
+)
+from stele_core.sleepgate import (
+    pi_depth_scan as sg_pi_depth_scan,
+)
+from stele_core.slora import (
+    slr_batch as slr_slr_batch,
+)
+from stele_core.slora import (
+    slr_loop_plan as slr_slr_loop_plan,
+)
+from stele_core.slora import (
+    slr_page as slr_slr_page,
+)
+from stele_core.slora import (
+    slr_pool as slr_slr_pool,
+)
+from stele_core.slora import (
+    slr_scale as slr_slr_scale,
+)
+from stele_core.slora import (
+    slr_score as slr_slr_score,
+)
+from stele_core.smith import (
+    smith_create_tool as sm_smith_create_tool,
+)
+from stele_core.smith import (
+    smith_curriculum_difficulty as sm_smith_curriculum_difficulty,
+)
+from stele_core.smith import (
+    smith_loop_plan as sm_smith_loop_plan,
+)
+from stele_core.smith import (
+    smith_retrieve_episode as sm_smith_retrieve_episode,
+)
+from stele_core.smith import (
+    smith_store_memory as sm_smith_store_memory,
+)
+from stele_core.smith import (
+    smith_tool_reuse_gate as sm_smith_tool_reuse_gate,
+)
+from stele_core.smoa import (
+    smo_loop_plan as smo_smo_loop_plan,
+)
+from stele_core.smoa import (
+    smo_mod as smo_smo_mod,
+)
+from stele_core.smoa import (
+    smo_rank as smo_smo_rank,
+)
+from stele_core.smoa import (
+    smo_score as smo_smo_score,
+)
+from stele_core.smoa import (
+    smo_struct as smo_smo_struct,
+)
+from stele_core.smoa import (
+    smo_train as smo_smo_train,
+)
+from stele_core.socratic import (
+    socratic_closed_loop as so_socratic_closed_loop,
+)
+from stele_core.socratic import (
+    socratic_generator_distill as so_socratic_generator_distill,
+)
+from stele_core.socratic import (
+    socratic_seed_bootstrap as so_socratic_seed_bootstrap,
+)
+from stele_core.socratic import (
+    socratic_solver_preference as so_socratic_solver_preference,
+)
+from stele_core.socratic import (
+    socratic_teacher_craft as so_socratic_teacher_craft,
+)
+from stele_core.socratic import (
+    socratic_weakness_target as so_socratic_weakness_target,
+)
+from stele_core.sodamem import (
+    cited_pack as soda_cited_pack,
+)
+from stele_core.sodamem import (
+    density_fuse as soda_density_fuse,
+)
+from stele_core.sodamem import (
+    evidence_plan as soda_evidence_plan,
+)
+from stele_core.softpromptmixtures import (
+    msp_ensemble as msp_msp_ensemble,
+)
+from stele_core.softpromptmixtures import (
+    msp_loop_plan as msp_msp_loop_plan,
+)
+from stele_core.softpromptmixtures import (
+    msp_mix as msp_msp_mix,
+)
+from stele_core.softpromptmixtures import (
+    msp_probe as msp_msp_probe,
+)
+from stele_core.softpromptmixtures import (
+    msp_soft as msp_msp_soft,
+)
+from stele_core.softpromptmixtures import (
+    msp_underest as msp_msp_underest,
+)
+from stele_core.softprompttransfer import (
+    spot_embed as spot_spot_embed,
+)
+from stele_core.softprompttransfer import (
+    spot_init as spot_spot_init,
+)
+from stele_core.softprompttransfer import (
+    spot_loop_plan as spot_spot_loop_plan,
+)
+from stele_core.softprompttransfer import (
+    spot_retrieve as spot_spot_retrieve,
+)
+from stele_core.softprompttransfer import (
+    spot_source as spot_spot_source,
+)
+from stele_core.softprompttransfer import (
+    spot_vs_tune as spot_spot_vs_tune,
+)
+from stele_core.spiral import (
+    spiral_baseline_ema as sp_spiral_baseline_ema,
+)
+from stele_core.spiral import (
+    spiral_multi_game_plan as sp_spiral_multi_game_plan,
+)
+from stele_core.spiral import (
+    spiral_opponent_strength as sp_spiral_opponent_strength,
+)
+from stele_core.spiral import (
+    spiral_rae_advantage as sp_spiral_rae_advantage,
+)
+from stele_core.spiral import (
+    spiral_self_play_match as sp_spiral_self_play_match,
+)
+from stele_core.spiral import (
+    spiral_transfer_pattern as sp_spiral_transfer_pattern,
+)
+from stele_core.stale import (
+    ipa_gap_scan as stale_ipa_gap_scan,
+)
+from stele_core.stale import (
+    premise_resistance as stale_premise_resistance,
+)
+from stele_core.stale import (
+    related_slot_scan as stale_related_slot_scan,
+)
+from stele_core.stale import (
+    state_resolution as stale_state_resolution,
+)
+from stele_core.stale import (
+    verify_transition as stale_verify_transition,
+)
+from stele_core.stepback import (
+    sb_abstract as sb_sb_abstract,
+)
+from stele_core.stepback import (
+    sb_detail_trap as sb_sb_detail_trap,
+)
+from stele_core.stepback import (
+    sb_loop_plan as sb_sb_loop_plan,
+)
+from stele_core.stepback import (
+    sb_path as sb_sb_path,
+)
+from stele_core.stepback import (
+    sb_principle as sb_sb_principle,
+)
+from stele_core.stepback import (
+    sb_reason as sb_sb_reason,
+)
 from stele_core.store import SteleStore, require_ts
+from stele_core.strata import (
+    is_current_fact,
+    supersession_winners,
+)
+from stele_core.strata import (
+    stale_fact_scan as strata_stale_fact_scan,
+)
+from stele_core.superlora import (
+    spr_factor as spr_spr_factor,
+)
+from stele_core.superlora import (
+    spr_fold as spr_spr_fold,
+)
+from stele_core.superlora import (
+    spr_group as spr_spr_group,
+)
+from stele_core.superlora import (
+    spr_loop_plan as spr_spr_loop_plan,
+)
+from stele_core.superlora import (
+    spr_score as spr_spr_score,
+)
+from stele_core.superlora import (
+    spr_unify as spr_spr_unify,
+)
+from stele_core.svft import (
+    svf_geom as svf_svf_geom,
+)
+from stele_core.svft import (
+    svf_loop_plan as svf_svf_loop_plan,
+)
+from stele_core.svft import (
+    svf_score as svf_svf_score,
+)
+from stele_core.svft import (
+    svf_sparse as svf_svf_sparse,
+)
+from stele_core.svft import (
+    svf_svd as svf_svf_svd,
+)
+from stele_core.svft import (
+    svf_train as svf_svf_train,
+)
+from stele_core.switchlora import (
+    swl_alloc as swl_swl_alloc,
+)
+from stele_core.switchlora import (
+    swl_full as swl_swl_full,
+)
+from stele_core.switchlora import (
+    swl_loop_plan as swl_swl_loop_plan,
+)
+from stele_core.switchlora import (
+    swl_score as swl_swl_score,
+)
+from stele_core.switchlora import (
+    swl_switch as swl_swl_switch,
+)
+from stele_core.switchlora import (
+    swl_train as swl_swl_train,
+)
+from stele_core.system2attention import (
+    s2a_attend as s2a_s2a_attend,
+)
+from stele_core.system2attention import (
+    s2a_factuality as s2a_s2a_factuality,
+)
+from stele_core.system2attention import (
+    s2a_loop_plan as s2a_s2a_loop_plan,
+)
+from stele_core.system2attention import (
+    s2a_regenerate as s2a_s2a_regenerate,
+)
+from stele_core.system2attention import (
+    s2a_respond as s2a_s2a_respond,
+)
+from stele_core.system2attention import (
+    s2a_sycophancy as s2a_s2a_sycophancy,
+)
+from stele_core.tabcot import (
+    tabcot_extract as tabcot_tabcot_extract,
+)
+from stele_core.tabcot import (
+    tabcot_header as tabcot_tabcot_header,
+)
+from stele_core.tabcot import (
+    tabcot_infer2d as tabcot_tabcot_infer2d,
+)
+from stele_core.tabcot import (
+    tabcot_loop_plan as tabcot_tabcot_loop_plan,
+)
+from stele_core.tabcot import (
+    tabcot_row as tabcot_tabcot_row,
+)
+from stele_core.tabcot import (
+    tabcot_zeroshot as tabcot_tabcot_zeroshot,
+)
+from stele_core.tarl import (
+    TARL_ACTIONS,
+)
+from stele_core.tarl import (
+    classify_update as tarl_classify_update,
+)
+from stele_core.tarl import (
+    ledger_view as tarl_ledger_view,
+)
+from stele_core.tempera import (
+    tmpa_act as tmpa_tmpa_act,
+)
+from stele_core.tempera import (
+    tmpa_adapt as tmpa_tmpa_adapt,
+)
+from stele_core.tempera import (
+    tmpa_efficiency as tmpa_tmpa_efficiency,
+)
+from stele_core.tempera import (
+    tmpa_loop_plan as tmpa_tmpa_loop_plan,
+)
+from stele_core.tempera import (
+    tmpa_reward as tmpa_tmpa_reward,
+)
+from stele_core.tempera import (
+    tmpa_state as tmpa_tmpa_state,
+)
+from stele_core.tenslora import (
+    tnl_budget as tnl_tnl_budget,
+)
+from stele_core.tenslora import (
+    tnl_loop_plan as tnl_tnl_loop_plan,
+)
+from stele_core.tenslora import (
+    tnl_mode as tnl_tnl_mode,
+)
+from stele_core.tenslora import (
+    tnl_score as tnl_tnl_score,
+)
+from stele_core.tenslora import (
+    tnl_stack as tnl_tnl_stack,
+)
+from stele_core.tenslora import (
+    tnl_tucker as tnl_tnl_tucker,
+)
+from stele_core.tera import (
+    ter_freeze as ter_ter_freeze,
+)
+from stele_core.tera import (
+    ter_highrank as ter_ter_highrank,
+)
+from stele_core.tera import (
+    ter_loop_plan as ter_ter_loop_plan,
+)
+from stele_core.tera import (
+    ter_scale as ter_ter_scale,
+)
+from stele_core.tera import (
+    ter_score as ter_ter_score,
+)
+from stele_core.tera import (
+    ter_tucker as ter_ter_tucker,
+)
+from stele_core.tgms import (
+    claim_verify as tgms_claim_verify,
+)
+from stele_core.tgms import (
+    operator_cost_estimate as tgms_operator_cost_estimate,
+)
+from stele_core.tgms import (
+    plan_static_verify as tgms_plan_static_verify,
+)
+from stele_core.tgms import (
+    result_digest as tgms_result_digest,
+)
+from stele_core.tgms import (
+    summary_quarantine_scan as tgms_summary_quarantine_scan,
+)
+from stele_core.thinkongraph import (
+    tog_answer_from_paths as tog_tog_answer_from_paths,
+)
+from stele_core.thinkongraph import (
+    tog_beam_prune as tog_tog_beam_prune,
+)
+from stele_core.thinkongraph import (
+    tog_explore_neighbors as tog_tog_explore_neighbors,
+)
+from stele_core.thinkongraph import (
+    tog_init_entity as tog_tog_init_entity,
+)
+from stele_core.thinkongraph import (
+    tog_loop_plan as tog_tog_loop_plan,
+)
+from stele_core.thinkongraph import (
+    tog_path_score as tog_tog_path_score,
+)
+from stele_core.thoughtpropagation import (
+    tprop_amend as tprop_tprop_amend,
+)
+from stele_core.thoughtpropagation import (
+    tprop_compat as tprop_tprop_compat,
+)
+from stele_core.thoughtpropagation import (
+    tprop_loop_plan as tprop_tprop_loop_plan,
+)
+from stele_core.thoughtpropagation import (
+    tprop_propose as tprop_tprop_propose,
+)
+from stele_core.thoughtpropagation import (
+    tprop_reuse as tprop_tprop_reuse,
+)
+from stele_core.thoughtpropagation import (
+    tprop_solve as tprop_tprop_solve,
+)
+from stele_core.threadofthought import (
+    thot_analyze as thot_thot_analyze,
+)
+from stele_core.threadofthought import (
+    thot_loop_plan as thot_thot_loop_plan,
+)
+from stele_core.threadofthought import (
+    thot_plug as thot_thot_plug,
+)
+from stele_core.threadofthought import (
+    thot_segment as thot_thot_segment,
+)
+from stele_core.threadofthought import (
+    thot_select as thot_thot_select,
+)
+from stele_core.threadofthought import (
+    thot_synthesize as thot_thot_synthesize,
+)
+from stele_core.tiedlora import (
+    tld_frac as tld_tld_frac,
+)
+from stele_core.tiedlora import (
+    tld_loop_plan as tld_tld_loop_plan,
+)
+from stele_core.tiedlora import (
+    tld_scale as tld_tld_scale,
+)
+from stele_core.tiedlora import (
+    tld_score as tld_tld_score,
+)
+from stele_core.tiedlora import (
+    tld_select as tld_tld_select,
+)
+from stele_core.tiedlora import (
+    tld_tie as tld_tld_tie,
+)
+from stele_core.tiedlora import (
+    tlo_base as tlo_tlo_base,
+)
+from stele_core.tiedlora import (
+    tlo_efficient as tlo_tlo_efficient,
+)
+from stele_core.tiedlora import (
+    tlo_loop_plan as tlo_tlo_loop_plan,
+)
+from stele_core.tiedlora import (
+    tlo_score as tlo_tlo_score,
+)
+from stele_core.tiedlora import (
+    tlo_tie as tlo_tlo_tie,
+)
+from stele_core.tiedlora import (
+    tlo_train as tlo_tlo_train,
+)
+from stele_core.tiermem import (
+    escalate as tiermem_escalate,
+)
+from stele_core.tiermem import (
+    get_raw_page as tiermem_get_raw_page,
+)
+from stele_core.tiermem import (
+    put_raw_page as tiermem_put_raw_page,
+)
+from stele_core.tiermem import (
+    sufficiency_gate as tiermem_sufficiency_gate,
+)
+from stele_core.tiermem import (
+    summary_entry_template as tiermem_summary_entry_template,
+)
+from stele_core.tmanm import (
+    act_authority_gate as tma_act_authority_gate,
+)
+from stele_core.tmanm import (
+    launder_scan as tma_launder_scan,
+)
+from stele_core.tmanm import (
+    origin_bind as tma_origin_bind,
+)
+from stele_core.tmanm import (
+    propagate_origin as tma_propagate_origin,
+)
+from stele_core.toki_ops import (
+    anomaly_scan as toki_anomaly_scan,
+)
+from stele_core.toki_ops import (
+    classify_write_operator as toki_classify_write_operator,
+)
+from stele_core.toki_ops import (
+    tip_for_conflict_key as toki_tip_for_conflict_key,
+)
+from stele_core.toolformer import (
+    tf_api_candidate as tf_tf_api_candidate,
+)
+from stele_core.toolformer import (
+    tf_demo_apis as tf_tf_demo_apis,
+)
+from stele_core.toolformer import (
+    tf_execute_proxy as tf_tf_execute_proxy,
+)
+from stele_core.toolformer import (
+    tf_filter_call as tf_tf_filter_call,
+)
+from stele_core.toolformer import (
+    tf_incorporate_result as tf_tf_incorporate_result,
+)
+from stele_core.toolformer import (
+    tf_loop_plan as tf_tf_loop_plan,
+)
+from stele_core.trace2skill import (
+    collect_trajectory_label as t2s_collect_trajectory_label,
+)
+from stele_core.trace2skill import (
+    hierarchical_merge_patches as t2s_hierarchical_merge_patches,
+)
+from stele_core.trace2skill import (
+    parallel_patch_pool as t2s_parallel_patch_pool,
+)
+from stele_core.trace2skill import (
+    prefer_parallel_over_sequential as t2s_prefer_parallel_over_sequential,
+)
+from stele_core.trace2skill import (
+    propose_trajectory_patch as t2s_propose_trajectory_patch,
+)
+from stele_core.trace2skill import (
+    skill_mode_gate as t2s_skill_mode_gate,
+)
+from stele_core.treeofthoughts import (
+    tot_backtrack as tot_tot_backtrack,
+)
+from stele_core.treeofthoughts import (
+    tot_evaluate as tot_tot_evaluate,
+)
+from stele_core.treeofthoughts import (
+    tot_expand as tot_tot_expand,
+)
+from stele_core.treeofthoughts import (
+    tot_loop_plan as tot_tot_loop_plan,
+)
+from stele_core.treeofthoughts import (
+    tot_propose as tot_tot_propose,
+)
+from stele_core.treeofthoughts import (
+    tot_select_best as tot_tot_select_best,
+)
+from stele_core.unilora import (
+    ulo_iso as ulo_ulo_iso,
+)
+from stele_core.unilora import (
+    ulo_loop_plan as ulo_ulo_loop_plan,
+)
+from stele_core.unilora import (
+    ulo_one as ulo_ulo_one,
+)
+from stele_core.unilora import (
+    ulo_score as ulo_ulo_score,
+)
+from stele_core.unilora import (
+    ulo_space as ulo_ulo_space,
+)
+from stele_core.unilora import (
+    ulo_vec as ulo_ulo_vec,
+)
+from stele_core.vblora import (
+    vbl_bank as vbl_vbl_bank,
+)
+from stele_core.vblora import (
+    vbl_compose as vbl_vbl_compose,
+)
+from stele_core.vblora import (
+    vbl_extreme as vbl_vbl_extreme,
+)
+from stele_core.vblora import (
+    vbl_loop_plan as vbl_vbl_loop_plan,
+)
+from stele_core.vblora import (
+    vbl_score as vbl_vbl_score,
+)
+from stele_core.vblora import (
+    vbl_topk as vbl_vbl_topk,
+)
+from stele_core.vera import (
+    vra_loop_plan as vra_vra_loop_plan,
+)
+from stele_core.vera import (
+    vra_scale as vra_vra_scale,
+)
+from stele_core.vera import (
+    vra_score as vra_vra_score,
+)
+from stele_core.vera import (
+    vra_share as vra_vra_share,
+)
+from stele_core.vera import (
+    vra_tiny as vra_vra_tiny,
+)
+from stele_core.vera import (
+    vra_train as vra_vra_train,
+)
+from stele_core.verifyandedit import (
+    ved_edit as ved_ved_edit,
+)
+from stele_core.verifyandedit import (
+    ved_knowledge as ved_ved_knowledge,
+)
+from stele_core.verifyandedit import (
+    ved_loop_plan as ved_ved_loop_plan,
+)
+from stele_core.verifyandedit import (
+    ved_predict as ved_ved_predict,
+)
+from stele_core.verifyandedit import (
+    ved_search as ved_ved_search,
+)
+from stele_core.verifyandedit import (
+    ved_uncertain as ved_ved_uncertain,
+)
+from stele_core.versioning import (
+    checkout_view as ver_checkout_view,
+)
+from stele_core.versioning import (
+    commit_view as ver_commit_view,
+)
+from stele_core.versioning import (
+    copyability_gate as ver_copyability_gate,
+)
+from stele_core.versioning import (
+    diff_commits as ver_diff_commits,
+)
+from stele_core.versioning import (
+    get_read_head as ver_get_read_head,
+)
+from stele_core.versioning import (
+    list_commits as ver_list_commits,
+)
+from stele_core.versioning import (
+    merge_refs as ver_merge_refs,
+)
+from stele_core.versioning import (
+    set_read_head as ver_set_read_head,
+)
+from stele_core.versioning import (
+    tag_commit as ver_tag_commit,
+)
+from stele_core.versioning import (
+    verify_commit_chain as ver_verify_commit_chain,
+)
+from stele_core.vikingmem import (
+    viking_extract_event as vk_viking_extract_event,
+)
+from stele_core.vikingmem import (
+    viking_loop_plan as vk_viking_loop_plan,
+)
+from stele_core.vikingmem import (
+    viking_rerank as vk_viking_rerank,
+)
+from stele_core.vikingmem import (
+    viking_time_weighted_recall as vk_viking_time_weighted_recall,
+)
+from stele_core.vikingmem import (
+    viking_timeline_compress as vk_viking_timeline_compress,
+)
+from stele_core.vikingmem import (
+    viking_update_entity as vk_viking_update_entity,
+)
+from stele_core.voyager import (
+    voy_compose as voy_voy_compose,
+)
+from stele_core.voyager import (
+    voy_curriculum as voy_voy_curriculum,
+)
+from stele_core.voyager import (
+    voy_loop_plan as voy_voy_loop_plan,
+)
+from stele_core.voyager import (
+    voy_self_verify as voy_voy_self_verify,
+)
+from stele_core.voyager import (
+    voy_skill_retrieve as voy_voy_skill_retrieve,
+)
+from stele_core.voyager import (
+    voy_skill_store as voy_voy_skill_store,
+)
+from stele_core.waveft import (
+    wft_granular as wft_wft_granular,
+)
+from stele_core.waveft import (
+    wft_idwt as wft_wft_idwt,
+)
+from stele_core.waveft import (
+    wft_loop_plan as wft_wft_loop_plan,
+)
+from stele_core.waveft import (
+    wft_score as wft_wft_score,
+)
+from stele_core.waveft import (
+    wft_sparse as wft_wft_sparse,
+)
+from stele_core.waveft import (
+    wft_wave as wft_wft_wave,
+)
+from stele_core.worth import (
+    low_worth_scan as worth_low_worth_scan,
+)
+from stele_core.worth import (
+    memory_worth as worth_memory_worth,
+)
+from stele_core.worth import (
+    passes_min_worth,
+)
+from stele_core.xmemory import (
+    build_themes_from_entries as xm_build_themes_from_entries,
+)
+from stele_core.xmemory import (
+    split_merge_plan as xm_split_merge_plan,
+)
+from stele_core.xmemory import (
+    theme_attach as xm_theme_attach,
+)
+from stele_core.xmemory import (
+    top_down_pack as xm_top_down_pack,
+)
+from stele_core.zep import (
+    zep_add_episode as zp_zep_add_episode,
+)
+from stele_core.zep import (
+    zep_bitemporal as zp_zep_bitemporal,
+)
+from stele_core.zep import (
+    zep_cross_session as zp_zep_cross_session,
+)
+from stele_core.zep import (
+    zep_link_entities as zp_zep_link_entities,
+)
+from stele_core.zep import (
+    zep_loop_plan as zp_zep_loop_plan,
+)
+from stele_core.zep import (
+    zep_synthesize as zp_zep_synthesize,
+)
 
 
 def _title_sim(a: str, b: str) -> float:
@@ -2933,16 +6155,20 @@ class Stele:
             raise SchemaError("delete requires entry_id or subject_id")
         removed: list[str] = []
         with self.store:
-            if entry_id:
-                if self.store.delete_entry_file(entry_id, actor=actor, ts=ts, reason=reason):
-                    removed.append(entry_id)
+            if (
+                entry_id
+                and self.store.delete_entry_file(entry_id, actor=actor, ts=ts, reason=reason)
+            ):
+                removed.append(entry_id)
             if subject_id:
                 for e in list(self.store.iter_entries()):
-                    if e["provenance"].get("subject_id") == subject_id:
-                        if self.store.delete_entry_file(
+                    if (
+                        e["provenance"].get("subject_id") == subject_id
+                        and self.store.delete_entry_file(
                             e["id"], actor=actor, ts=ts, reason=reason
-                        ):
-                            removed.append(e["id"])
+                        )
+                    ):
+                        removed.append(e["id"])
             self.store.drop_indexes()
         self.retriever.rebuild(lexical_only=True)
         return {"removed": sorted(set(removed))}
@@ -3139,8 +6365,8 @@ class Stele:
         if principal_scopes is not None:
             # GateMem-shaped access control: explicit allowlist; no implicit universal.
             allow_scopes = {str(s).strip() for s in principal_scopes if s and str(s).strip()}
-            for s in allow_scopes:
-                validate_scope(s)
+            for allowed_scope in allow_scopes:
+                validate_scope(allowed_scope)
             slices = [s for s in slices if str(s.get("scope") or "") in allow_scopes]
         if withhold_injection_suspects:
             # MAPLE-Guard retrieval gate proxy — deterministic marker filter.
@@ -3175,8 +6401,8 @@ class Stele:
         ) else []
         if now_ts:
             for s in slices:
-                eid = s.get("id")
-                entry = self.store.read_entry(str(eid)) if eid else None
+                slice_id = s.get("id")
+                entry = self.store.read_entry(str(slice_id)) if slice_id else None
                 if entry:
                     s["lifecycle_tier"] = lifecycle_tier(
                         entry, now=now_ts, hot_days=hot_days, warm_days=warm_days
@@ -3289,7 +6515,7 @@ class Stele:
                 raise SchemaError("memory_roles filter requires at least one role")
             bad = allow_roles - {"evidence", "claim", "decision"}
             if bad:
-                raise SchemaError(f"memory_roles must be subset of evidence|claim|decision")
+                raise SchemaError("memory_roles must be subset of evidence|claim|decision")
             slices = [s for s in slices if s.get("memory_role") in allow_roles]
         # MemStrata-shaped supersession filter (skip under version Select —
         # pinned snapshot intentionally includes later-superseded facts)
@@ -3678,7 +6904,7 @@ class Stele:
                 key = tuple(sorted([e["id"], oid]))
                 if key in seen:
                     continue
-                seen.add(key)  # type: ignore[arg-type]
+                seen.add(key)
                 other = self.store.read_entry(oid)
                 pairs.append(
                     {
@@ -6158,7 +9384,7 @@ class Stele:
             e = by_id.get(str(sid))
             if e is None:
                 continue
-            auth = e.get("authority") if isinstance(e.get("authority"), Mapping) else {}
+            auth = raw_authority if isinstance(raw_authority := e.get("authority"), Mapping) else {}
             origin = str(auth.get("origin") or "")
             if not origin:
                 src = str((e.get("provenance") or {}).get("source") or "")
@@ -6502,6 +9728,7 @@ class Stele:
         quarantine_channels: Sequence[str] | None = None,
     ) -> dict[str, Any]:
         """MPBench source isolation admit/quarantine/reject."""
+        entry: Mapping[str, Any] | None
         if candidate is not None:
             entry = candidate
         elif entry_id:
@@ -6642,6 +9869,7 @@ class Stele:
         entry_id: str | None = None,
     ) -> dict[str, Any]:
         """Reject ephemeral intelligence candidates from persistence."""
+        entry: Mapping[str, Any] | None
         if candidate is not None:
             entry = candidate
         elif entry_id:
@@ -6666,6 +9894,7 @@ class Stele:
         entry_id: str | None = None,
     ) -> dict[str, Any]:
         """MAPLE-shaped write Reject for credentials."""
+        entry: Mapping[str, Any] | None
         if candidate is not None:
             entry = candidate
         elif entry_id:
@@ -7192,7 +10421,7 @@ class Stele:
     def foresight_filter(self, *, now: str | None = None) -> dict[str, Any]:
         """EverMemOS foresight validity filter."""
         consol = ev_consolidate_memscenes(list(self.store.iter_entries()))
-        return ev_foresight_filter(consol["cells"], now=now or self._now)
+        return ev_foresight_filter(consol["cells"], now=require_ts(now or self._now))
 
     def reconstructive_recollect(
         self,
@@ -7232,7 +10461,7 @@ class Stele:
         e = self.store.read_entry(entry_id)
         if e is None:
             raise KeyError(entry_id)
-        return mo_classify_memory_tier(e, now=self._now)
+        return mo_classify_memory_tier(e, now=require_ts(self._now))
 
     def heat_score(
         self,
@@ -7298,7 +10527,7 @@ class Stele:
         return mo_hierarchical_retrieve(
             list(self.store.iter_entries()),
             query=query,
-            now=self._now,
+            now=require_ts(self._now),
             top_m_segments=top_m_segments,
             top_k_pages=top_k_pages,
         )
@@ -17037,10 +20266,8 @@ class Stele:
                 line = line.strip()
                 if not line:
                     continue
-                try:
+                with contextlib.suppress(Exception):
                     journal.append(_loads(line))
-                except Exception:  # noqa: BLE001
-                    continue
         return toki_anomaly_scan(
             list(self.store.iter_entries()), journal_rows=journal, limit=limit
         )
@@ -17385,9 +20612,7 @@ class Stele:
         id_set = {str(i) for i in (entry_ids or []) if i}
         remaining: list[str] = []
         for e in self.store.iter_entries():
-            if subject_id and str((e.get("provenance") or {}).get("subject_id") or "") == subject_id:
-                remaining.append(e["id"])
-            elif e["id"] in id_set:
+            if subject_id and str((e.get("provenance") or {}).get("subject_id") or "") == subject_id or e["id"] in id_set:
                 remaining.append(e["id"])
 
         leaks: list[dict[str, Any]] = []

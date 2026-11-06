@@ -14,7 +14,7 @@ from typing import Any
 
 from stele_core.schema import SchemaError, canonical_dumps
 
-_TOKEN = re.compile(r"[a-z0-9_]{2,}", re.I)
+_TOKEN = re.compile(r"[a-z0-9_]{2,}", re.IGNORECASE)
 SPE_STEPS = ("search", "predict", "evolve")
 REFINE_ACTIONS = frozenset({"retrieve", "prune", "organize", "noop"})
 

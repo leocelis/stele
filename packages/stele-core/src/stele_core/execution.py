@@ -211,7 +211,7 @@ def authority_score(entry: Mapping[str, Any]) -> dict[str, Any]:
     if agent in {"migration", "oracle"}:
         score = max(score, 0.75)
         reasons.append(f"agent={agent}")
-    if source.startswith("oracle:") or source.startswith("ci:"):
+    if source.startswith(("oracle:", "ci:")):
         score = max(score, 0.85)
         reasons.append("trusted_source_prefix")
     elif source.startswith("session:"):

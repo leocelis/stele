@@ -9,12 +9,11 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from typing import Any
 
-from stele_core.index.lexical import tokenize
 from stele_core.schema import SchemaError
 
 
 def _ts(e: Mapping[str, Any]) -> str:
-    t = e.get("temporal") if isinstance(e.get("temporal"), Mapping) else {}
+    t = raw_temporal if isinstance(raw_temporal := e.get("temporal"), Mapping) else {}
     return str(
         t.get("valid_from")
         or (e.get("provenance") or {}).get("written_at")

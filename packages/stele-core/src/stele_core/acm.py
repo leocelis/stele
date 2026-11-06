@@ -42,9 +42,11 @@ def anticipate_prefetch(
             if str(link.get("kind") or "") != "entry":
                 continue
             ref = str(link.get("ref") or "").strip()
-            if ref and ref not in hit_ids and ref in by_id:
-                if by_id[ref].get("state") == "promoted":
-                    scored[ref] = scored.get(ref, 0) + 1.0
+            if (
+                ref and ref not in hit_ids and ref in by_id
+                and by_id[ref].get("state") == "promoted"
+            ):
+                scored[ref] = scored.get(ref, 0) + 1.0
         ck = str(entry.get("conflict_key") or "")
         if ck:
             for other in all_entries:

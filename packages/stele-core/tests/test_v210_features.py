@@ -5,8 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-
-from stele_core import Stele, SchemaError, pam_cava_shaped_report
+from stele_core import SchemaError, Stele, pam_cava_shaped_report
 
 TS = "2026-08-21T00:00:00Z"
 EV = [

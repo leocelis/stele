@@ -114,7 +114,7 @@ def profile_expand(
         for e in entries
         if e.get("state") in {"promoted", "contested"}
     ]
-    scored: list[tuple[float, dict[str, Any]]] = []
+    scored: list[tuple[float, Mapping[str, Any]]] = []
     for e in pool:
         blob = f"{e.get('title')}\n{e.get('body')}"
         etok = set(tokenize(blob))

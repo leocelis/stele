@@ -34,10 +34,10 @@ def supersession_winners(
             seen: set[str] = set()
             while cur and cur not in seen:
                 seen.add(cur)
-                e = by_id.get(cur)
-                if e is None:
+                node = by_id.get(cur)
+                if node is None:
                     break
-                nxt = (e.get("temporal") or {}).get("superseded_by")
+                nxt = (node.get("temporal") or {}).get("superseded_by")
                 if not nxt:
                     tips.append(cur)
                     break

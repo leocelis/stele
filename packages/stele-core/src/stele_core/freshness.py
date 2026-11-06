@@ -8,7 +8,7 @@ which memory is fresher.
 from __future__ import annotations
 
 import re
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Mapping, Sequence
 from typing import Any
 
 from stele_core.index.lexical import tokenize
@@ -32,7 +32,7 @@ def extract_version_markers(entry: Mapping[str, Any]) -> dict[str, Any]:
         dates.append(last_verified)
     if valid_from:
         dates.append(valid_from)
-    dates = sorted(set(d for d in dates if d))
+    dates = sorted({d for d in dates if d})
     max_serial = max(serials) if serials else None
     max_ts = max(dates) if dates else None
     return {
@@ -131,7 +131,7 @@ def assemble_current(
     if not q:
         raise SchemaError("query is required")
     qtok = set(tokenize(q))
-    scored: list[tuple[float, dict[str, Any]]] = []
+    scored: list[tuple[float, Mapping[str, Any]]] = []
     for e in entries:
         if e.get("state") not in {"promoted", "contested"}:
             continue
@@ -143,7 +143,7 @@ def assemble_current(
     scored.sort(key=lambda x: (-x[0], str(x[1].get("id"))))
     top = [e for _, e in scored[: max(limit * 3, 5)]]
 
-    groups: dict[str, list[dict[str, Any]]] = {}
+    groups: dict[str, list[Mapping[str, Any]]] = {}
     for e in top:
         ck = str(e.get("conflict_key") or "") or f"id:{e.get('id')}"
         groups.setdefault(ck, []).append(e)

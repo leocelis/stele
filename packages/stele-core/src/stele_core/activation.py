@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from typing import Any
 
 from stele_core.graph import _entry_links
@@ -10,7 +10,7 @@ from stele_core.lifecycle import age_days
 
 
 def retention_score(
-    entry: dict[str, Any],
+    entry: Mapping[str, Any],
     *,
     now: str,
     half_life_days: float = 30.0,

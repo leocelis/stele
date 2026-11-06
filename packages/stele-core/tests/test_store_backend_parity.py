@@ -8,10 +8,9 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Iterator
 from pathlib import Path
-from typing import Any
+from typing import Any, Self
 
 import pytest
-
 from stele_core.integrity import (
     journal_digest,
     replay_consistency,
@@ -48,7 +47,7 @@ class _MemoryStore:
     backend = "memory"
 
     def __init__(self, store_id: str = "mem_parity") -> None:
-        self.root = Path("/tmp/stele-memory-unused")  # noqa: S108 — unused sentinel
+        self.root = Path("/tmp/stele-memory-unused")
         self.index_dir = self.root / "index"
         self.attachments = self.root / "attachments"
         self._store_id = store_id
@@ -65,7 +64,7 @@ class _MemoryStore:
     def release(self) -> None:
         return None
 
-    def __enter__(self) -> _MemoryStore:
+    def __enter__(self) -> Self:
         self.acquire()
         return self
 

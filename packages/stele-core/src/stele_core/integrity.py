@@ -8,6 +8,7 @@ only when the store exposes ``entries_q`` / ``entries_p`` Path dirs.
 from __future__ import annotations
 
 import hashlib
+from collections.abc import Iterator
 from typing import Any, Protocol, runtime_checkable
 
 from stele_core.schema import SchemaError, canonical_dumps, canonical_loads, validate_entry
@@ -20,9 +21,9 @@ class StoreLike(Protocol):
     @property
     def store_id(self) -> str: ...
 
-    def iter_entries(self, *, states: Any = None): ...
+    def iter_entries(self, *, states: Any = None) -> Iterator[dict[str, Any]]: ...
 
-    def iter_journal(self, *, entry_id: str | None = None): ...
+    def iter_journal(self, *, entry_id: str | None = None) -> Iterator[dict[str, Any]]: ...
 
     def read_entry(self, entry_id: str) -> dict[str, Any] | None: ...
 

@@ -6,7 +6,6 @@ import ast
 from pathlib import Path
 
 import pytest
-
 from helpers import TS, base_entry, oracle_evidence
 from stele_core import SchemaError, Stele
 
@@ -26,9 +25,11 @@ def test_full_lifecycle_all_constraints(tmp_path: Path) -> None:
                 for alias in node.names:
                     if alias.name.split(".")[0] in FORBIDDEN:
                         hits.append(alias.name)
-            elif isinstance(node, ast.ImportFrom) and node.module:
-                if node.module.split(".")[0] in FORBIDDEN:
-                    hits.append(node.module)
+            elif (
+                isinstance(node, ast.ImportFrom) and node.module
+                and node.module.split(".")[0] in FORBIDDEN
+            ):
+                hits.append(node.module)
     assert hits == []
 
     added = stele.add(

@@ -102,7 +102,7 @@ def stale_propagation_scan(
     """
     Flag same conflict_key with an older tip still promoted alongside a newer tip.
     """
-    by_ck: dict[str, list[dict[str, Any]]] = {}
+    by_ck: dict[str, list[Mapping[str, Any]]] = {}
     for e in entries:
         ck = str(e.get("conflict_key") or "")
         if not ck or e.get("state") not in {"promoted", "contested"}:

@@ -21,7 +21,7 @@ from stele_core.schema import SchemaError, canonical_dumps
 
 FUNCTIONAL_ROLES = frozenset({"semantic", "episodic", "procedural", "unknown"})
 
-_TOKEN = re.compile(r"[a-z0-9_]{2,}", re.I)
+_TOKEN = re.compile(r"[a-z0-9_]{2,}", re.IGNORECASE)
 
 _LAYER_ROLE: dict[str, str] = {
     "decision": "semantic",
@@ -48,7 +48,7 @@ def ept_classify(entry: Mapping[str, Any]) -> dict[str, Any]:
     # Property = content layer / conflict key stem
     ck = str(entry.get("conflict_key") or "").strip()
     prop = ck.split(":")[-1] if ck else str(entry.get("layer") or "fact")
-    temporal = entry.get("temporal") if isinstance(entry.get("temporal"), Mapping) else {}
+    temporal = raw_temporal if isinstance(raw_temporal := entry.get("temporal"), Mapping) else {}
     t = temporal.get("valid_from") or entry.get("created_at")
     return {
         "id": entry.get("id"),
@@ -73,9 +73,11 @@ def functional_role_assign(entry: Mapping[str, Any]) -> dict[str, Any]:
     body = f"{entry.get('title') or ''}\n{entry.get('body') or ''}".lower()
     if "procedure" in body or "workflow" in body or "step 1" in body:
         role = "procedural"
-    elif "on " in body and any(m in body for m in ("monday", "yesterday", "at ")):
-        if role == "unknown":
-            role = "episodic"
+    elif (
+        "on " in body and any(m in body for m in ("monday", "yesterday", "at "))
+        and role == "unknown"
+    ):
+        role = "episodic"
     return {
         "id": entry.get("id"),
         "functional_role": role,

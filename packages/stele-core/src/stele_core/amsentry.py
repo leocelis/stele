@@ -100,7 +100,7 @@ def retrieval_screen(
     blocked: list[dict[str, Any]] = []
     ctx = str(context or "").lower()
     for h in hits:
-        auth = h.get("authority") if isinstance(h.get("authority"), Mapping) else {}
+        auth = raw_authority if isinstance(raw_authority := h.get("authority"), Mapping) else {}
         origin = str(auth.get("origin") or "").lower()
         act = str(auth.get("act_class") or "").lower()
         text = f"{h.get('title') or ''}\n{h.get('body') or ''}".lower()
@@ -108,24 +108,21 @@ def retrieval_screen(
         reason = None
         if markers:
             reason = "directive_markers"
-        elif block_untrusted_act and (
-            origin == "untrusted_external" or act == "none"
-        ):
+        elif (
+            block_untrusted_act
+            and (origin == "untrusted_external" or act == "none")
             # Still allow inform-only surface if act_class inform and no markers
-            if act == "none" or origin == "untrusted_external":
-                # If body pushes consequential patterns relative to context
-                if markers or any(
+            and (act == "none" or origin == "untrusted_external")
+            # If body pushes consequential patterns relative to context
+            and (
+                markers
+                or any(
                     x in text
-                    for x in (
-                        "pay ",
-                        "wire ",
-                        "send to ",
-                        "exfil",
-                        "bcc ",
-                        "password",
-                    )
-                ):
-                    reason = "untrusted_actionable"
+                    for x in ("pay ", "wire ", "send to ", "exfil", "bcc ", "password")
+                )
+            )
+        ):
+            reason = "untrusted_actionable"
         if reason:
             blocked.append(
                 {

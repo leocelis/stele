@@ -34,7 +34,7 @@ def classify_memory_tier(
         raise SchemaError("entry mapping is required")
     layer = str(entry.get("layer") or "")
     body = f"{entry.get('title') or ''}\n{entry.get('body') or ''}".lower()
-    temporal = entry.get("temporal") if isinstance(entry.get("temporal"), Mapping) else {}
+    temporal = raw_temporal if isinstance(raw_temporal := entry.get("temporal"), Mapping) else {}
     t = str(temporal.get("valid_from") or entry.get("created_at") or "")
     if any(w in body for w in ("prefer", "i am", "personality", "always like")):
         tier = "lpm"
@@ -249,9 +249,6 @@ def hierarchical_retrieve(
     scored_segs.sort(key=lambda x: (-x[0], str(x[1].get("segment_id"))))
     chosen = [s for sc, s in scored_segs[:top_m_segments] if sc >= 0]
 
-    by_id = {
-        str(e.get("id")): e for e in entries if isinstance(e, Mapping) and e.get("id")
-    }
     for e in entries:
         if not isinstance(e, Mapping):
             continue

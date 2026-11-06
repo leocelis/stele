@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import uuid
 from pathlib import Path
@@ -85,10 +86,8 @@ def list_decision_receipts(root: Path, *, limit: int = 50) -> list[dict[str, Any
         return []
     rows: list[dict[str, Any]] = []
     for path in ddir.glob("dr_*.json"):
-        try:
+        with contextlib.suppress(Exception):
             rows.append(canonical_loads(path.read_text(encoding="utf-8")))
-        except Exception:  # noqa: BLE001
-            continue
     rows.sort(key=lambda r: str(r.get("ts") or ""), reverse=True)
     return rows[:limit]
 

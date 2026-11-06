@@ -5,8 +5,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from stele_core import Stele
 from helpers import TS, base_entry, oracle_evidence
+from stele_core import Stele
 
 
 def test_index_rebuild_is_lossless(tmp_path: Path) -> None:

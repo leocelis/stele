@@ -73,7 +73,7 @@ def sensory_filter(
         kept = sorted(toks, key=len, reverse=True)[: max(1, int(len(toks) * keep_ratio))]
         dropped = [t for t in toks if t not in kept]
     if keep_ratio < 1.0 and kept:
-        target = max(1, int(round(len(kept) * keep_ratio)))
+        target = max(1, round(len(kept) * keep_ratio))
         ranked = sorted(kept, key=lambda t: (-len(t), t))
         final_set = set(ranked[:target])
         ordered = [t for t in kept if t in final_set]
@@ -163,17 +163,17 @@ def topic_segments(
             boundaries.append(i)
     segments: list[dict[str, Any]] = []
     start = 0
-    for b in boundaries + [len(texts)]:
-        chunk = list(texts[start:b])
+    for end in boundaries + [len(texts)]:
+        chunk = list(texts[start:end])
         segments.append(
             {
                 "start": start,
-                "end": b - 1,
+                "end": end - 1,
                 "size": len(chunk),
                 "preview": (chunk[0][:80] if chunk else ""),
             }
         )
-        start = b
+        start = end
     return {
         "segments": segments,
         "boundaries": boundaries,

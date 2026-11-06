@@ -120,7 +120,7 @@ def history_collapse_gate(
 ) -> dict[str, Any]:
     """Reject global history collapse (ECHO keeps source-addressable set)."""
     return {
-        "allow_collapse": False if collapsed_summary_only else True,
+        "allow_collapse": not collapsed_summary_only,
         "reject_collapse": collapsed_summary_only,
         "apply": False,
         "ok": True,

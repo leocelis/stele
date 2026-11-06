@@ -81,7 +81,7 @@ def test_follow_links_one_hop(tmp_path: Path) -> None:
     )
     ids = {s["id"] for s in expanded}
     assert lesson in ids and goal in ids
-    via = [s for s in expanded if s["id"] == goal][0]
+    via = next(s for s in expanded if s["id"] == goal)
     assert via["via_link"] is True and via["linked_from"] == lesson
 
 

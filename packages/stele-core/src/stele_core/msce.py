@@ -62,7 +62,7 @@ def crystallize_skill(
     Retains evidence links + applicability boundary stubs.
     """
     by_id = {str(e.get("id")): e for e in entries}
-    sources: list[dict[str, Any]] = []
+    sources: list[Mapping[str, Any]] = []
     barriers: list[str] = []
     for sid in source_ids:
         e = by_id.get(str(sid))
@@ -147,7 +147,7 @@ def value_backfill(
     usage = dict(entry.get("usage") or {})
     helpful = int(usage.get("helpful") or 0)
     harmful = int(usage.get("harmful") or 0)
-    delta = max(1, int(round(reflection_weight)))
+    delta = max(1, round(reflection_weight))
     if terminal_success:
         helpful += delta
     else:

@@ -20,8 +20,8 @@ stele-mcp = { workspace = true }
 dev = [
     "pytest>=8",
     "pytest-cov>=5",
-    "mypy>=1.10",
-    "ruff>=0.5",
+    "mypy==2.4.1",
+    "ruff==0.17.4",
 ]
 
 [tool.pytest.ini_options]
@@ -41,3 +41,7 @@ target-version = "py311"
 [tool.mypy]
 python_version = "3.11"
 strict = true
+
+[[tool.mypy.overrides]]
+module = ["pymysql", "pymysql.*"]
+ignore_missing_imports = true

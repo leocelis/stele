@@ -32,7 +32,7 @@ def raptor_cluster(*, chunks: int, clusters: int) -> dict[str, Any]:
     """Cluster leaf chunks before recursive summarization."""
     if chunks < 0 or clusters < 0:
         raise SchemaError("chunks and clusters must be >= 0")
-    if clusters > chunks and chunks > 0:
+    if clusters > chunks > 0:
         raise SchemaError("clusters cannot exceed chunks")
     return {
         "chunks": chunks,

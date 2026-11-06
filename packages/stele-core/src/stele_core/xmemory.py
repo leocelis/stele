@@ -86,7 +86,7 @@ def split_merge_plan(
         raise SchemaError("min_size must be >= 1")
     actions: list[dict[str, Any]] = []
     # Index for merge
-    labeled = []
+    labeled: list[dict[str, Any]] = []
     for th in themes:
         members = th.get("members") or th.get("member_ids") or []
         n = len(members)

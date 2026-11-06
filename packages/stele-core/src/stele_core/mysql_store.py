@@ -16,6 +16,7 @@ Never log DSN passwords. Never commit live DSN values.
 from __future__ import annotations
 
 import base64
+import contextlib
 import hashlib
 import logging
 import os
@@ -25,10 +26,10 @@ import urllib.parse
 import uuid
 from collections.abc import Iterable, Iterator
 from pathlib import Path
-from typing import Any
+from typing import Any, Self
 
 from stele_core.schema import canonical_dumps, canonical_loads, validate_entry
-from stele_core.store import StoreError, _GENESIS_HASH, _row_content_digest
+from stele_core.store import _GENESIS_HASH, StoreError, _row_content_digest
 
 _log = logging.getLogger("stele_core.mysql_store")
 
@@ -94,11 +95,10 @@ def _resolve_ca_path() -> str:
         return path
     b64 = os.environ.get("STELE_MYSQL_SSL_CA_B64")
     if b64:
-        tmp = tempfile.NamedTemporaryFile(
+        with tempfile.NamedTemporaryFile(
             mode="wb", suffix=".pem", delete=False, prefix="stele_ca_"
-        )
-        tmp.write(base64.b64decode(b64))
-        tmp.close()
+        ) as tmp:
+            tmp.write(base64.b64decode(b64))
         return tmp.name
     raise RuntimeError(
         "MySQL backend requires TLS verification: set STELE_MYSQL_SSL_CA "
@@ -147,7 +147,7 @@ class MySQLSteleStore:
             self._load_meta_or_fail()
 
     @staticmethod
-    def _parse(dsn: str) -> dict:
+    def _parse(dsn: str) -> dict[str, Any]:
         u = urllib.parse.urlparse(dsn)
         if u.scheme != "mysql":
             raise ValueError(f"unsupported DSN scheme {u.scheme!r}; expected mysql://")
@@ -155,7 +155,7 @@ class MySQLSteleStore:
             raise ValueError("DSN must be mysql://user:pass@host:port/dbname")
         import pymysql.cursors
 
-        params: dict = {
+        params: dict[str, Any] = {
             "host": u.hostname,
             "port": u.port or 3306,
             "user": urllib.parse.unquote(u.username),
@@ -184,7 +184,7 @@ class MySQLSteleStore:
             d.mkdir(parents=True, exist_ok=True)
 
     @staticmethod
-    def _apply_session_settings(conn) -> None:
+    def _apply_session_settings(conn: Any) -> None:
         with conn.cursor() as cur:
             cur.execute("SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED")
         conn.commit()
@@ -194,7 +194,7 @@ class MySQLSteleStore:
         *,
         budget_seconds: float | None = None,
         connect_timeout: int | None = None,
-    ):
+    ) -> Any:
         import pymysql
 
         params = dict(self._params)
@@ -216,7 +216,7 @@ class MySQLSteleStore:
                     cur.fetchone()
                 conn.commit()
                 return conn
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 last = exc
                 if _is_permanent(exc):
                     raise RuntimeError(
@@ -300,7 +300,7 @@ class MySQLSteleStore:
             cur.execute("SELECT RELEASE_LOCK(%s) AS rel", (name,))
         self._conn.commit()
 
-    def __enter__(self) -> MySQLSteleStore:
+    def __enter__(self) -> Self:
         self.acquire()
         return self
 
@@ -422,7 +422,8 @@ class MySQLSteleStore:
             row = cur.fetchone()
         if row is None:
             return None
-        return canonical_loads(row["body_json"])
+        entry: dict[str, Any] = canonical_loads(row["body_json"])
+        return entry
 
     def delete_entry_file(self, entry_id: str, *, actor: str, ts: str, reason: str) -> bool:
         self.ensure_live()
@@ -505,7 +506,5 @@ class MySQLSteleStore:
         return ok
 
     def close(self) -> None:
-        try:
+        with contextlib.suppress(Exception):
             self._conn.close()
-        except Exception:  # noqa: BLE001
-            pass

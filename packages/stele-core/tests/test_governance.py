@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 import pytest
-
-from stele_core import SchemaError, Stele
 from helpers import TS, base_entry, oracle_evidence
+from stele_core import SchemaError, Stele
 
 
 def test_self_graded_never_promotes(stele: Stele) -> None:

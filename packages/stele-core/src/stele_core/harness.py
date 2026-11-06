@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -613,9 +614,10 @@ def maple_shaped_report(
         ts=ts,
     )
     # Write gate: ADD always lands quarantined
-    write_ok = poison.get("state") == "quarantined" or stele.store.read_entry(poison["id"])[
-        "state"
-    ] == "quarantined"
+    stored_poison = stele.store.read_entry(poison["id"]) or {}
+    write_ok = (
+        poison.get("state") == "quarantined" or stored_poison.get("state") == "quarantined"
+    )
 
     scan = stele.injection_scan(entry_ids=[poison["id"]])
     scan_ok = scan["count"] >= 1
@@ -853,10 +855,8 @@ def tepa_amvl_shaped_report(
 
     # cleanup
     for eid in (stale["id"], fresh["id"]):
-        try:
+        with contextlib.suppress(Exception):
             stele.delete(entry_id=eid, actor="ops", ts=ts, reason="tepa_cleanup")
-        except Exception:  # noqa: BLE001
-            pass
 
     return {
         "suite": "tepa_amvl_shaped",
@@ -913,7 +913,7 @@ def meld_map_shaped_report(
             payload["conflict_key"] = key
         eid = stele.add(payload, ts=ts)["id"]
         stele.promote(eid, evidence, actor="ci", ts=ts)
-        return eid
+        return str(eid)
 
     a = _add("API host is api.old.example", "session:trusted", key="pref:api-host")
     b = _add("API host is api.new.example", "session:trusted", key="pref:api-host")
@@ -940,10 +940,8 @@ def meld_map_shaped_report(
     filter_ok = all(h.get("path_trust", 0) >= 0.5 for h in hits)
 
     for eid in (a, b, c):
-        try:
+        with contextlib.suppress(Exception):
             stele.delete(entry_id=eid, actor="ops", ts=ts, reason="meld_cleanup")
-        except Exception:  # noqa: BLE001
-            pass
 
     return {
         "suite": "meld_map_shaped",
@@ -1004,7 +1002,7 @@ def soda_synapse_shaped_report(
             payload["usage"] = {"helpful": 2, "harmful": 0, "ignored": 0, "pinned": True}
         eid = stele.add(payload, ts=ts)["id"]
         stele.promote(eid, evidence, actor="ci", ts=ts)
-        return eid
+        return str(eid)
 
     a = _add("Day bucket tip", pinned=True)
     b = _add("Midnight rollover tip")
@@ -1033,10 +1031,8 @@ def soda_synapse_shaped_report(
     rank_ok = bool(ranked) and "connection_density" in ranked[0]
 
     for eid in (a, b, c):
-        try:
+        with contextlib.suppress(Exception):
             stele.delete(entry_id=eid, actor="ops", ts=ts, reason="soda_cleanup")
-        except Exception:  # noqa: BLE001
-            pass
 
     return {
         "suite": "soda_synapse_shaped",
@@ -1115,10 +1111,8 @@ def gpm_release_shaped_report(
     sqlite_ok = rebuilt.get("entry_count", 0) >= 1 and any(r["id"] == eid for r in sq)
 
     # cleanup
-    try:
+    with contextlib.suppress(Exception):
         stele.delete(entry_id=eid, actor="ops", ts=ts, reason="gpm_cleanup")
-    except Exception:  # noqa: BLE001
-        pass
 
     return {
         "suite": "gpm_release_shaped",
@@ -1238,11 +1232,9 @@ def pam_cava_shaped_report(
     )
     refuse_ok = clean not in {h.get("id") for h in refused}
 
-    try:
+    with contextlib.suppress(Exception):
         stele.delete(entry_id=clean, actor="ops", ts=ts, reason="pam_cleanup")
         stele.delete(entry_id=poison, actor="ops", ts=ts, reason="pam_cleanup")
-    except Exception:  # noqa: BLE001
-        pass
 
     return {
         "suite": "pam_cava_shaped",
@@ -1348,11 +1340,9 @@ def poem_ppmf_shaped_report(
     bad_close = stele.claim_closure([eid, "se_missing"])
     close_fail_ok = bad_close.get("closed") is False
 
-    try:
+    with contextlib.suppress(Exception):
         stele.delete(entry_id=eid, actor="ops", ts=ts, reason="poem_cleanup")
         stele.delete(entry_id=pack, actor="ops", ts=ts, reason="poem_cleanup")
-    except Exception:  # noqa: BLE001
-        pass
 
     return {
         "suite": "poem_ppmf_shaped",
@@ -1453,11 +1443,9 @@ def memorepair_shaped_report(
     )
     revival_ok = probe.get("ok") is True
 
-    try:
+    with contextlib.suppress(Exception):
         stele.delete(entry_id=fault, actor="ops", ts=ts, reason="mr_cleanup")
         stele.delete(entry_id=child, actor="ops", ts=ts, reason="mr_cleanup")
-    except Exception:  # noqa: BLE001
-        pass
 
     return {
         "suite": "memorepair_shaped",
@@ -1564,11 +1552,9 @@ def memir_dmem_shaped_report(
     )
     claims_filter_ok = evid not in {h["id"] for h in claims_only}
 
-    try:
+    with contextlib.suppress(Exception):
         stele.delete(entry_id=claim, actor="ops", ts=ts, reason="memir_cleanup")
         stele.delete(entry_id=evid, actor="ops", ts=ts, reason="memir_cleanup")
-    except Exception:  # noqa: BLE001
-        pass
 
     return {
         "suite": "memir_dmem_shaped",
@@ -1683,11 +1669,9 @@ def gitofthoughts_shaped_report(
         "memory_likely_helps"
     ) is False
 
-    try:
+    with contextlib.suppress(Exception):
         stele.delete(entry_id=a, actor="ops", ts=ts, reason="got_cleanup")
         stele.delete(entry_id=b, actor="ops", ts=ts, reason="got_cleanup")
-    except Exception:  # noqa: BLE001
-        pass
 
     return {
         "suite": "gitofthoughts_shaped",
@@ -1791,12 +1775,10 @@ def chronomem_strata_shaped_report(
     activate_ok = old in {h["id"] for h in scoped}
     stele.activate_version(None)
 
-    try:
+    with contextlib.suppress(Exception):
         stele.delete(entry_id=old, actor="ops", ts=ts, reason="chrono_cleanup")
         if new_id:
             stele.delete(entry_id=new_id, actor="ops", ts=ts, reason="chrono_cleanup")
-    except Exception:  # noqa: BLE001
-        pass
 
     return {
         "suite": "chronomem_strata_shaped",
@@ -1835,7 +1817,7 @@ def tarl_mw_shaped_report(
             "exit_status": 0,
         }
     ]
-    base = {
+    base: dict[str, Any] = {
         "layer": "failure_lesson",
         "title": "Cache TTL tip",
         "body": "Set cache TTL to 60 seconds for the session token store.",
@@ -1905,14 +1887,12 @@ def tarl_mw_shaped_report(
     )
     filt_ok = tip not in {h["id"] for h in filtered}
 
-    try:
+    with contextlib.suppress(Exception):
         stele.delete(entry_id=added["id"], actor="ops", ts=ts, reason="tarl_cleanup")
         if reject.get("id"):
             stele.delete(entry_id=reject["id"], actor="ops", ts=ts, reason="tarl_cleanup")
         if revise.get("id"):
             stele.delete(entry_id=revise["id"], actor="ops", ts=ts, reason="tarl_cleanup")
-    except Exception:  # noqa: BLE001
-        pass
 
     return {
         "suite": "tarl_mw_shaped",
@@ -2026,10 +2006,8 @@ def memtx_aoep_shaped_report(
     aoep = stele.aoep_report()
     aoep_ok = aoep.get("ok") is True
 
-    try:
+    with contextlib.suppress(Exception):
         stele.delete(entry_id=eid, actor="ops", ts=ts, reason="memtx_cleanup")
-    except Exception:  # noqa: BLE001
-        pass
 
     return {
         "suite": "memtx_aoep_shaped",
@@ -2094,7 +2072,7 @@ def lattice_cordon_shaped_report(
             ts=ts,
         )["id"]
         stele.promote(eid, evidence, actor="ci", ts=ts)
-        return eid
+        return str(eid)
 
     a = _add(
         "Deploy window A",
@@ -2136,11 +2114,9 @@ def lattice_cordon_shaped_report(
     list_ok = listed.get("count", 0) >= 1
     stele.abort_transaction(tx["txid"], actor="ci", ts=ts, reason="cleanup")
 
-    try:
+    with contextlib.suppress(Exception):
         stele.delete(entry_id=a, actor="ops", ts=ts, reason="lat_cleanup")
         stele.delete(entry_id=b, actor="ops", ts=ts, reason="lat_cleanup")
-    except Exception:  # noqa: BLE001
-        pass
 
     return {
         "suite": "lattice_cordon_shaped",
@@ -2272,11 +2248,9 @@ def stale_gem_shaped_report(
     gem = stele.gem_report()
     gem_ok = gem.get("ok") is True
 
-    try:
+    with contextlib.suppress(Exception):
         for eid in (old, new_id, pref):
             stele.delete(entry_id=eid, actor="ops", ts=ts, reason="stale_cleanup")
-    except Exception:  # noqa: BLE001
-        pass
 
     return {
         "suite": "stale_gem_shaped",
@@ -2407,11 +2381,9 @@ def statefuse_toki_shaped_report(
     bid_ok = bid.get("admitted_count", 0) == 1
 
     stele.clear_projection_pin("vendor:sla")
-    try:
+    with contextlib.suppress(Exception):
         for eid in (a, b):
             stele.delete(entry_id=eid, actor="ops", ts=ts, reason="fuse_cleanup")
-    except Exception:  # noqa: BLE001
-        pass
 
     return {
         "suite": "statefuse_toki_shaped",
@@ -2541,11 +2513,9 @@ def memorepair_cupmem_cmgl_shaped_report(
     listed = stele.list_admit_receipts(limit=5)
     list_ok = listed.get("count", 0) >= 2
 
-    try:
+    with contextlib.suppress(Exception):
         for eid in (child, fault):
             stele.delete(entry_id=eid, actor="ops", ts=ts, reason="v32_cleanup")
-    except Exception:  # noqa: BLE001
-        pass
 
     return {
         "suite": "memorepair_cupmem_cmgl_shaped",
@@ -2654,11 +2624,9 @@ def tiermem_msce_shaped_report(
     )
     bf_ok = bf.get("applied") is True
 
-    try:
+    with contextlib.suppress(Exception):
         for eid in filter(None, [crystal.get("id"), lesson, wb.get("id")]):
             stele.delete(entry_id=eid, actor="ops", ts=ts, reason="v33_cleanup")
-    except Exception:  # noqa: BLE001
-        pass
 
     return {
         "suite": "tiermem_msce_shaped",
@@ -2782,11 +2750,9 @@ def fademem_memr3_shaped_report(
     )
     upd_ok = "remaining_count" in upd
 
-    try:
+    with contextlib.suppress(Exception):
         for eid in (stale, fresh):
             stele.delete(entry_id=eid, actor="ops", ts=ts, reason="v34_cleanup")
-    except Exception:  # noqa: BLE001
-        pass
 
     return {
         "suite": "fademem_memr3_shaped",
@@ -2905,11 +2871,9 @@ def archive_sfams_memcon_shaped_report(
         "PLAN_INJECT",
     }
 
-    try:
+    with contextlib.suppress(Exception):
         for eid in (issue, lesson):
             stele.delete(entry_id=eid, actor="ops", ts=ts, reason="v35_cleanup")
-    except Exception:  # noqa: BLE001
-        pass
 
     return {
         "suite": "archive_sfams_memcon_shaped",
@@ -3063,12 +3027,10 @@ def scm_gam_acm_shaped_report(
     )
     verify_ok = verify.get("ok") is True
 
-    try:
+    with contextlib.suppress(Exception):
         stele.wm_clear()
         for eid in (lesson, related, q_id):
             stele.delete(entry_id=eid, actor="ops", ts=ts, reason="v36_cleanup")
-    except Exception:  # noqa: BLE001
-        pass
 
     return {
         "suite": "scm_gam_acm_shaped",
@@ -3223,12 +3185,10 @@ def lightmem_hippo_quipu_shaped_report(
         "Redact",
     }
 
-    try:
+    with contextlib.suppress(Exception):
         stele.wm_clear()
         for eid in (a, b):
             stele.delete(entry_id=eid, actor="ops", ts=ts, reason="v37_cleanup")
-    except Exception:  # noqa: BLE001
-        pass
 
     return {
         "suite": "lightmem_hippo_quipu_shaped",
@@ -3384,11 +3344,9 @@ def prograph_emg_agentir_shaped_report(
     )
     fuse_ok = fuse.get("ok") is True and fuse.get("count", 0) >= 1
 
-    try:
+    with contextlib.suppress(Exception):
         for eid in (fail, ok, hop):
             stele.delete(entry_id=eid, actor="ops", ts=ts, reason="v38_cleanup")
-    except Exception:  # noqa: BLE001
-        pass
 
     return {
         "suite": "prograph_emg_agentir_shaped",
@@ -3547,11 +3505,9 @@ def govmem_hymem_shaped_report(
     )
     pack_ok = pack.get("ok") is True and pack.get("dilution_ok") is True
 
-    try:
+    with contextlib.suppress(Exception):
         for eid in (a, b):
             stele.delete(entry_id=eid, actor="ops", ts=ts, reason="v39_cleanup")
-    except Exception:  # noqa: BLE001
-        pass
 
     return {
         "suite": "govmem_hymem_shaped",
@@ -3695,11 +3651,9 @@ def freshness_memtxn_fleet_shaped_report(
     stale = stele.stale_propagation_scan()
     stale_ok = any(s.get("id") == old for s in stale.get("suspects") or [])
 
-    try:
+    with contextlib.suppress(Exception):
         for eid in (old, new):
             stele.delete(entry_id=eid, actor="ops", ts=ts, reason="v40_cleanup")
-    except Exception:  # noqa: BLE001
-        pass
 
     return {
         "suite": "freshness_memtxn_fleet_shaped",
@@ -3847,11 +3801,9 @@ def budgetmem_erskill_shaped_report(
     )
     run_ok = run.get("ok") is True and run.get("skill") == "skill_first"
 
-    try:
+    with contextlib.suppress(Exception):
         for eid in (skill, dep):
             stele.delete(entry_id=eid, actor="ops", ts=ts, reason="v41_cleanup")
-    except Exception:  # noqa: BLE001
-        pass
 
     return {
         "suite": "budgetmem_erskill_shaped",
@@ -4011,10 +3963,8 @@ def consistency_memgate_sovereignty_shaped_report(
         "action"
     ) == "revoke_or_supersede"
 
-    try:
+    with contextlib.suppress(Exception):
         stele.delete(entry_id=tip2, actor="ops", ts=ts, reason="v42_cleanup")
-    except Exception:  # noqa: BLE001
-        pass
 
     return {
         "suite": "consistency_memgate_sovereignty_shaped",
@@ -4086,7 +4036,7 @@ def sodamem_memrefine_ariadne_shaped_report(
             ts=ts,
         )["id"]
         stele.promote(eid, evidence, actor="ci", ts=ts)
-        return eid
+        return str(eid)
 
     a = _add(
         "Retry backoff",
@@ -4231,7 +4181,7 @@ def tgms_memdata_shaped_report(
             ts=ts,
         )["id"]
         stele.promote(eid, evidence, actor="ci", ts=ts)
-        return eid
+        return str(eid)
 
     a = _add(
         "Retry backoff",
@@ -4587,21 +4537,21 @@ def memforest_xmemory_shaped_report(
             ts=f"{day}T00:00:00Z",
         )["id"]
         stele.promote(eid, evidence, actor="ci", ts=f"{day}T00:00:00Z")
-        return eid
+        return str(eid)
 
-    a = _add(
+    _add(
         "Retry backoff",
         "Payment retries use exponential backoff and cap at five.",
         "policy:retry",
         "2026-08-01",
     )
-    b = _add(
+    _add(
         "Timeout policy",
         "HTTP client timeout is thirty seconds for payment calls.",
         "policy:timeout",
         "2026-08-02",
     )
-    c = _add(
+    _add(
         "Retry note two",
         "Payment retries backoff tip for production.",
         "policy:retry",
@@ -5037,7 +4987,7 @@ def mempoison_salami_shaped_report(
             },
             ts=ts,
         )["id"]
-        return eid
+        return str(eid)
 
     benign = _add(
         "Retry policy",
@@ -5542,7 +5492,7 @@ def agentdog_memweaver_shaped_report(
     stele.promote(child, evidence, actor="ci", ts=ts)
     stele.link(child, kind="entry", ref=parent, actor="ci", ts=ts)
 
-    twin = stele.add(
+    stele.add(
         {
             "layer": "workflow",
             "title": "Retry workflow twin",
@@ -5563,7 +5513,7 @@ def agentdog_memweaver_shaped_report(
         ts=ts,
     )["id"]
 
-    cont = stele.add(
+    stele.add(
         {
             "layer": "decision",
             "title": "Retry policy contested",
@@ -6233,7 +6183,7 @@ def memoryos_nemori_shaped_report(
             ts=ts,
         )["id"]
         stele.promote(eid, evidence, actor="ci", ts=ts)
-        return eid
+        return str(eid)
 
     p = _seed(
         layer="decision",
@@ -6414,7 +6364,7 @@ def hindsight_reasoningbank_shaped_report(
             ts=ts,
         )["id"]
         stele.promote(eid, evidence, actor="ci", ts=ts)
-        return eid
+        return str(eid)
 
     world = _seed(
         layer="issue",
@@ -6572,7 +6522,7 @@ def memskill_memoryr1_shaped_report(
             ts=ts,
         )["id"]
         stele.promote(eid, evidence, actor="ci", ts=ts)
-        return eid
+        return str(eid)
 
     base = _seed(
         title="Retry twice on timeout",
@@ -6713,7 +6663,7 @@ def gmemory_memma_shaped_report(
             ts=ts,
         )["id"]
         stele.promote(eid, evidence, actor="ci", ts=ts)
-        return eid
+        return str(eid)
 
     insight = _seed(
         layer="decision",
@@ -7200,7 +7150,7 @@ def trace2skill_evomemory_shaped_report(
         ["search", "predict", "evolve"]
     )
     spe_ok = spe.get("valid") is True
-    mem0: list = []
+    mem0: list[dict[str, Any]] = []
     ap = stele.streaming_task_append(
         mem0, task="alfworld pick apple", prediction="go to fridge", outcome="success"
     )
@@ -8408,7 +8358,7 @@ def himem_hmeml_shaped_report(
     return {
         "suite": "himem_hmeml_shaped",
         "episode": {"ok": ep_ok},
-        "note": {"ok": note_ok},
+        "note_check": {"ok": note_ok},
         "link": {"ok": link_ok},
         "hybrid": {"ok": hyb_ok},
         "best_effort": {"ok": best},

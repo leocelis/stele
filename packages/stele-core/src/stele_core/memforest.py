@@ -15,7 +15,7 @@ from stele_core.schema import SchemaError
 
 
 def _ts(e: Mapping[str, Any]) -> str:
-    t = e.get("temporal") if isinstance(e.get("temporal"), Mapping) else {}
+    t = raw_temporal if isinstance(raw_temporal := e.get("temporal"), Mapping) else {}
     return str(
         t.get("valid_from")
         or (e.get("provenance") or {}).get("written_at")

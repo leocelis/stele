@@ -54,10 +54,12 @@ def retrieval_admit(
                 or ""
             )
             # Soft: only reject if entry declares a different domain token
-            if domain and consumer_domain not in domain and domain not in consumer_domain:
+            if (
+                domain and consumer_domain not in domain and domain not in consumer_domain
                 # Don't hard-reject on domain alone when overlap is strong
-                if overlap < min_overlap + 0.2:
-                    reason = "domain_mismatch"
+                and overlap < min_overlap + 0.2
+            ):
+                reason = "domain_mismatch"
         if reason:
             rejected.append(
                 {

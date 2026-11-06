@@ -5,7 +5,7 @@ Retrieval behaviors = ordered primitives. Router matches query cues to a skill.
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Sequence
 from typing import Any
 
 from stele_core.index.lexical import tokenize

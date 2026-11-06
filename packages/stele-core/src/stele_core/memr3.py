@@ -7,7 +7,7 @@ not MemR3 paper scores.
 from __future__ import annotations
 
 import re
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Mapping, Sequence
 from typing import Any
 
 from stele_core.index.lexical import tokenize
@@ -138,13 +138,7 @@ def gap_tracker_update(
         kind = str(g.get("kind") or "")
         val = str(g.get("value") or "")
         done = False
-        if kind == "digit" and val in digits:
-            done = True
-        elif kind == "token" and val.lower() in toks:
-            done = True
-        elif kind == "empty_hits" and new_hits:
-            done = True
-        elif val and val.lower() in blob_l:
+        if kind == "digit" and val in digits or kind == "token" and val.lower() in toks or kind == "empty_hits" and new_hits or val and val.lower() in blob_l:
             done = True
         if done:
             resolved.append(dict(g))

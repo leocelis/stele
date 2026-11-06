@@ -112,7 +112,7 @@ def refine_plan(
         ]
         if not pairs:
             # Force-delete lowest worth
-            worst = sorted(alive, key=worth)[0]
+            worst = min(alive, key=worth)
             actions.append(
                 {
                     "action": "delete",

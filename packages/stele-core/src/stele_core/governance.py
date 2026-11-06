@@ -131,10 +131,12 @@ def apply_resolve_contested(
 
     peers_w = set(winner.get("contested_with") or [])
     peers_l = set(loser.get("contested_with") or [])
-    if loser_id not in peers_w and winner_id not in peers_l:
+    if (
+        loser_id not in peers_w and winner_id not in peers_l
         # Allow resolve if they share scope + were conflict-flagged without peer links
-        if winner["scope"] != loser["scope"]:
-            raise SchemaError("contested pair must share scope or contested_with links")
+        and winner["scope"] != loser["scope"]
+    ):
+        raise SchemaError("contested pair must share scope or contested_with links")
 
     if actor == winner["provenance"]["agent"] or actor == loser["provenance"]["agent"]:
         raise SchemaError(

@@ -14,7 +14,7 @@ from typing import Any
 
 from stele_core.schema import SchemaError, canonical_dumps
 
-_TOKEN = re.compile(r"[a-z0-9_]{2,}", re.I)
+_TOKEN = re.compile(r"[a-z0-9_]{2,}", re.IGNORECASE)
 
 
 def _tokens(text: str) -> set[str]:
@@ -119,7 +119,7 @@ def adaptive_rewrite_plan(
     for e in experiences[:5]:
         if not isinstance(e, Mapping):
             continue
-        facets = e.get("facets") if isinstance(e.get("facets"), Mapping) else {}
+        facets = raw_facets if isinstance(raw_facets := e.get("facets"), Mapping) else {}
         if facets.get("success_pattern"):
             lines.append(f"APPLY: {facets['success_pattern']}")
         if facets.get("failure_trigger"):

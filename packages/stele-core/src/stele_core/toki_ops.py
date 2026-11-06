@@ -210,8 +210,9 @@ def tip_for_conflict_key(
         return None
     promoted = [e for e in pool if e.get("state") == "promoted"]
     if promoted:
-        return max(promoted, key=lambda e: authority_score(e)["authority"])
+        strongest = max(promoted, key=lambda e: authority_score(e)["authority"])
+        return dict(strongest)
     contested = [e for e in pool if e.get("state") == "contested"]
     if contested:
-        return contested[0]
-    return pool[0]
+        return dict(contested[0])
+    return dict(pool[0])

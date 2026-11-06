@@ -45,10 +45,10 @@ def consensus_admit(
 
     link_support: set[str] = set()
     for eid in lexical_ids:
-        e = by_id.get(eid)
-        if e is None:
+        linked = by_id.get(eid)
+        if linked is None:
             continue
-        for link in e.get("links") or []:
+        for link in linked.get("links") or []:
             if not isinstance(link, Mapping):
                 continue
             if str(link.get("kind") or "") != "entry":

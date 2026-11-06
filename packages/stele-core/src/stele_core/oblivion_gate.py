@@ -107,7 +107,7 @@ def reasoning_reserve_plan(
         reason_frac = 0.10
     else:
         reason_frac = 0.10 + (conf - 0.3) * (0.20 / 0.4)
-    reason_tokens = int(round(budget * reason_frac))
+    reason_tokens = round(budget * reason_frac)
     recall_tokens = budget - reason_tokens
     return {
         "budget": budget,

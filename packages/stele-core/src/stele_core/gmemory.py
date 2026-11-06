@@ -16,7 +16,7 @@ from typing import Any
 from stele_core.schema import SchemaError, canonical_dumps
 
 TIERS = frozenset({"insight", "query", "interaction"})
-_TOKEN = re.compile(r"[a-z0-9_]{2,}", re.I)
+_TOKEN = re.compile(r"[a-z0-9_]{2,}", re.IGNORECASE)
 
 
 def _tokens(text: str) -> set[str]:
@@ -60,10 +60,12 @@ def build_query_graph(entries: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
         if not isinstance(e, Mapping) or not e.get("id"):
             continue
         tier = classify_graph_tier(e)["tier"]
-        if tier != "query" and "query" not in f"{e.get('title') or ''}".lower():
+        if (
+            tier != "query" and "query" not in f"{e.get('title') or ''}".lower()
             # still allow decision/issue as query-like task nodes
-            if tier == "interaction":
-                continue
+            and tier == "interaction"
+        ):
+            continue
         eid = str(e.get("id"))
         title = str(e.get("title") or "")
         body = str(e.get("body") or "")
@@ -125,9 +127,11 @@ def upward_insight_traverse(
         if classify_graph_tier(e)["tier"] != "insight":
             # also accept decision with lesson language
             blob = f"{e.get('title') or ''} {e.get('body') or ''}".lower()
-            if "insight" not in blob and "lesson" not in blob and "always" not in blob:
-                if str(e.get("layer")) != "decision":
-                    continue
+            if (
+                "insight" not in blob and "lesson" not in blob and "always" not in blob
+                and str(e.get("layer")) != "decision"
+            ):
+                continue
         blob = f"{e.get('title') or ''}\n{e.get('body') or ''}"
         score = len(qtok & _tokens(blob))
         hits.append(

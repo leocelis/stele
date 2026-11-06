@@ -30,20 +30,17 @@ def classify_write_channel(entry: Mapping[str, Any]) -> dict[str, Any]:
         source = str(prov.get("source") or "").strip()
     low = source.lower()
     channel = "unknown"
-    if low.startswith("user:") or low.startswith("human:"):
+    if low.startswith(("user:", "human:")):
         channel = "user"
-    elif low.startswith("oracle:") or low.startswith("ci:"):
+    elif low.startswith(("oracle:", "ci:")):
         channel = "oracle"
-    elif low.startswith("tool:") or low.startswith("mcp:"):
+    elif low.startswith(("tool:", "mcp:")):
         channel = "tool"
     elif (
-        low.startswith("web:")
-        or low.startswith("http://")
-        or low.startswith("https://")
-        or low.startswith("url:")
+        low.startswith(("web:", "http://", "https://", "url:"))
     ):
         channel = "web"
-    elif low.startswith("agent:") or low.startswith("llm:"):
+    elif low.startswith(("agent:", "llm:")):
         channel = "agent"
     return {
         "id": entry.get("id"),

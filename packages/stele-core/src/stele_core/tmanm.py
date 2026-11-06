@@ -176,7 +176,7 @@ def act_authority_gate(
         if not origin:
             # Infer from provenance.source prefix if present
             src = str((d.get("provenance") or {}).get("source") or "")
-            if src.startswith("user:") or src.startswith("oracle:"):
+            if src.startswith(("user:", "oracle:")):
                 origin = "user"
             elif src.startswith("tool:"):
                 origin = "trusted_tool"

@@ -6,7 +6,7 @@ Match a failed lesson to a successful workflow/skill and emit an edit path
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Iterable, Mapping
 from typing import Any
 
 from stele_core.index.lexical import tokenize
