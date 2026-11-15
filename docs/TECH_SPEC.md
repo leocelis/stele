@@ -4014,3 +4014,128 @@ Paths resolve under `packages/stele-core/tests/` unless noted. Provenance rule: 
 | UC-560–571 | §7.69 |
 | UC-572–583 | §7.70 |
 
+---
+
+## 12. Multi-tenant hosts: derived tenant keys and a store per tenant (PROPOSED 2026-11-15, not built)
+
+**Problem.** The hosted server accepts any key in `STELE_API_KEYS` and opens **one store per
+process** (`STELE_STORE_ID`) for every key (`stele_mcp/auth.py`, `stele_mcp/server.py`). That fits
+one person. A **host app** that serves many of its own customers (tenants) needs each tenant to have
+its own store, with no provisioning step, and a way to show a tenant what its store holds.
+
+**Goal.** One secret shared between the host and the server; one store per tenant; no tenant able to
+read, list or delete another's entries, or to reach the server's disk. Keys in `STELE_API_KEYS`
+keep working exactly as today.
+
+### 12.1 The key (ST1)
+
+```
+key = "stl_" + tenant + "_" + base64url_nopad( HMAC-SHA256(SECRET, "stl:" + VERSION + ":" + tenant) )
+```
+
+- `tenant` matches `^[a-z0-9][a-z0-9-]{0,55}$`: lowercase only, and at most 56 characters because
+  the store id `t-<tenant>` becomes the MySQL lock name `stele:t-<tenant>`, and lock names stop at
+  64 characters.
+- The MAC is always 43 characters. The server reads the tenant as the text between the prefix and
+  the last 44 characters, never by splitting on `_`.
+- Neither the host nor the server stores the key.
+- The signed text starts with the product name, so a key made for one server is not valid on
+  another even if an operator reuses a secret.
+
+| Variable | Meaning | Default |
+|---|---|---|
+| `STELE_TENANT_KEY_SECRET` | The shared secret. Not set → the feature is off | not set |
+| `STELE_TENANT_KEY_VERSIONS` | Comma-separated versions the server accepts | `v1` |
+| `STELE_REVOKED_TENANTS` | Comma-separated tenants whose keys are refused | empty |
+
+A bearer key that is not in `STELE_API_KEYS` is accepted when the secret is set, the prefix and the
+tenant are valid, the MAC matches for an accepted version (constant-time compare) and the tenant is
+not revoked. The request then runs as that tenant; the existing per-key rate limit applies to it.
+
+Three things in today's code need care:
+
+- **Order.** The middleware rejects every request when `STELE_API_KEYS` is empty. It rejects only
+  when both that list and the tenant secret are missing.
+- **Path.** One middleware guards both surfaces, the full one (`/sse`, `/mcp`, about 2,000 tools)
+  and the core one (`/core/*`). A tenant key is accepted only under `/core`.
+- **Identity per message.** The tenant is read from **each message's own request**, not from a value set when the MCP
+  session was opened. With stateful Streamable HTTP the server task for a session starts inside the
+  request that created it, so a per-request variable set there stays the first caller's. A session is
+  also bound to the identity that opened it: a message whose key resolves to a different identity
+  (another tenant, or an operator key) is refused. Without that, one MCP session reused for two
+  tenants would run both as the first.
+  The variable the middleware sets today (`current_key_id`) is read nowhere.
+
+Test vector (each project that implements this scheme carries its own, same secret and tenant):
+
+| Secret | Version | Tenant | Key |
+|---|---|---|---|
+| `test-secret-do-not-use` | `v1` | `acme` | `stl_acme_0p59V8dV554TE_3lmyXhrfNERv2GlWUS1dYdLIYS9fg` |
+
+### 12.2 A store per tenant (ST2, ST2a)
+
+- **ST2.** A tenant key opens store `t-<tenant>`. Today `get_store()` returns one store for the
+  whole process and takes no argument; it takes the message's tenant and returns that tenant's
+  store. Stores are opened on first use and kept in a bounded set, least recently used closed
+  first. Each has its **own scratch root**, not only its own index folder: search reads the active
+  version from the root, so a shared root would let one caller's version pin steer another's
+  search. Keys in `STELE_API_KEYS` keep `STELE_STORE_ID`.
+- **Tenant keys need the MySQL store** (`STELE_STORE_DSN`). The file store keeps the id already in
+  its folder and ignores the one asked for, so on a file store a tenant key is refused.
+- **ST2a.** When a store id is given and has no row, the MySQL store creates that row. It never
+  adopts another store's row. Today both ways of opening take the first existing row when the id
+  has none (`stele_core/mysql_store.py`, two `SELECT … LIMIT 1` reads), so every new tenant would
+  write into the operator's store.
+- `drop_indexes` works on one store's root for the same reason.
+
+### 12.3 What a tenant key may call (ST3)
+
+| Allowed | Refused |
+|---|---|
+| `stele_search`, `stele_add`, `stele_promote`, `stele_delete`, `stele_list` | Every other tool |
+
+The core surface also carries `stele_export`, `stele_snapshot`, `stele_hydrate` and
+`stele_diff_stores`, which take paths on the server. They stay out of tenant reach. `tools/list`
+for a tenant key returns only the five allowed tools.
+
+### 12.4 Listing a store (ST4)
+
+No core tool lists a store's entries with their titles: `stele_ledger_view` returns ids only and is
+outside the core set. A host cannot show a tenant what is remembered, or let it remove one entry.
+
+New core tool: `stele_list(state, limit, cursor)` → for each entry `id`, `layer`, `title`, `state`
+and `written_at` (from the entry's provenance); in pages. It reads the calling key's store only. The core set goes from 35 tools to 36.
+
+### 12.5 What a host must do itself
+
+- **Fill the entry's provenance, scope and temporal block.** A model should write only `layer`,
+  `title` and `body`. Who wrote it, where, for which subject and from when it holds is the host's
+  knowledge; the temporal block is required by the schema.
+- **Build the promotion evidence.** Promotion needs evidence from someone other than the writer
+  (C7), and `human_signoff` is accepted with any issuer string. So the host, never the model, writes
+  the evidence: an independent judge's verdict on that entry's text, or the signed-in person's own
+  approval.
+- **Decide where the store may be used.** The server knows tenants, not the host's private spaces.
+
+### 12.6 Tests
+
+- The test vector verifies; a tampered MAC, an unknown version, a revoked tenant and a tenant that
+  breaks the rule are refused; a MAC containing `_` yields the right tenant.
+- Two tenants never find, list or delete each other's entries.
+- Against a MySQL database that already holds another store, a tenant key opens `t-<tenant>` and
+  never that store.
+- A tenant key calling `stele_export` is refused; `tools/list` shows five tools; a tenant key on
+  `/mcp` or `/sse` is refused.
+- With the tenant secret set and `STELE_API_KEYS` empty, a valid tenant key is served.
+- On a file store a tenant key is refused.
+- An MCP session opened with one key and continued with another is refused.
+- A version pinned in one store does not change what another store's search returns.
+- `stele_list` returns only the caller's entries, in pages.
+- A key from `STELE_API_KEYS` behaves as before.
+
+### 12.7 Files
+
+`packages/stele-mcp/src/stele_mcp/auth.py`, `server.py`, `deploy/wsgi.py`,
+`packages/stele-core/src/stele_core/mysql_store.py` (ST2a, per-store scratch root), `stele_core/ops.py`
+(the listing), `SECURITY.md`, a new `docs/integrations/HOST_APP.md`, tests. §10's "Remote/multi-store
+sync and hosted deployment" stays deferred: this section adds stores on one server, not sync.
