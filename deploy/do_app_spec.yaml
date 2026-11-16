@@ -42,3 +42,8 @@ services:
       - key: STELE_MYSQL_SSL_CA_B64
         type: SECRET
         scope: RUN_TIME
+      # Optional: derived per-tenant keys for a host app on /core (docs/integrations/HOST_APP.md).
+      # Unset = only STELE_API_KEYS authenticate.
+      - key: STELE_TENANT_KEY_SECRET
+        type: SECRET
+        scope: RUN_TIME
