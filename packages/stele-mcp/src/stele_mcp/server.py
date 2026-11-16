@@ -94,13 +94,11 @@ def _tenant_store(tenant: str) -> Stele:
         store = _open_tenant_store(tenant)
         _TENANT_STORES[tenant] = store
         while len(_TENANT_STORES) > TENANT_STORE_CACHE_SIZE:
-            _evicted_tenant, evicted = _TENANT_STORES.popitem(last=False)
-            close = getattr(evicted.store, "close", None)
-            if callable(close):
-                try:
-                    close()
-                except Exception:  # noqa: BLE001
-                    pass
+            # Drop the reference only. A request on another thread may still be
+            # using the evicted store; closing it here would cut that request's
+            # connection mid-call. The MySQL store closes its own connection when
+            # the last holder lets go (MySQLStore.__del__).
+            _TENANT_STORES.popitem(last=False)
         return store
 
 

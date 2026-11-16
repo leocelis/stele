@@ -317,3 +317,28 @@ def test_operator_key_keeps_operator_store(env) -> None:
     assert ("store_operator01", added["id"]) in db.entries
     ok, stats = op.call("stele_stats")
     assert ok
+
+
+def test_evicting_a_tenant_store_never_closes_it_under_a_caller(monkeypatch) -> None:
+    """Build review 2026-11-16: eviction closed the evicted store's connection,
+    cutting any request on another thread that still held it. Eviction now only
+    drops the cache's reference."""
+
+    class _Conn:
+        closed = 0
+
+        def close(self) -> None:
+            _Conn.closed += 1
+
+    class _FakeStele:
+        def __init__(self) -> None:
+            self.store = type("S", (), {"close": lambda self: _Conn().close()})()
+
+    monkeypatch.setattr(server_mod, "_open_tenant_store", lambda tenant: _FakeStele())
+    monkeypatch.setattr(server_mod, "TENANT_STORE_CACHE_SIZE", 1)
+    server_mod._TENANT_STORES.clear()
+    held = server_mod._tenant_store("acme")  # a request is using acme's store
+    server_mod._tenant_store("beta")  # beta's arrival evicts acme
+    assert "acme" not in server_mod._TENANT_STORES
+    assert _Conn.closed == 0 and held.store is not None
+    server_mod._TENANT_STORES.clear()

@@ -531,3 +531,12 @@ class MySQLSteleStore:
     def close(self) -> None:
         with contextlib.suppress(Exception):
             self._conn.close()
+
+    def __del__(self) -> None:
+        # The hosted server drops an evicted tenant store without closing it, so
+        # a request still holding it keeps working; the connection closes here,
+        # once nothing holds the store.
+        conn = getattr(self, "_conn", None)
+        if conn is not None:
+            with contextlib.suppress(Exception):
+                conn.close()
