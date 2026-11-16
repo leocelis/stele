@@ -21,7 +21,7 @@
 
 | Surface | Tools | Use |
 |---------|-------|-----|
-| `stele-mcp` / `/core/sse` | 35 | Production agent memory |
+| `stele-mcp` / `/core/sse` | 36 | Production agent memory |
 | `stele-mcp-full` / `/sse` | ~2000 | Operator research reproduction |
 
 ## Verify locally

@@ -9,4 +9,4 @@ def test_default_surface_matches_core_allowlist() -> None:
     core = create_core_app()
     names = {t.name for t in core._tool_manager.list_tools()}
     assert names == set(_CORE_TOOL_NAMES)
-    assert len(names) == 35
+    assert len(names) == 36

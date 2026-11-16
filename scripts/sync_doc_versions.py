@@ -27,7 +27,7 @@ REPLACEMENTS: list[tuple[pathlib.Path, list[tuple[str, str]]]] = [
             (r"^\*\*Version:\*\* [\d.]+", f"**Version:** {VERSION}"),
             (
                 r"stele-mcp \(26 named tools\)",
-                "stele-mcp-core (35 governed-ledger tools)",
+                "stele-mcp-core (36 governed-ledger tools)",
             ),
         ],
     ),

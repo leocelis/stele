@@ -19831,6 +19831,67 @@ class Stele:
             "target_id": plan.get("target_id"),
         }
 
+    # TECH_SPEC §12.4 (ST4): page through this store's entries with titles.
+    _LIST_LIVE_STATES = frozenset({"quarantined", "promoted", "contested"})
+    _LIST_STATE_ALIASES = {
+        "quarantine": "quarantined",
+        "quarantined": "quarantined",
+        "promoted": "promoted",
+    }
+    LIST_DEFAULT_LIMIT = 50
+    LIST_MAX_LIMIT = 200
+
+    def list_entries(
+        self,
+        *,
+        state: str | None = None,
+        limit: int = LIST_DEFAULT_LIMIT,
+        cursor: str | None = None,
+    ) -> dict[str, Any]:
+        """List this store's entries in pages, ordered by id.
+
+        ``state``: "quarantine" | "promoted" | None (all live entries:
+        quarantined, promoted, contested). ``cursor`` is the ``next_cursor``
+        of the previous page. Returns ``{"entries": [...], "next_cursor"}``,
+        each entry carrying ``id``, ``layer``, ``title``, ``state`` and
+        ``written_at`` (from the entry's provenance).
+        """
+        if state is None or state == "":
+            wanted = set(self._LIST_LIVE_STATES)
+        else:
+            canonical = self._LIST_STATE_ALIASES.get(str(state))
+            if canonical is None:
+                raise SchemaError(
+                    'state must be "quarantine", "promoted" or omitted (all live entries)'
+                )
+            wanted = {canonical}
+        try:
+            size = int(limit)
+        except (TypeError, ValueError) as exc:
+            raise SchemaError("limit must be an integer") from exc
+        size = max(1, min(size, self.LIST_MAX_LIMIT))
+        after = str(cursor) if cursor else None
+
+        rows = sorted(
+            (e for e in self.store.iter_entries(states=wanted) if e.get("id")),
+            key=lambda e: str(e["id"]),
+        )
+        if after is not None:
+            rows = [e for e in rows if str(e["id"]) > after]
+        page = rows[:size]
+        entries = [
+            {
+                "id": str(e["id"]),
+                "layer": e.get("layer"),
+                "title": e.get("title"),
+                "state": e.get("state"),
+                "written_at": (e.get("provenance") or {}).get("written_at"),
+            }
+            for e in page
+        ]
+        next_cursor = entries[-1]["id"] if len(rows) > size and entries else None
+        return {"entries": entries, "next_cursor": next_cursor}
+
     def ledger_view(self) -> dict[str, Any]:
         """TARL accepted / pending / rejected projection."""
         return tarl_ledger_view(list(self.store.iter_entries()))

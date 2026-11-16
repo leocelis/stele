@@ -1,4 +1,4 @@
-# MCP core tools (35)
+# MCP core tools (36)
 Auto-generated — do not edit by hand.
 
 - `stele_add`
@@ -17,6 +17,7 @@ Auto-generated — do not edit by hand.
 - `stele_hygiene_candidates`
 - `stele_lineage`
 - `stele_link`
+- `stele_list`
 - `stele_list_contested`
 - `stele_pin`
 - `stele_promote`

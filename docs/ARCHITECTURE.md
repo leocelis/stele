@@ -8,7 +8,7 @@ Stele is a **governed experiential-memory protocol**: agents write distilled les
 ┌─────────────────────────────────────────────────────────────┐
 │  Agents / MCP hosts / CLI / library callers                 │
 └───────────────┬─────────────────────────────┬───────────────┘
-                │ stele-mcp-core (35 governed-ledger tools) │ stele CLI
+                │ stele-mcp-core (36 governed-ledger tools) │ stele CLI
                 ▼                             ▼
 ┌─────────────────────────────────────────────────────────────┐
 │  stele-core (zero runtime deps)                             │

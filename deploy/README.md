@@ -18,8 +18,8 @@ Production entry: `deploy/wsgi.py`.
 | Path | Auth | Tools |
 |------|------|-------|
 | `/health` | No | Status + `tool_counts` |
-| `/core/sse` | Bearer | 35 ledger tools (**recommended**) |
-| `/core/mcp` | Bearer | 35 ledger tools |
+| `/core/sse` | Bearer | 36 ledger tools (**recommended**) |
+| `/core/mcp` | Bearer | 36 ledger tools |
 | `/sse` | Bearer | Full (~2000) |
 | `/mcp` | Bearer | Full |
 

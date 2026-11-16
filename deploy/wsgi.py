@@ -10,13 +10,16 @@ Serves both transports, full and core-only, from a single process:
   /core/mcp     — Streamable HTTP transport, governed-ledger tools only
 
 The core-only routes exist because the full surface carries ~2000 PEFT/agent-
-pattern research-reproduction tools alongside the ~34-tool governed ledger
+pattern research-reproduction tools alongside the ~36-tool governed ledger
 (ROADMAP.md Phase 9+ / CHANGELOG.md) — a client that only wants the ledger
 (stele_add/promote/search/doctor/...) should point at /core/sse or /core/mcp
 instead of /sse or /mcp.
 
-Auth:  Bearer token via SteleAuthMiddleware (reads STELE_API_KEYS env var).
-       /health is always exempt.
+Auth:  Bearer token via SteleAuthMiddleware (reads STELE_API_KEYS env var,
+       and STELE_TENANT_KEY_SECRET for derived tenant keys — TECH_SPEC §12).
+       /health is always exempt. Tenant keys reach /core/* only: the
+       middleware refuses them elsewhere and the dispatcher below refuses a
+       tenant identity on /sse, /messages and /mcp as a second guard.
 
 Usage:
     python deploy/wsgi.py --port 8080
@@ -45,7 +48,7 @@ for _pkg in (
 os.environ.setdefault("STELE_ENV", "production")
 
 from stele_core import __version__  # noqa: E402
-from stele_mcp.auth import SteleAuthMiddleware  # noqa: E402
+from stele_mcp.auth import SteleAuthMiddleware, identity_from_scope  # noqa: E402
 from stele_mcp.server import create_app, create_core_app, store_mode  # noqa: E402
 
 import uvicorn  # noqa: E402
@@ -139,6 +142,14 @@ def build_app():
     class _Dispatcher:
         async def __call__(self, scope, receive, send):
             path = scope.get("path", "/")
+            is_core = path == "/core" or path.startswith("/core/")
+            identity = identity_from_scope(scope)
+            if identity is not None and identity.is_tenant and not is_core:
+                refused = JSONResponse(
+                    {"error": "Tenant keys are accepted only under /core"}, status_code=401
+                )
+                await refused(scope, receive, send)
+                return
             if path == "/core/mcp" or path.startswith("/core/mcp/"):
                 await core_http_starlette(_strip_core_prefix(scope), receive, send)
             elif (

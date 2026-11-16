@@ -2,7 +2,7 @@
 
 Same MCP tools as Cursor. Prefer local stdio; the hosted endpoint needs a Bearer key and has no self-serve keys.
 
-**Default vs full.** `stele-mcp` (stdio) and `/core/sse` (hosted) expose the 35-tool
+**Default vs full.** `stele-mcp` (stdio) and `/core/sse` (hosted) expose the 36-tool
 governed ledger. `stele-mcp-full` and `/sse` add ~2000 PEFT/agent-pattern research tools.
 
 ---

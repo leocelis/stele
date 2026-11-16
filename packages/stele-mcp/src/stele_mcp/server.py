@@ -2,21 +2,120 @@
 
 from __future__ import annotations
 
+import collections
 import json
 import os
+import threading
 from pathlib import Path
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
+from mcp.server.fastmcp.exceptions import ToolError
 from stele_core import Stele
+
+from stele_mcp.auth import LOCAL_IDENTITY, Identity, identity_from_scope
 
 _STORE: Stele | None = None
 
+# TECH_SPEC §12.2 (ST2): one store per tenant, opened on first use, kept in a
+# bounded set; the least recently used store is closed first.
+_TENANT_STORES: collections.OrderedDict[str, Stele] = collections.OrderedDict()
+_TENANT_STORES_LOCK = threading.Lock()
+TENANT_STORE_CACHE_SIZE: int = max(1, int(os.environ.get("STELE_TENANT_STORE_CACHE", "64")))
 
-def get_store() -> Stele:
+# TECH_SPEC §12.3 (ST3): the only tools a tenant key may list or call.
+TENANT_TOOL_NAMES: frozenset[str] = frozenset(
+    {"stele_search", "stele_add", "stele_promote", "stele_delete", "stele_list"}
+)
+
+
+class TenantStoreError(RuntimeError):
+    """A tenant store cannot be opened (no MySQL store configured)."""
+
+
+def current_identity() -> Identity:
+    """Identity of the MCP message being handled right now.
+
+    Read from the HTTP request that carried *this* message (the low-level
+    server sets ``request_ctx`` per message), never from a value captured when
+    the session started. Stdio and direct calls run as the local operator.
+    """
+    try:
+        from mcp.server.lowlevel.server import request_ctx
+    except ImportError:  # pragma: no cover
+        return LOCAL_IDENTITY
+    ctx = request_ctx.get(None)
+    if ctx is None:
+        return LOCAL_IDENTITY
+    request = getattr(ctx, "request", None)
+    scope = getattr(request, "scope", None)
+    ident = identity_from_scope(scope)
+    return ident if ident is not None else LOCAL_IDENTITY
+
+
+def tenant_store_id(tenant: str) -> str:
+    return f"t-{tenant}"
+
+
+def _store_base_root() -> Path:
+    return Path(os.environ.get("STELE_STORE", "./.stele-store"))
+
+
+def tenant_scratch_root(tenant: str) -> Path:
+    """Own scratch root per tenant store, outside the operator's root.
+
+    Search reads the active version pin from the store root, so a shared root
+    would let one store's pin steer another store's search (§12.2).
+    """
+    base = _store_base_root()
+    return base.parent / f"{base.name}.tenants" / tenant_store_id(tenant)
+
+
+def _open_tenant_store(tenant: str) -> Stele:
+    dsn = os.environ.get("STELE_STORE_DSN")
+    if not dsn:
+        raise TenantStoreError(
+            "tenant keys need the MySQL store (STELE_STORE_DSN); refused on a file store"
+        )
+    return Stele.open(
+        tenant_scratch_root(tenant),
+        store_id=tenant_store_id(tenant),
+        now=os.environ.get("STELE_NOW"),
+        dsn=dsn,
+    )
+
+
+def _tenant_store(tenant: str) -> Stele:
+    with _TENANT_STORES_LOCK:
+        store = _TENANT_STORES.get(tenant)
+        if store is not None:
+            _TENANT_STORES.move_to_end(tenant)
+            return store
+        store = _open_tenant_store(tenant)
+        _TENANT_STORES[tenant] = store
+        while len(_TENANT_STORES) > TENANT_STORE_CACHE_SIZE:
+            _evicted_tenant, evicted = _TENANT_STORES.popitem(last=False)
+            close = getattr(evicted.store, "close", None)
+            if callable(close):
+                try:
+                    close()
+                except Exception:  # noqa: BLE001
+                    pass
+        return store
+
+
+def get_store(identity: Identity | None = None) -> Stele:
+    """Return the store for the caller of the current message.
+
+    A derived tenant key gets its own store ``t-<tenant>``; operator keys,
+    stdio and direct calls keep the process store (``STELE_STORE_ID``).
+    """
+    ident = identity if identity is not None else current_identity()
+    if ident.is_tenant and ident.tenant:
+        return _tenant_store(ident.tenant)
     global _STORE
     if _STORE is None:
-        root = Path(os.environ.get("STELE_STORE", "./.stele-store"))
+        root = _store_base_root()
         now = os.environ.get("STELE_NOW")  # optional fixed clock for tests
         # STELE_STORE_DSN wins over file path when set (hosted durable SoT).
         _STORE = Stele.open(
@@ -57,7 +156,87 @@ def _transport_security() -> Any:
     return TransportSecuritySettings(enable_dns_rebinding_protection=False)
 
 
-mcp = FastMCP("stele", transport_security=_transport_security())
+def _refuse_foreign_session_message(identity: Identity) -> None:
+    """Refuse a message whose key differs from the one that opened the session."""
+    try:
+        from mcp.server.lowlevel.server import request_ctx
+    except ImportError:  # pragma: no cover
+        return
+    ctx = request_ctx.get(None)
+    session = getattr(ctx, "session", None) if ctx is not None else None
+    if session is None or getattr(ctx, "request", None) is None:
+        return
+    owner = getattr(session, "_stele_owner", None)
+    if owner is None:
+        session._stele_owner = identity.principal
+    elif owner != identity.principal:
+        raise ToolError("this MCP session was opened with a different key; open a new session")
+
+
+class _SteleFastMCP(FastMCP):
+    """FastMCP that applies the tenant allowlist and session binding per message."""
+
+    async def list_tools(self) -> list[Any]:
+        identity = current_identity()
+        _refuse_foreign_session_message(identity)
+        tools = await super().list_tools()
+        if identity.is_tenant:
+            tools = [t for t in tools if t.name in TENANT_TOOL_NAMES]
+        return tools
+
+    async def call_tool(self, name: str, arguments: dict[str, Any]) -> Any:
+        identity = current_identity()
+        _refuse_foreign_session_message(identity)
+        if identity.is_tenant and name not in TENANT_TOOL_NAMES:
+            raise ToolError(f"tool {name!r} is not available to tenant keys")
+        return await super().call_tool(name, arguments)
+
+
+def _install_session_binding() -> None:
+    """Bind each MCP session to the identity of its first message (TECH_SPEC §12.1).
+
+    A later message on the same session whose key resolves to another
+    identity (another tenant, or an operator key) gets a JSON-RPC error and is
+    never dispatched. Idempotent.
+    """
+    try:
+        from mcp import types as mcp_types
+        from mcp.server.session import ServerSession
+    except ImportError:  # pragma: no cover
+        return
+    if getattr(ServerSession, "_stele_binding_installed", False):
+        return
+    original = ServerSession._received_request
+
+    async def _bound_received_request(self: Any, responder: Any) -> None:
+        metadata = getattr(responder, "message_metadata", None)
+        request = getattr(metadata, "request_context", None)
+        identity = identity_from_scope(getattr(request, "scope", None))
+        if identity is not None:
+            owner = getattr(self, "_stele_owner", None)
+            if owner is None:
+                self._stele_owner = identity.principal
+            elif owner != identity.principal:
+                with responder:
+                    await responder.respond(
+                        mcp_types.ErrorData(
+                            code=mcp_types.INVALID_REQUEST,
+                            message=(
+                                "this MCP session was opened with a different key; "
+                                "open a new session"
+                            ),
+                        )
+                    )
+                return
+        await original(self, responder)
+
+    ServerSession._received_request = _bound_received_request  # type: ignore[method-assign]
+    ServerSession._stele_binding_installed = True  # type: ignore[attr-defined]
+
+
+_install_session_binding()
+
+mcp = _SteleFastMCP("stele", transport_security=_transport_security())
 
 # Governed-ledger surface only — TECH_SPEC §7.1-7.9 (Core six + promote,
 # contested/export/hydrate, living ledger/ops, recovery+batch, hygiene+
@@ -76,6 +255,7 @@ _CORE_TOOL_NAMES: frozenset[str] = frozenset(
         "stele_supersede",
         "stele_delete",
         "stele_search",
+        "stele_list",
         "stele_reflect",
         "stele_link",
         # §7.3 contested + export/hydrate
@@ -133,7 +313,7 @@ def create_core_app() -> FastMCP:
     `mcp`, so a stale allowlist fails loudly instead of silently shrinking
     the core surface.
     """
-    core = FastMCP("stele-core", transport_security=_transport_security())
+    core = _SteleFastMCP("stele-core", transport_security=_transport_security())
     missing: list[str] = []
     for name in sorted(_CORE_TOOL_NAMES):
         tool = mcp._tool_manager.get_tool(name)
@@ -153,6 +333,17 @@ def stele_add(entry_json: str, ts: str | None = None) -> str:
     """ADD a distilled structured entry into quarantine. Pass entry as JSON object string."""
     entry = json.loads(entry_json)
     result = get_store().add(entry, ts=ts)
+    return json.dumps(result)
+
+
+@mcp.tool()
+def stele_list(state: str | None = None, limit: int = 50, cursor: str | None = None) -> str:
+    """LIST the calling key's store entries in pages: id, layer, title, state, written_at.
+
+    state: "quarantine" | "promoted" | omitted (all live entries). limit: 1-200
+    (default 50). cursor: the next_cursor from the previous page.
+    """
+    result = get_store().list_entries(state=state, limit=limit, cursor=cursor)
     return json.dumps(result)
 
 

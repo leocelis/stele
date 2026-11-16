@@ -82,6 +82,14 @@ _PERMANENT_ERRNOS = frozenset({1044, 1045, 1049, 1698, 2059})
 _PERMANENT_TLS_MARKER = "CERTIFICATE_VERIFY_FAILED"
 
 
+# Store ids that start with "t-" belong to tenants (TECH_SPEC §12.2); a store
+# opened without an id may adopt an operator row, never one of these.
+_ADOPT_OPERATOR_STORE_SQL = (
+    "SELECT store_id FROM stele_meta WHERE store_id NOT LIKE 't-%' "
+    "ORDER BY store_id ASC LIMIT 1"
+)
+
+
 def _is_permanent(exc: BaseException) -> bool:
     errno = exc.args[0] if getattr(exc, "args", None) else None
     if isinstance(errno, int) and errno in _PERMANENT_ERRNOS:
@@ -139,6 +147,10 @@ class MySQLSteleStore:
             budget_seconds=_STARTUP_BUDGET_S,
             connect_timeout=_STARTUP_CONNECT_TIMEOUT_S,
         )
+        # An explicit id is always honoured (created when absent, never swapped
+        # for another store's row). Without one, the store adopts an existing
+        # operator store — never a tenant store ``t-*`` (TECH_SPEC §12.2 ST2a).
+        self._requested_store_id = store_id
         self._store_id = store_id or f"store_{uuid.uuid4().hex[:12]}"
         self._ensure_scratch()
         if create:
@@ -252,9 +264,12 @@ class MySQLSteleStore:
                     (self._store_id,),
                 )
                 if cur.fetchone() is None:
-                    # Prefer an existing meta row if this DB already has one store.
-                    cur.execute("SELECT store_id FROM stele_meta LIMIT 1")
-                    existing = cur.fetchone()
+                    existing = None
+                    if self._requested_store_id is None:
+                        # No id asked for: keep an existing operator store if the
+                        # DB already has one. Tenant stores are never adopted.
+                        cur.execute(_ADOPT_OPERATOR_STORE_SQL)
+                        existing = cur.fetchone()
                     if existing:
                         self._store_id = existing["store_id"]
                     else:
@@ -271,9 +286,17 @@ class MySQLSteleStore:
     def _load_meta_or_fail(self) -> None:
         self.ensure_live()
         with self._conn.cursor() as cur:
-            cur.execute("SELECT store_id FROM stele_meta LIMIT 1")
+            if self._requested_store_id is not None:
+                cur.execute(
+                    "SELECT store_id FROM stele_meta WHERE store_id = %s",
+                    (self._requested_store_id,),
+                )
+            else:
+                cur.execute(_ADOPT_OPERATOR_STORE_SQL)
             row = cur.fetchone()
         if row is None:
+            if self._requested_store_id is not None:
+                raise StoreError(f"no stele store {self._requested_store_id!r} in MySQL")
             raise StoreError("no stele store in MySQL (stele_meta empty)")
         self._store_id = row["store_id"]
 

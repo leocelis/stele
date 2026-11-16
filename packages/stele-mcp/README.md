@@ -10,7 +10,7 @@ pip install stele-mcp
 
 ## Tools
 
-`stele-mcp` runs 35 tools by default. The main ones:
+`stele-mcp` runs 36 tools by default. The main ones:
 
 | Tool | Role |
 |---|---|

@@ -4016,7 +4016,7 @@ Paths resolve under `packages/stele-core/tests/` unless noted. Provenance rule: 
 
 ---
 
-## 12. Multi-tenant hosts: derived tenant keys and a store per tenant (PROPOSED 2026-11-15, not built)
+## 12. Multi-tenant hosts: derived tenant keys and a store per tenant (built 2026-11-16)
 
 **Problem.** The hosted server accepts any key in `STELE_API_KEYS` and opens **one store per
 process** (`STELE_STORE_ID`) for every key (`stele_mcp/auth.py`, `stele_mcp/server.py`). That fits

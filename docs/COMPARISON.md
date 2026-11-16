@@ -11,7 +11,7 @@ Honest positioning for adopters. Stele is **not** trying to win every benchmark.
 | Erasure / DELETE proofs | Yes (`forget_compliance`) | Varies | Varies | Usually none |
 | Eval story | Task-outcome harnesses | Recall / LoCoMo marketing | Enterprise benchmarks | Host-dependent |
 | Install | `pip install stele-core stele-mcp` | `pip install mem0ai` | Cloud + SDK | Built into stack |
-| MCP default tools | 35 (core) | Varies | Varies | Varies |
+| MCP default tools | 36 (core) | Varies | Varies | Varies |
 | Core write path LLM | Forbidden (C5) | Uses LLM in pipeline | Uses LLM | Host-dependent |
 
 **Choose Stele** when multiple agents share a codebase, failures repeat, and you already have CI or review as oracle.

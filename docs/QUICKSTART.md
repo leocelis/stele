@@ -31,7 +31,7 @@ stele init ./.stele-store --store-id demo --demo --now 2026-09-01T12:00:00Z
 stele doctor ./.stele-store --now 2026-09-01T12:00:00Z
 ```
 
-## MCP stdio (35 tools — default)
+## MCP stdio (36 tools — default)
 
 ```bash
 export STELE_STORE=./.stele-store

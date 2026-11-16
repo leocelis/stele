@@ -91,7 +91,7 @@ stele snapshot ./.stele-store /tmp/stele-backup --now 2026-08-20T12:00:00Z --act
 Requires the Model Context Protocol Python SDK **1.x** (`mcp>=1.0,<2`).
 mcp 2.x removed `mcp.server.fastmcp` and will not boot this server.
 
-**Default (`stele-mcp`):** 35 governed-ledger tools — add, promote, search, doctor, export, …
+**Default (`stele-mcp`):** 36 governed-ledger tools — add, promote, search, doctor, export, …
 
 ```bash
 export STELE_STORE=./.stele-store
@@ -122,7 +122,7 @@ same process, same auth, same store:
 | Surface | SSE | Streamable HTTP | Tools |
 |---|---|---|---|
 | Full | `/sse` | `/mcp` | 2003 (ledger + PEFT/pattern research library) |
-| Core (governed ledger only) | `/core/sse` | `/core/mcp` | 35 — see list below |
+| Core (governed ledger only) | `/core/sse` | `/core/mcp` | 36 — see list below |
 
 Production:
 
@@ -155,8 +155,8 @@ STELE_API_KEYS=stl_local_dev STELE_AUTH_DISABLED=false \
 }
 ```
 
-**35 governed-ledger tools** (TECH_SPEC §7.1-7.9 — everything `create_core_app()` exposes):
-add · update · promote · supersede · delete · search · reflect · link ·
+**36 governed-ledger tools** (TECH_SPEC §7.1-7.9 — everything `create_core_app()` exposes):
+add · update · promote · supersede · delete · search · list · reflect · link ·
 list_contested · resolve_contested · verify · reviewer_corrections · hydrate · export ·
 record_outcome · pin · stale_report · reverify · related · stats · timeline · verify_pack ·
 attach · snapshot · doctor · entry_schema · purge_by_provenance · diff_stores · add_batch ·
