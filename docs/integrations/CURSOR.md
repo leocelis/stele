@@ -63,7 +63,7 @@ when experiential memory is needed — not as invisible monitoring.
 
 ## 3. Smoke check
 
-After reload, the agent tool list should include `stele_*` tools (35 for default `stele-mcp`). Quick probe:
+After reload, the agent tool list should include `stele_*` tools (36 for default `stele-mcp`). Quick probe:
 
 1. Call `stele_doctor` with a fixed `now` ISO timestamp.
 2. Expect JSON with `"ok": true` (empty store is fine).

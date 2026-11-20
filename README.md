@@ -30,6 +30,8 @@ Full research: [`docs/research/`](docs/research/) · patterns: [`docs/patterns/`
 pip install stele-core stele-mcp
 ```
 
+The PyPI package named `stele` is an unrelated project; install `stele-core` and `stele-mcp`.
+
 From git (contributors):
 
 ```bash
@@ -82,7 +84,7 @@ stele doctor ./.stele-store --now 2026-08-20T12:00:00Z
 stele hygiene ./.stele-store --now 2026-08-20T12:00:00Z
 stele entangled ./.stele-store --source web_page --now 2026-08-20T12:00:00Z
 stele forget-check ./.stele-store --scope project:demo --subject-id subj-x --probe-query secret --now 2026-08-20T12:00:00Z
-stele schema --out docs/schemas/entry.schema.json
+stele schema --out entry.schema.json
 stele snapshot ./.stele-store /tmp/stele-backup --now 2026-08-20T12:00:00Z --actor ops
 ```
 
@@ -121,7 +123,7 @@ same process, same auth, same store:
 
 | Surface | SSE | Streamable HTTP | Tools |
 |---|---|---|---|
-| Full | `/sse` | `/mcp` | 2003 (ledger + PEFT/pattern research library) |
+| Full | `/sse` | `/mcp` | 2004 (ledger + PEFT/pattern research library) |
 | Core (governed ledger only) | `/core/sse` | `/core/mcp` | 36 — see list below |
 
 Production:
@@ -171,7 +173,7 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). Planes: Contract · Tools ·
 | OSS guide (start here) | [`docs/OSS_GUIDE.md`](docs/OSS_GUIDE.md) |
 | Quickstart | [`docs/QUICKSTART.md`](docs/QUICKSTART.md) |
 | PRD | [`docs/PRD.md`](docs/PRD.md) |
-| TECH_SPEC v1.1 | [`docs/TECH_SPEC.md`](docs/TECH_SPEC.md) |
+| TECH_SPEC | [`docs/TECH_SPEC.md`](docs/TECH_SPEC.md) |
 | Entry JSON Schema | [`docs/schemas/entry.schema.json`](docs/schemas/entry.schema.json) |
 | Intent (C1–C8) | [`stele_system_intent.yaml`](stele_system_intent.yaml) |
 

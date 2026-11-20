@@ -16,6 +16,12 @@ REPLACEMENTS: list[tuple[pathlib.Path, list[tuple[str, str]]]] = [
         ],
     ),
     (
+        ROOT / "packages/stele-mcp/src/stele_mcp/__init__.py",
+        [
+            (r'^__version__ = "[\d.]+"', f'__version__ = "{VERSION}"'),
+        ],
+    ),
+    (
         ROOT / "docs/PRD.md",
         [
             (r"^\*\*Version:\*\* [\d.]+", f"**Version:** {VERSION}"),

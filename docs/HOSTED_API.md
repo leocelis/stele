@@ -10,7 +10,7 @@ Unauthenticated.
   "server": "stele",
   "version": "18.16.4",
   "store_mode": "mysql",
-  "tool_counts": { "full": 2003, "core": 36 },
+  "tool_counts": { "full": 2004, "core": 36 },
   "recommended_surface": "core",
   "docs_url": "https://github.com/leocelis/stele/blob/main/docs/QUICKSTART.md"
 }

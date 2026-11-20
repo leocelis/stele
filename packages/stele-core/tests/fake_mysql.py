@@ -14,7 +14,7 @@ Usage::
 from __future__ import annotations
 
 import re
-from typing import Any
+from typing import Any, Self
 
 FAKE_DSN = "mysql://fake:fake@fake-mysql.invalid:3306/stele_test"
 
@@ -76,7 +76,7 @@ class FakeCursor:
         self._rows: list[dict[str, Any]] = []
         self.rowcount = 0
 
-    def __enter__(self) -> FakeCursor:
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(self, *exc: object) -> None:
@@ -88,7 +88,7 @@ class FakeCursor:
     def fetchall(self) -> list[dict[str, Any]]:
         return list(self._rows)
 
-    def execute(self, sql: str, args: tuple[Any, ...] | None = None) -> int:  # noqa: C901
+    def execute(self, sql: str, args: tuple[Any, ...] | None = None) -> int:
         q = _norm(sql)
         a = tuple(args or ())
         s = self.s
@@ -97,7 +97,7 @@ class FakeCursor:
         self.rowcount = 0
         up = q.upper()
 
-        if up.startswith("CREATE TABLE") or up.startswith("SET "):
+        if up.startswith(("CREATE TABLE", "SET ")):
             return 0
         if q == "SELECT 1":
             self._rows = [{"1": 1}]

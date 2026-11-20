@@ -22,7 +22,7 @@ pip install stele-core
 from pathlib import Path
 from stele_core import Stele
 
-store = Stele.open(Path("./.stele-store"), store_id="demo")
+store = Stele.open(Path("./.stele-store"), store_id="demo", now="2026-08-20T12:00:00Z")
 result = store.add({
     "layer": "failure_lesson",
     "title": "Pin cache keys to calendar buckets",

@@ -12,7 +12,7 @@ governed ledger. `stele-mcp-full` and `/sse` add ~2000 PEFT/agent-pattern resear
 ### Option A — Hosted (needs a Bearer key, no self-serve keys)
 
 ```bash
-claude mcp add --transport http stele https://stele.leocelis.com/core/sse \
+claude mcp add --transport http stele https://stele.leocelis.com/core/mcp \
   --header "Authorization: Bearer YOUR_KEY_HERE" \
   --scope user
 ```
@@ -20,7 +20,7 @@ claude mcp add --transport http stele https://stele.leocelis.com/core/sse \
 Full research library:
 
 ```bash
-claude mcp add --transport http stele-full https://stele.leocelis.com/sse \
+claude mcp add --transport http stele-full https://stele.leocelis.com/mcp \
   --header "Authorization: Bearer YOUR_KEY_HERE" \
   --scope user
 ```

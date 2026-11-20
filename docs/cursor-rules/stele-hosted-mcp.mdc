@@ -6,7 +6,7 @@ alwaysApply: false
 
 # Stele — hosted MCP (experiential memory)
 
-**Endpoint:** `https://stele.leocelis.com/core/sse` (35 tools, Bearer required)  
+**Endpoint:** `https://stele.leocelis.com/core/sse` (36 tools, Bearer required)  
 **Config:** `~/.cursor/mcp.json` → `mcpServers.stele` with `Authorization: Bearer …`
 
 ## When to use

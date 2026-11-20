@@ -241,7 +241,7 @@ def test_session_continued_with_another_key_is_refused(env) -> None:
     assert "different key" in other["error"]["message"]
     op = s.rpc("tools/list", {}, key=OPERATOR_KEY)
     assert "error" in op
-    ok, msg = s.call(
+    ok, _msg = s.call(
         "stele_add", key=_key("globex"),
         entry_json=json.dumps(_entry("x", "should never land", "project:x")), ts=TS,
     )
@@ -315,7 +315,7 @@ def test_operator_key_keeps_operator_store(env) -> None:
     )
     assert ok
     assert ("store_operator01", added["id"]) in db.entries
-    ok, stats = op.call("stele_stats")
+    ok, _stats = op.call("stele_stats")
     assert ok
 
 

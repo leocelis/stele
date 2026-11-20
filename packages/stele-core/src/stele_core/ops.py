@@ -5,7 +5,7 @@ from __future__ import annotations
 import contextlib
 from collections.abc import Mapping, Sequence
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 from stele_core.abba import (
     abb_expr as abb_abb_expr,
@@ -19833,7 +19833,7 @@ class Stele:
 
     # TECH_SPEC §12.4 (ST4): page through this store's entries with titles.
     _LIST_LIVE_STATES = frozenset({"quarantined", "promoted", "contested"})
-    _LIST_STATE_ALIASES = {
+    _LIST_STATE_ALIASES: ClassVar[dict[str, str]] = {
         "quarantine": "quarantined",
         "quarantined": "quarantined",
         "promoted": "promoted",
