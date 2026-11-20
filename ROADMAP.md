@@ -7,7 +7,7 @@ its joint-satisfaction test gates every implementation phase.
 
 | | |
 |---|---|
-| **Shipped** | **v18.16.4** — `crystallize-skill` fixed, CI runs its tests again. Since v18.16.3, promotion needs evidence that supports the lesson. MCP tools unchanged. |
+| **Shipped** | **v18.16.5** — `stele_list` core tool (36 core tools) and host apps with a store per tenant. Since v18.16.3, promotion needs evidence that supports the lesson. |
 | **Next** | Phase 192 / v18.16 — two unused PEFT proxies. **Not started.** Prefixes not locked. |
 | **Pending** | Phase 192 + Post-v18.15 list below. Phases 0–191 are done. |
 

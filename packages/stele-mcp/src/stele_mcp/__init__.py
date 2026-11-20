@@ -4,4 +4,4 @@ from stele_mcp.server import main, mcp
 
 __all__ = ["main", "mcp"]
 
-__version__ = "18.16.4"
+__version__ = "18.16.5"

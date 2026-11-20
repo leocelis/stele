@@ -4,6 +4,24 @@ All notable changes to Stele are documented here.
 
 ## [Unreleased]
 
+## [18.16.5] — 2026-11-20
+
+### Added
+- `stele_list` core tool: pages through a store's entries by state
+  (`state`, `limit`, `cursor` → entries + `next_cursor`). The core surface goes
+  from 35 tools to 36, the full surface from 2003 to 2004.
+- Host apps: one hosted server, a store per tenant. Tenant keys are derived
+  from `STELE_TENANT_KEY_SECRET`, served under `/core` only, need the MySQL
+  store, and reach five tools (search, add, promote, delete, list). Keys in
+  `STELE_API_KEYS` work as before. See `docs/integrations/HOST_APP.md`.
+
+### Fixed
+- The stele-core package README quick start now passes `now=` to `Stele.open`,
+  so it runs as printed.
+- `docs/integrations/CLAUDE_CODE.md` registers `--transport http` against
+  `/core/mcp` and `/mcp` (the streamable HTTP paths).
+- `stele_mcp.__version__` now follows the release.
+
 ## [18.16.4] — 2026-11-06
 
 ### Fixed
